@@ -1,3 +1,9 @@
+## Sprint 1.1
+
+- Corregido el teclado del chat en iPhone para mostrar la barra espaciadora.
+- El campo acepta entradas como `658 6728`, `520 6578 51` y `FT 10 520`.
+- Actualizada la caché offline para distribuir el cambio.
+
 # Viejito 4.0 PWA — Sprint 1
 
 Primera versión funcional de la PWA industrial de Viejito.
