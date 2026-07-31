@@ -274,6 +274,25 @@ function optimizerMarkup(result){
   const status=optimizerStatus(result);
   return `<div class="chat-optimizer ${result.level}"><strong>${escapeHTML(status.title)}</strong><small>${escapeHTML(status.message)}</small><div class="chat-optimizer-grid"><span>${escapeHTML(ot('targetBW'))}: <b>${escapeHTML(fmt(result.targetBW))}</b></span><span>${escapeHTML(ot('difference'))}: <b>${escapeHTML(result.difference>0?`+${fmt(result.difference)}`:fmt(result.difference))}</b></span><span>${escapeHTML(ot('formulaSuggestion'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.formulaSuggestion,1):'—')}</b></span><span>${escapeHTML(ot('learnedSuggestion'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—')}</b></span><span>${escapeHTML(ot('confidence'))}: <b>${escapeHTML(result.learning.confidence+'%')}</b></span><span>${escapeHTML(ot('rollsLearned'))}: <b>${escapeHTML(result.learning.count)}</b></span></div><p>${escapeHTML(optimizerAction(result))}</p></div>`;
 }
+
+function renderPuppyStatus(result){
+  const puppy=$('puppy-status');
+  if(!puppy) return;
+  const status=optimizerStatus(result);
+  puppy.classList.remove('idle','green','yellow','red','animate-pop');
+  puppy.classList.add(result.level);
+  // Restart the entrance animation after every calculation.
+  void puppy.offsetWidth;
+  puppy.classList.add('animate-pop');
+  $('puppy-title').textContent=status.title;
+  $('puppy-message').textContent=result.level==='green'
+    ? (state.language==='es'?'¡Buen trabajo!':state.language==='fr'?'Très bien !':'Good job!')
+    : result.level==='yellow'
+      ? (state.language==='es'?'Revísalo pronto':state.language==='fr'?'À surveiller':'Check it soon')
+      : (state.language==='es'?'Necesita ajuste':state.language==='fr'?'Réglage requis':'Adjustment needed');
+  puppy.setAttribute('aria-label',`${status.title}. ${status.message}`);
+}
+
 function renderOptimizerPanel(result){
   const panel=$('optimizer-panel');
   const status=optimizerStatus(result);
@@ -303,6 +322,7 @@ function renderOptimizerPanel(result){
   const span=result.warningTolerance*2;
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
+  renderPuppyStatus(result);
 }
 
 function sanitizeTrendHistory(){

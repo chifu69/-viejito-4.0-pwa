@@ -15,3 +15,9 @@ This version keeps the Sprint 2.1 Adaptive Process Intelligence and adds prevent
 - Works offline and stores all data only on the device.
 
 Upload every file in this folder to the root of the GitHub Pages repository, replacing the older files.
+
+
+## Viejito 4.3
+- Animated process puppy in the Basis Weight result card.
+- Happy in green, concerned in yellow, and very sad with animated tears in red.
+- Puppy status follows the existing Smart Optimizer tolerances.

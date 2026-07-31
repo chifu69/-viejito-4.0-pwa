@@ -12,7 +12,7 @@
 <link href="manifest.webmanifest" rel="manifest"/>
 <link href="icons/icon-180.png" rel="apple-touch-icon"/>
 <link href="icons/icon-192.png" rel="icon"/>
-<link href="styles.css?v=4.2.0" rel="stylesheet"/>
+<link href="styles.css?v=4.3.0" rel="stylesheet"/>
 <title>Viejito Industrial</title>
 </head>
 <body>
@@ -65,7 +65,19 @@
 <label><span id="target-bw-label">Target BW</span><input id="bw-target" inputmode="decimal" min="0" placeholder="6.35" step="0.01" type="number"/></label>
 <label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" inputmode="decimal" min="0" placeholder="170" step="1" type="number"/></label>
 </div>
-<div class="result-box" id="bw-result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
+<div class="result-box puppy-result" id="bw-result-box">
+  <div class="result-copy"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
+  <div class="puppy-status idle" id="puppy-status" aria-live="polite" aria-label="Waiting for calculation">
+    <div class="puppy-spark spark-one"></div><div class="puppy-spark spark-two"></div><div class="puppy-spark spark-three"></div>
+    <div class="puppy-head">
+      <span class="puppy-ear left"></span><span class="puppy-ear right"></span>
+      <span class="puppy-eye left"></span><span class="puppy-eye right"></span>
+      <span class="puppy-tear left"></span><span class="puppy-tear right"></span>
+      <span class="puppy-muzzle"><i class="puppy-nose"></i><i class="puppy-mouth"></i><i class="puppy-tongue"></i></span>
+    </div>
+    <div class="puppy-caption"><strong id="puppy-title">Ready</strong><small id="puppy-message">Calculate BW</small></div>
+  </div>
+</div>
 <section aria-live="polite" class="optimizer-panel hidden" id="optimizer-panel">
 <div class="optimizer-status-row">
 <span class="status-dot" id="optimizer-status-dot"></span>
@@ -192,7 +204,7 @@
 <span class="chat-fab-label">Chat</span>
 </button>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=4.2.0"></script>
-<script src="app.js?v=4.2.0"></script>
+<script src="optimizer.js?v=4.3.0"></script>
+<script src="app.js?v=4.3.0"></script>
 </body>
 </html>

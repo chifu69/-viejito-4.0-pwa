@@ -166,3 +166,28 @@ body.chat-open{overflow:hidden}
   .tool-workspace .quick-card strong{font-size:.67rem}
   .tool-workspace .calculator-card{padding:9px}
 }
+
+
+/* Viejito 4.3 — Animated process puppy */
+.puppy-result{display:grid;grid-template-columns:minmax(0,1fr) 150px;align-items:center;gap:10px;overflow:hidden}
+.result-copy{min-width:0}.puppy-status{position:relative;min-height:104px;border-radius:15px;display:grid;grid-template-columns:74px 1fr;align-items:center;padding:8px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);transition:.25s ease}
+.puppy-caption{display:grid;gap:2px;min-width:0}.puppy-caption strong{font-size:.72rem!important;margin:0!important;line-height:1.15;text-transform:uppercase}.puppy-caption small{font-size:.64rem;line-height:1.2}
+.puppy-head{position:relative;width:68px;height:62px;border-radius:48% 48% 44% 44%;background:#d99b52;border:2px solid rgba(65,39,19,.22);box-shadow:inset 0 -8px 0 rgba(115,63,26,.10),0 6px 12px rgba(0,0,0,.12);transform-origin:50% 90%}
+.puppy-ear{position:absolute;top:5px;width:26px;height:45px;background:#a96531;border:2px solid rgba(65,39,19,.18);z-index:-1}.puppy-ear.left{left:-13px;border-radius:70% 35% 60% 70%;transform:rotate(18deg)}.puppy-ear.right{right:-13px;border-radius:35% 70% 70% 60%;transform:rotate(-18deg)}
+.puppy-eye{position:absolute;top:23px;width:8px;height:10px;border-radius:50%;background:#17202a;box-shadow:inset 2px 2px 0 rgba(255,255,255,.7)}.puppy-eye.left{left:18px}.puppy-eye.right{right:18px}
+.puppy-muzzle{position:absolute;left:50%;top:34px;width:36px;height:25px;transform:translateX(-50%);border-radius:50%;background:#efc88e}.puppy-nose{position:absolute;left:50%;top:1px;width:13px;height:9px;transform:translateX(-50%);border-radius:60% 60% 70% 70%;background:#24180f}.puppy-mouth{position:absolute;left:50%;top:10px;width:20px;height:9px;transform:translateX(-50%);border-bottom:2px solid #55331e;border-radius:0 0 50% 50%}.puppy-tongue{position:absolute;left:50%;top:15px;width:11px;height:10px;transform:translateX(-50%);border-radius:0 0 8px 8px;background:#f27783;opacity:0}
+.puppy-tear{position:absolute;top:34px;width:6px;height:11px;border-radius:60% 40% 60% 40%;background:#55baf5;opacity:0}.puppy-tear.left{left:12px;transform:rotate(15deg)}.puppy-tear.right{right:12px;transform:rotate(-15deg)}
+.puppy-spark{position:absolute;width:4px;height:12px;border-radius:99px;background:#35c96f;opacity:0}.spark-one{left:15px;top:5px;transform:rotate(-35deg)}.spark-two{left:32px;top:0}.spark-three{left:48px;top:5px;transform:rotate(35deg)}
+.puppy-status.idle{opacity:.72}.puppy-status.green{border-color:rgba(53,201,111,.58);background:rgba(53,201,111,.09)}.puppy-status.yellow{border-color:rgba(246,195,68,.7);background:rgba(246,195,68,.11)}.puppy-status.red{border-color:rgba(255,82,82,.7);background:rgba(255,82,82,.1)}
+.puppy-status.green .puppy-caption strong{color:#35c96f}.puppy-status.yellow .puppy-caption strong{color:#d99a00}.puppy-status.red .puppy-caption strong{color:#ff5252}
+.puppy-status.green .puppy-tongue,.puppy-status.green .puppy-spark{opacity:1}.puppy-status.green .puppy-head{animation:puppyHappy 1.25s ease-in-out infinite}.puppy-status.green .puppy-ear.left{animation:earHappyLeft .8s ease-in-out infinite}.puppy-status.green .puppy-ear.right{animation:earHappyRight .8s ease-in-out infinite}
+.puppy-status.yellow .puppy-head{transform:rotate(-3deg)}.puppy-status.yellow .puppy-eye{height:7px;top:25px}.puppy-status.yellow .puppy-mouth{width:15px;border-bottom:0;border-top:2px solid #55331e;border-radius:50% 50% 0 0;top:16px}.puppy-status.yellow .puppy-ear{top:9px}
+.puppy-status.red .puppy-head{animation:puppySad 1.7s ease-in-out infinite}.puppy-status.red .puppy-eye{height:6px;top:27px}.puppy-status.red .puppy-mouth{width:18px;border-bottom:0;border-top:2px solid #55331e;border-radius:50% 50% 0 0;top:17px}.puppy-status.red .puppy-tear{opacity:1;animation:puppyTear 1.4s ease-in infinite}.puppy-status.red .puppy-tear.right{animation-delay:.55s}.puppy-status.red .puppy-ear{top:12px}
+.puppy-status.animate-pop{animation:puppyPop .36s ease-out}
+@keyframes puppyHappy{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+@keyframes earHappyLeft{0%,100%{transform:rotate(18deg)}50%{transform:rotate(32deg)}}@keyframes earHappyRight{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(-32deg)}}
+@keyframes puppySad{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(2px) rotate(2deg)}}
+@keyframes puppyTear{0%{transform:translateY(-2px);opacity:0}20%{opacity:1}100%{transform:translateY(14px);opacity:0}}
+@keyframes puppyPop{0%{transform:scale(.88);opacity:.35}100%{transform:scale(1);opacity:1}}
+@media(max-width:620px){.puppy-result{grid-template-columns:minmax(0,1fr) 104px;gap:6px}.puppy-status{min-height:84px;grid-template-columns:1fr;padding:5px;justify-items:center}.puppy-head{width:55px;height:50px}.puppy-ear{height:36px;width:21px}.puppy-eye{top:18px}.puppy-eye.left{left:14px}.puppy-eye.right{right:14px}.puppy-muzzle{top:27px;transform:translateX(-50%) scale(.82)}.puppy-caption{text-align:center}.puppy-caption strong{font-size:.58rem!important}.puppy-caption small{display:none}.puppy-spark{display:none}}
+@media(prefers-reduced-motion:reduce){.puppy-status *,.puppy-status{animation:none!important;transition:none!important}}
