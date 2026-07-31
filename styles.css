@@ -44,3 +44,14 @@
 .chat-optimizer>strong,.chat-optimizer>small{display:block}.chat-optimizer>small{margin-top:3px;opacity:.75}
 .chat-optimizer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px;font-size:.82rem}.chat-optimizer p{margin:9px 0 0;font-weight:700;font-size:.88rem}
 @media(max-width:520px){.optimizer-values,.chat-optimizer-grid{grid-template-columns:1fr 1fr}.optimizer-panel{padding:13px}}
+
+
+/* Sprint 2.1 — Adaptive Process Intelligence */
+.learning-summary,.learning-dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.learning-summary>div,.learning-dashboard-grid>div{padding:11px;border-radius:12px;background:rgba(255,255,255,.045);display:grid;gap:4px}
+.learning-summary span,.learning-dashboard-grid span{font-size:.78rem;opacity:.72}.learning-summary strong,.learning-dashboard-grid strong{font-size:1.12rem}
+.secondary{width:100%;margin-top:14px;padding:12px 14px;border-radius:13px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;font-weight:750;cursor:pointer}
+.learning-form{margin-top:14px;padding:14px;border-radius:14px;border:1px dashed var(--line);background:rgba(255,255,255,.025)}
+.learning-form>p{margin:0 0 12px;line-height:1.45;opacity:.84}.learning-actions{display:flex;align-items:center;gap:12px;margin-top:12px}.learning-actions .primary{margin:0;flex:1}.learning-dashboard{margin-top:18px}.learning-dashboard>small{display:block;margin-top:12px;opacity:.68}
+.hidden{display:none!important}
+@media(max-width:520px){.learning-summary,.learning-dashboard-grid{grid-template-columns:1fr 1fr}.learning-actions{align-items:stretch;flex-direction:column}.learning-actions .text-button{padding:10px}}

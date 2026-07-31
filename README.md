@@ -1,18 +1,15 @@
-# Viejito 4.0 — Sprint 2.0 Smart Process Optimizer
+# Viejito 4.0 — Sprint 2.1
 
-## New in this version
+## Adaptive Process Intelligence
 
-- Target BW and Current S-Wrap fields in the BW calculator.
-- Global tolerance for every product:
-  - Green: difference up to ±0.25; no S-Wrap change.
-  - Yellow: difference from 0.26 through 0.30; preventive S-Wrap adjustment.
-  - Red: difference greater than 0.30; S-Wrap adjustment recommended.
-- Suggested S-Wrap formula: `current S-Wrap × actual BW ÷ target BW`.
-- Visual range indicator and colored BW result.
-- Smart chat format: `520 6578 6.35 170`.
-- Target BW and current S-Wrap are saved locally.
-- Works offline after the first load.
+This version adds offline machine learning to the Smart Process Optimizer.
 
-## Upload to GitHub Pages
+- Keeps the same global BW tolerance for every product: green ±0.25, yellow 0.26–0.30, red above 0.30.
+- Shows the standard formula suggestion and the learned machine suggestion.
+- Lets the operator record the S-Wrap actually used and the final BW.
+- Learns a weighted correction from confirmed rolls.
+- Shows rolls learned, confidence, success rate, and average correction.
+- Stores all learning locally on the device; no cloud or subscription is required.
+- Starts applying learned correction after at least three recorded rolls.
 
-Upload all files and the `icons` folder, replacing the previous files. Wait about one minute, then reopen the site. The new service worker cache is versioned to force the update.
+Upload every file in this folder to the root of the GitHub Pages repository, replacing the older files.

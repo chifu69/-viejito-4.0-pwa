@@ -182,7 +182,9 @@ const state = {
   context: JSON.parse(localStorage.getItem('viejitoContext') || '{}'),
   history: JSON.parse(localStorage.getItem('viejitoHistory') || '[]'),
   targetBW: Number(localStorage.getItem('viejitoTargetBW')) || DEFAULT_TARGET_BW,
-  currentSWrap: Number(localStorage.getItem('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP
+  currentSWrap: Number(localStorage.getItem('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP,
+  latestOptimization: null,
+  learningEngine: new AdaptiveLearningEngine()
 };
 
 const $ = (id) => document.getElementById(id);
@@ -216,7 +218,7 @@ const optimizerText = {
     greenMessage:'Within ±0.25. No adjustment needed.', yellowMessage:'Within 0.26–0.30. Make a preventive S-Wrap adjustment.',
     redMessage:'More than 0.30 from target. Adjust S-Wrap.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
     decrease:'Decrease S-Wrap by {amount}, from {current} to {suggested}.', increase:'Increase S-Wrap by {amount}, from {current} to {suggested}.',
-    hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}'
+    hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}', formulaSuggestion:'Formula suggestion', learnedSuggestion:'Learned suggestion', confidence:'Confidence', rollsLearned:'Rolls learned', recordResult:'Record actual result', learningQuestion:'After making the change, enter the S-Wrap you used and the final BW.', appliedSWrap:'Applied S-Wrap', finalBW:'Final BW', saveLearn:'Save and learn', cancel:'Cancel', learningSaved:'Result saved. Viejito learned from this roll.', machineLearning:'Machine learning', resetLearning:'Reset learning', averageCorrection:'Average correction', successRate:'Success rate', deviceOnly:'Learning is stored only on this device.', resetDone:'Machine learning was reset.'
   },
   es: {
     targetBW:'BW objetivo', currentSWrap:'S-Wrap actual', difference:'Diferencia', suggestedSWrap:'S-Wrap sugerido',
@@ -224,7 +226,7 @@ const optimizerText = {
     greenMessage:'Dentro de ±0.25. No se necesita ajuste.', yellowMessage:'Entre 0.26 y 0.30. Haz un ajuste preventivo del S-Wrap.',
     redMessage:'Más de 0.30 del objetivo. Ajusta el S-Wrap.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
     decrease:'Baja el S-Wrap {amount}, de {current} a {suggested}.', increase:'Sube el S-Wrap {amount}, de {current} a {suggested}.',
-    hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}'
+    hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}', formulaSuggestion:'Sugerencia por fórmula', learnedSuggestion:'Sugerencia aprendida', confidence:'Confianza', rollsLearned:'Rollos aprendidos', recordResult:'Registrar resultado real', learningQuestion:'Después del cambio, escribe el S-Wrap que usaste y el BW final.', appliedSWrap:'S-Wrap aplicado', finalBW:'BW final', saveLearn:'Guardar y aprender', cancel:'Cancelar', learningSaved:'Resultado guardado. Viejito aprendió de este rollo.', machineLearning:'Aprendizaje de la máquina', resetLearning:'Borrar aprendizaje', averageCorrection:'Corrección promedio', successRate:'Porcentaje de éxito', deviceOnly:'El aprendizaje se guarda solamente en este dispositivo.', resetDone:'Se borró el aprendizaje de la máquina.'
   },
   fr: {
     targetBW:'BW cible', currentSWrap:'S-Wrap actuel', difference:'Différence', suggestedSWrap:'S-Wrap suggéré',
@@ -232,7 +234,7 @@ const optimizerText = {
     greenMessage:'Dans ±0,25. Aucun réglage nécessaire.', yellowMessage:'Entre 0,26 et 0,30. Faites un réglage préventif du S-Wrap.',
     redMessage:'Écart supérieur à 0,30. Réglez le S-Wrap.', noChange:'Gardez le S-Wrap à {speed}. Aucun changement recommandé.',
     decrease:'Réduisez le S-Wrap de {amount}, de {current} à {suggested}.', increase:'Augmentez le S-Wrap de {amount}, de {current} à {suggested}.',
-    hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}'
+    hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}', formulaSuggestion:'Suggestion par formule', learnedSuggestion:'Suggestion apprise', confidence:'Confiance', rollsLearned:'Rouleaux appris', recordResult:'Enregistrer le résultat réel', learningQuestion:'Après le changement, saisissez le S-Wrap utilisé et le BW final.', appliedSWrap:'S-Wrap appliqué', finalBW:'BW final', saveLearn:'Enregistrer et apprendre', cancel:'Annuler', learningSaved:'Résultat enregistré. Viejito a appris de ce rouleau.', machineLearning:'Apprentissage machine', resetLearning:'Réinitialiser', averageCorrection:'Correction moyenne', successRate:'Taux de réussite', deviceOnly:'Les données restent uniquement sur cet appareil.', resetDone:'Apprentissage réinitialisé.'
   }
 };
 function ot(key,vars={}){
@@ -249,7 +251,7 @@ function saveOptimizerSettings(targetBW,currentSWrap){
 }
 function optimizeBasisWeight(actualBW,targetBW=state.targetBW,currentSWrap=state.currentSWrap){
   saveOptimizerSettings(targetBW,currentSWrap);
-  const optimizer=new SmartOptimizer({targetBW:state.targetBW,currentSWrap:state.currentSWrap,roundMode:'nearest1'});
+  const optimizer=new SmartOptimizer({targetBW:state.targetBW,currentSWrap:state.currentSWrap,roundMode:'nearest1',learningEngine:state.learningEngine});
   return optimizer.evaluate(actualBW);
 }
 function optimizerAction(result){
@@ -266,7 +268,7 @@ function optimizerStatus(result){
 }
 function optimizerMarkup(result){
   const status=optimizerStatus(result);
-  return `<div class="chat-optimizer ${result.level}"><strong>${escapeHTML(status.title)}</strong><small>${escapeHTML(status.message)}</small><div class="chat-optimizer-grid"><span>${escapeHTML(ot('targetBW'))}: <b>${escapeHTML(fmt(result.targetBW))}</b></span><span>${escapeHTML(ot('difference'))}: <b>${escapeHTML(result.difference>0?`+${fmt(result.difference)}`:fmt(result.difference))}</b></span><span>${escapeHTML(ot('currentSWrap'))}: <b>${escapeHTML(fmt(result.currentSWrap,1))}</b></span><span>${escapeHTML(ot('suggestedSWrap'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—')}</b></span></div><p>${escapeHTML(optimizerAction(result))}</p></div>`;
+  return `<div class="chat-optimizer ${result.level}"><strong>${escapeHTML(status.title)}</strong><small>${escapeHTML(status.message)}</small><div class="chat-optimizer-grid"><span>${escapeHTML(ot('targetBW'))}: <b>${escapeHTML(fmt(result.targetBW))}</b></span><span>${escapeHTML(ot('difference'))}: <b>${escapeHTML(result.difference>0?`+${fmt(result.difference)}`:fmt(result.difference))}</b></span><span>${escapeHTML(ot('formulaSuggestion'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.formulaSuggestion,1):'—')}</b></span><span>${escapeHTML(ot('learnedSuggestion'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—')}</b></span><span>${escapeHTML(ot('confidence'))}: <b>${escapeHTML(result.learning.confidence+'%')}</b></span><span>${escapeHTML(ot('rollsLearned'))}: <b>${escapeHTML(result.learning.count)}</b></span></div><p>${escapeHTML(optimizerAction(result))}</p></div>`;
 }
 function renderOptimizerPanel(result){
   const panel=$('optimizer-panel');
@@ -282,6 +284,15 @@ function renderOptimizerPanel(result){
   $('optimizer-current').textContent=fmt(result.currentSWrap,1);
   $('optimizer-suggested').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—';
   $('optimizer-action').textContent=optimizerAction(result);
+  $('formula-suggestion').textContent=result.suggestAdjustment?fmt(result.formulaSuggestion,1):'—';
+  $('learned-suggestion').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—';
+  $('learning-confidence').textContent=`${result.learning.confidence}%`;
+  $('learning-count').textContent=String(result.learning.count);
+  state.latestOptimization=result;
+  $('record-result-toggle').classList.toggle('hidden',!result.suggestAdjustment);
+  $('learning-form').classList.add('hidden');
+  $('applied-swrap').value=result.suggestAdjustment?fmt(result.suggestedSWrap,1):'';
+  renderLearningDashboard();
   $('range-low').textContent=fmt(result.targetBW-result.warningTolerance);
   $('range-target').textContent=fmt(result.targetBW);
   $('range-high').textContent=fmt(result.targetBW+result.warningTolerance);
@@ -289,6 +300,37 @@ function renderOptimizerPanel(result){
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
 }
+
+function renderLearningDashboard(){
+  const stats=state.learningEngine.stats();
+  $('dashboard-rolls').textContent=String(stats.count);
+  $('dashboard-correction').textContent=stats.correction>0?`+${fmt(stats.correction,1)}`:fmt(stats.correction,1);
+  $('dashboard-success').textContent=`${stats.successRate}%`;
+  $('dashboard-confidence').textContent=`${stats.confidence}%`;
+}
+function saveLearningResult(){
+  const optimization=state.latestOptimization;
+  if(!optimization) return showToast(t('invalidNumbers'));
+  const appliedSWrap=Number($('applied-swrap').value);
+  const finalBW=Number($('final-bw').value);
+  try{
+    state.learningEngine.add({
+      initialBW:optimization.actualBW,
+      targetBW:optimization.targetBW,
+      currentSWrap:optimization.currentSWrap,
+      formulaSuggestion:optimization.formulaSuggestion,
+      appliedSWrap,
+      finalBW
+    });
+    $('learning-form').classList.add('hidden');
+    $('final-bw').value='';
+    renderLearningDashboard();
+    const refreshed=optimizeBasisWeight(optimization.actualBW,optimization.targetBW,optimization.currentSWrap);
+    renderOptimizerPanel(refreshed);
+    showToast(ot('learningSaved'));
+  }catch(error){showToast(error.message);}
+}
+
 function parseSmartBWRequest(text){
   const vals=numbers(text);
   const lower=text.toLowerCase();
@@ -495,6 +537,23 @@ function applyLanguage(language, announce=false){
   $('optimizer-difference-label').textContent=ot('difference');
   $('optimizer-current-label').textContent=ot('currentSWrap');
   $('optimizer-suggested-label').textContent=ot('suggestedSWrap');
+  $('formula-label').textContent=ot('formulaSuggestion');
+  $('learned-label').textContent=ot('learnedSuggestion');
+  $('confidence-label').textContent=ot('confidence');
+  $('rolls-label').textContent=ot('rollsLearned');
+  $('record-result-toggle').textContent=ot('recordResult');
+  $('learning-question').textContent=ot('learningQuestion');
+  $('applied-swrap-label').textContent=ot('appliedSWrap');
+  $('final-bw-label').textContent=ot('finalBW');
+  $('save-learning').textContent=ot('saveLearn');
+  $('cancel-learning').textContent=ot('cancel');
+  $('machine-learning-title').textContent=ot('machineLearning');
+  $('clear-learning').textContent=ot('resetLearning');
+  $('dashboard-rolls-label').textContent=ot('rollsLearned');
+  $('dashboard-correction-label').textContent=ot('averageCorrection');
+  $('dashboard-success-label').textContent=ot('successRate');
+  $('dashboard-confidence-label').textContent=ot('confidence');
+  $('learning-note').textContent=ot('deviceOnly');
   $('too-light-label').textContent=ot('tooLight');
   $('too-heavy-label').textContent=ot('tooHeavy');
   updateMetaText();
@@ -533,6 +592,11 @@ $('personality-select').addEventListener('change',event=>{
 $('bw-calc').addEventListener('click',()=>{try{const w=Number($('bw-weight').value),l=Number($('bw-length').value),m=currentMandrel('bw'),target=Number($('bw-target').value),currentSWrap=Number($('bw-current-swrap').value),r=calculateBW(w,l,m),optimizer=optimizeBasisWeight(r,target,currentSWrap);$('bw-result').textContent=fmt(r);$('bw-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});renderOptimizerPanel(optimizer);addHistory('BW',`${fmt(r)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${m}”`);}catch(e){showToast(e.message);}});
 $('ft-calc').addEventListener('click',()=>{try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
 $('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),r=calculateSWrap(a,s,target);$('sw-result').textContent=fmt(r,1);addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}`);}catch(e){showToast(e.message);}});
+
+$('record-result-toggle').addEventListener('click',()=>{$('learning-form').classList.toggle('hidden');});
+$('cancel-learning').addEventListener('click',()=>{$('learning-form').classList.add('hidden');});
+$('save-learning').addEventListener('click',saveLearningResult);
+$('clear-learning').addEventListener('click',()=>{state.learningEngine.clear();renderLearningDashboard();showToast(ot('resetDone'));});
 $('clear-history').addEventListener('click',()=>{state.history=[];localStorage.removeItem('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
 $('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem('viejitoTheme',document.documentElement.classList.contains('light')?'light':'dark');});
 window.addEventListener('online',updateConnection);
@@ -544,11 +608,12 @@ selectMandrel('ft',state.mandrel);
 $('bw-target').value=fmt(state.targetBW);
 $('bw-current-swrap').value=fmt(state.currentSWrap,1);
 applyLanguage(state.language);
+renderLearningDashboard();
 bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=2.0.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=2.1.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

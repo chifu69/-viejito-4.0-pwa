@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=2.0.0">
+  <link rel="stylesheet" href="styles.css?v=2.1.0">
   <title>Viejito Industrial</title>
 </head>
 <body>
@@ -107,6 +107,24 @@
               <div class="range-numbers"><span id="range-low">—</span><span id="range-target">—</span><span id="range-high">—</span></div>
             </div>
             <p id="optimizer-action" class="optimizer-action"></p>
+            <div id="learning-summary" class="learning-summary">
+              <div><span id="formula-label">Formula suggestion</span><strong id="formula-suggestion">—</strong></div>
+              <div><span id="learned-label">Learned suggestion</span><strong id="learned-suggestion">—</strong></div>
+              <div><span id="confidence-label">Confidence</span><strong id="learning-confidence">0%</strong></div>
+              <div><span id="rolls-label">Rolls learned</span><strong id="learning-count">0</strong></div>
+            </div>
+            <button id="record-result-toggle" class="secondary hidden" type="button">Record actual result</button>
+            <div id="learning-form" class="learning-form hidden">
+              <p id="learning-question">After making the change, enter the S-Wrap you used and the final BW.</p>
+              <div class="field-grid">
+                <label><span id="applied-swrap-label">Applied S-Wrap</span><input id="applied-swrap" type="number" inputmode="decimal" min="0" step="1"></label>
+                <label><span id="final-bw-label">Final BW</span><input id="final-bw" type="number" inputmode="decimal" min="0" step="0.01"></label>
+              </div>
+              <div class="learning-actions">
+                <button id="save-learning" class="primary" type="button">Save and learn</button>
+                <button id="cancel-learning" class="text-button" type="button">Cancel</button>
+              </div>
+            </div>
           </section>
           <button id="bw-calc" class="primary" type="button">Calculate BW</button>
         </div>
@@ -138,16 +156,27 @@
         </div>
       </section>
 
+      <section class="panel learning-dashboard">
+        <div class="panel-heading"><div><p class="eyebrow">ADAPTIVE</p><h3 id="machine-learning-title">Machine learning</h3></div><button id="clear-learning" class="text-button" type="button">Reset learning</button></div>
+        <div class="learning-dashboard-grid">
+          <div><span id="dashboard-rolls-label">Rolls learned</span><strong id="dashboard-rolls">0</strong></div>
+          <div><span id="dashboard-correction-label">Average correction</span><strong id="dashboard-correction">0</strong></div>
+          <div><span id="dashboard-success-label">Success rate</span><strong id="dashboard-success">0%</strong></div>
+          <div><span id="dashboard-confidence-label">Confidence</span><strong id="dashboard-confidence">0%</strong></div>
+        </div>
+        <small id="learning-note">Learning is stored only on this device.</small>
+      </section>
+
       <section class="panel history-panel">
         <div class="panel-heading"><div><p class="eyebrow" data-i18n="local">LOCAL</p><h3 data-i18n="recentHistory">Recent history</h3></div><button id="clear-history" class="text-button" type="button">Clear</button></div>
         <div id="history-list" class="history-list"></div>
       </section>
     </main>
 
-    <footer id="footer-text">Viejito 4.0 • Smart Process Optimizer</footer>
+    <footer id="footer-text">Viejito 4.0 • Adaptive Process Intelligence</footer>
   </div>
   <div id="toast" class="toast"></div>
-  <script src="optimizer.js?v=2.0.0"></script>
-  <script src="app.js?v=2.0.0"></script>
+  <script src="optimizer.js?v=2.1.0"></script>
+  <script src="app.js?v=2.1.0"></script>
 </body>
 </html>

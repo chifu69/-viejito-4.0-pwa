@@ -1,10 +1,10 @@
-const CACHE='viejito-4.0.4-sprint-2-smart-optimizer';
+const CACHE='viejito-4.0.5-sprint-2.1-adaptive-learning';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=2.0.0',
-  './optimizer.js?v=2.0.0',
-  './app.js?v=2.0.0',
+  './styles.css?v=2.1.0',
+  './optimizer.js?v=2.1.0',
+  './app.js?v=2.1.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',
