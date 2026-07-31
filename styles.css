@@ -55,3 +55,25 @@
 .learning-form>p{margin:0 0 12px;line-height:1.45;opacity:.84}.learning-actions{display:flex;align-items:center;gap:12px;margin-top:12px}.learning-actions .primary{margin:0;flex:1}.learning-dashboard{margin-top:18px}.learning-dashboard>small{display:block;margin-top:12px;opacity:.68}
 .hidden{display:none!important}
 @media(max-width:520px){.learning-summary,.learning-dashboard-grid{grid-template-columns:1fr 1fr}.learning-actions{align-items:stretch;flex-direction:column}.learning-actions .text-button{padding:10px}}
+
+
+/* Sprint 2.2 — Trend Predictor */
+.trend-panel{padding:18px;transition:border-color .2s,background .2s}
+.trend-panel.waiting{border-color:var(--line)}
+.trend-panel.green{border-color:rgba(53,201,111,.55);background:linear-gradient(145deg,rgba(53,201,111,.055),var(--surface))}
+.trend-panel.yellow{border-color:rgba(246,195,68,.7);background:linear-gradient(145deg,rgba(246,195,68,.07),var(--surface))}
+.trend-panel.red{border-color:rgba(255,82,82,.7);background:linear-gradient(145deg,rgba(255,82,82,.07),var(--surface))}
+.trend-message{line-height:1.5;font-weight:650;margin-bottom:14px}
+.trend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.trend-grid>div{padding:11px;border-radius:13px;background:rgba(255,255,255,.04);display:grid;gap:5px;min-width:0}
+.trend-grid span{font-size:.75rem;color:var(--muted)}
+.trend-grid strong{font-size:.95rem;overflow-wrap:anywhere}
+.chat-trend{margin-top:10px;padding:11px;border-radius:12px;border-left:4px solid}
+.chat-trend.green{border-color:#35c96f;background:rgba(53,201,111,.1)}
+.chat-trend.yellow{border-color:#f6c344;background:rgba(246,195,68,.1)}
+.chat-trend.red{border-color:#ff5252;background:rgba(255,82,82,.1)}
+.chat-trend>strong,.chat-trend>small{display:block}
+.chat-trend>small{margin-top:4px;line-height:1.42;opacity:.9}
+.chat-trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-top:9px;font-size:.75rem}
+.chat-trend-grid span:last-child{grid-column:1/-1}
+@media(max-width:620px){.trend-grid,.chat-trend-grid{grid-template-columns:1fr}.chat-trend-grid span:last-child{grid-column:auto}}

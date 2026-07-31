@@ -1,5 +1,5 @@
 /*
-  Viejito Adaptive Process Intelligence — Sprint 2.1
+  Viejito Adaptive Process Intelligence — Sprint 2.2
   Global tolerances for every product:
   GREEN  : |actual - target| <= 0.25 (no change)
   YELLOW : 0.25 < |actual - target| <= 0.30 (preventive adjustment)
@@ -103,6 +103,67 @@
     }
   }
 
+
+  class TrendPredictor {
+    constructor({ sampleSize = 5, targetBW = 6.35, tolerance = WARNING_TOLERANCE, preventiveStep = 2 } = {}) {
+      this.sampleSize = Math.max(3, Number(sampleSize) || 5);
+      this.targetBW = Number(targetBW);
+      this.tolerance = Number(tolerance);
+      this.preventiveStep = Math.max(1, Number(preventiveStep) || 2);
+    }
+
+    analyze(values, currentSWrap = 170) {
+      const rolls = (Array.isArray(values) ? values : [])
+        .map(Number)
+        .filter(finitePositive)
+        .slice(-this.sampleSize);
+      const speed = Number(currentSWrap);
+      const empty = {
+        ready:false, count:rolls.length, required:this.sampleSize, values:rolls, direction:'stable',
+        slope:0, projectedBW:null, consistency:0, level:'waiting', recommendAdjustment:false,
+        adjustment:0, suggestedSWrap:finitePositive(speed) ? speed : null
+      };
+      if (rolls.length < this.sampleSize) return empty;
+
+      const n = rolls.length;
+      const meanX = (n - 1) / 2;
+      const meanY = rolls.reduce((sum, value) => sum + value, 0) / n;
+      let numerator = 0, denominator = 0;
+      rolls.forEach((value, index) => {
+        numerator += (index - meanX) * (value - meanY);
+        denominator += Math.pow(index - meanX, 2);
+      });
+      const slope = denominator ? numerator / denominator : 0;
+      const intercept = meanY - slope * meanX;
+      const projectedBW = intercept + slope * n;
+      const residualTotal = rolls.reduce((sum, value, index) => {
+        const fitted = intercept + slope * index;
+        return sum + Math.pow(value - fitted, 2);
+      }, 0);
+      const totalVariation = rolls.reduce((sum, value) => sum + Math.pow(value - meanY, 2), 0);
+      const rSquared = totalVariation > 0 ? Math.max(0, 1 - residualTotal / totalVariation) : 1;
+      const direction = slope > 0.005 ? 'up' : slope < -0.005 ? 'down' : 'stable';
+      const projectedDifference = projectedBW - this.targetBW;
+      const projectedAbsoluteDifference = Math.abs(projectedDifference);
+      const movingAway = (direction === 'up' && projectedDifference > 0) || (direction === 'down' && projectedDifference < 0);
+      const consistent = rSquared >= 0.55;
+      const nearOrOutside = projectedAbsoluteDifference > GREEN_TOLERANCE;
+      const recommendAdjustment = finitePositive(speed) && direction !== 'stable' && movingAway && consistent && nearOrOutside;
+      const adjustment = recommendAdjustment ? (direction === 'up' ? -this.preventiveStep : this.preventiveStep) : 0;
+      const suggestedSWrap = finitePositive(speed) ? Math.max(1, Math.round(speed + adjustment)) : null;
+      let level = 'stable';
+      if (recommendAdjustment) level = projectedAbsoluteDifference > this.tolerance ? 'danger' : 'warning';
+
+      return {
+        ready:true, count:n, required:this.sampleSize, values:rolls, direction,
+        slope:Number(slope.toFixed(3)), projectedBW:Number(projectedBW.toFixed(3)),
+        projectedDifference:Number(projectedDifference.toFixed(3)), consistency:Math.round(rSquared * 100),
+        level, recommendAdjustment, adjustment, suggestedSWrap, targetBW:this.targetBW,
+        tolerance:this.tolerance
+      };
+    }
+  }
+
   class SmartOptimizer {
     constructor({ targetBW = 6.35, currentSWrap = 170, roundMode = 'nearest1', learningEngine = null } = {}) {
       this.targetBW = Number(targetBW);
@@ -146,5 +207,6 @@
 
   window.AdaptiveLearningEngine = AdaptiveLearningEngine;
   window.SmartOptimizer = SmartOptimizer;
+  window.TrendPredictor = TrendPredictor;
   window.VIEJITO_TOLERANCES = Object.freeze({green: GREEN_TOLERANCE, warning: WARNING_TOLERANCE});
 })();

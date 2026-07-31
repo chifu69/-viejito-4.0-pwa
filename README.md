@@ -1,15 +1,17 @@
-# Viejito 4.0 — Sprint 2.1
+# Viejito 4.0 — Sprint 2.2
 
-## Adaptive Process Intelligence
+## Trend Predictor
 
-This version adds offline machine learning to the Smart Process Optimizer.
+This version keeps the Sprint 2.1 Adaptive Process Intelligence and adds preventive BW trend prediction.
 
-- Keeps the same global BW tolerance for every product: green ±0.25, yellow 0.26–0.30, red above 0.30.
-- Shows the standard formula suggestion and the learned machine suggestion.
-- Lets the operator record the S-Wrap actually used and the final BW.
-- Learns a weighted correction from confirmed rolls.
-- Shows rolls learned, confidence, success rate, and average correction.
-- Stores all learning locally on the device; no cloud or subscription is required.
-- Starts applying learned correction after at least three recorded rolls.
+- Stores the five most recent BW calculations locally.
+- Uses linear regression to identify increasing, decreasing, or stable movement.
+- Projects the next BW and measures trend consistency.
+- Warns before the next roll is likely to approach or exceed tolerance.
+- For a consistent rising BW trend, recommends lowering S-Wrap by 2 points now.
+- For a consistent falling BW trend, recommends raising S-Wrap by 2 points now.
+- Shows the prediction in the calculator and in chat.
+- Includes a control to clear trend history independently of machine learning.
+- Works offline and stores all data only on the device.
 
 Upload every file in this folder to the root of the GitHub Pages repository, replacing the older files.

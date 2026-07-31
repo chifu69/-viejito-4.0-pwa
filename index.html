@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=2.1.0">
+  <link rel="stylesheet" href="styles.css?v=2.2.0">
   <title>Viejito Industrial</title>
 </head>
 <body>
@@ -130,6 +130,21 @@
         </div>
       </section>
 
+
+      <section id="trend-panel" class="panel trend-panel waiting" aria-live="polite">
+        <div class="panel-heading">
+          <div><p class="eyebrow">SPRINT 2.2</p><h3 id="trend-title">Trend Predictor</h3></div>
+          <button id="clear-trend" class="text-button" type="button">Clear trend</button>
+        </div>
+        <p id="trend-message" class="trend-message">Add 5 BW rolls to activate the prediction.</p>
+        <div class="trend-grid">
+          <div><span id="trend-projected-label">Projected next BW</span><strong id="trend-projected">—</strong></div>
+          <div><span id="trend-direction-label">Direction</span><strong id="trend-direction">—</strong></div>
+          <div><span id="trend-consistency-label">Consistency</span><strong id="trend-consistency">—</strong></div>
+          <div><span id="trend-rolls-label">Last rolls</span><strong id="trend-rolls">—</strong></div>
+        </div>
+      </section>
+
       <section id="view-ft" class="view">
         <div class="panel calculator-card">
           <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
@@ -173,10 +188,10 @@
       </section>
     </main>
 
-    <footer id="footer-text">Viejito 4.0 • Adaptive Process Intelligence</footer>
+    <footer id="footer-text">Viejito 4.0 • Sprint 2.2 Trend Predictor</footer>
   </div>
   <div id="toast" class="toast"></div>
-  <script src="optimizer.js?v=2.1.0"></script>
-  <script src="app.js?v=2.1.0"></script>
+  <script src="optimizer.js?v=2.2.0"></script>
+  <script src="app.js?v=2.2.0"></script>
 </body>
 </html>
