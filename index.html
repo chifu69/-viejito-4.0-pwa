@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=2.2.0">
+  <link rel="stylesheet" href="styles.css?v=4.1.0">
   <title>Viejito Industrial</title>
 </head>
 <body>
@@ -55,29 +55,12 @@
       </section>
 
       <nav id="quick-grid" class="quick-grid" aria-label="Quick tools">
-        <button class="quick-card active" data-view="chat"><span>💬</span><strong data-i18n="chat">Chat</strong><small data-i18n="chatSubtitle">Type naturally</small></button>
-        <button class="quick-card" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
+        <button class="quick-card active" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
         <button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small data-i18n="ftSubtitle">Calculate length</small></button>
         <button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small data-i18n="swrapSubtitle">Adjust speed</small></button>
       </nav>
 
-      <section id="view-chat" class="view active">
-        <div class="panel chat-panel">
-          <div id="chat-log" class="chat-log" aria-live="polite"></div>
-          <form id="chat-form" class="chat-form">
-            <input id="chat-input" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Example: 520 6578, 180, FT 10 520..." aria-label="Message for Viejito">
-            <button id="send-button" type="submit">Send</button>
-          </form>
-          <div class="hint-row">
-            <button class="example" data-example="520 6578">520 6578</button>
-            <button class="example" data-example="520 6578 51">520 6578 51</button>
-            <button class="example" data-example="180">180</button>
-            <button class="example" data-example="FT 10 520">FT 10 520</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-bw" class="view">
+      <section id="view-bw" class="view active">
         <div class="panel calculator-card">
           <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
           <div class="field-grid">
@@ -188,10 +171,39 @@
       </section>
     </main>
 
-    <footer id="footer-text">Viejito 4.0 • Sprint 2.2 Trend Predictor</footer>
+    <footer id="footer-text">Viejito 4.1 • Floating Chat</footer>
   </div>
+
+  <div id="chat-backdrop" class="chat-backdrop" hidden></div>
+  <aside id="floating-chat" class="floating-chat" aria-hidden="true" aria-label="Viejito chat">
+    <div class="floating-chat-header">
+      <div>
+        <strong>💬 Viejito AI</strong>
+        <small id="floating-chat-status">Online assistant</small>
+      </div>
+      <button id="chat-close" class="chat-close" type="button" aria-label="Close chat">×</button>
+    </div>
+    <div class="chat-panel">
+          <div id="chat-log" class="chat-log" aria-live="polite"></div>
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Example: 520 6578, 180, FT 10 520..." aria-label="Message for Viejito">
+            <button id="send-button" type="submit">Send</button>
+          </form>
+          <div class="hint-row">
+            <button class="example" data-example="520 6578">520 6578</button>
+            <button class="example" data-example="520 6578 51">520 6578 51</button>
+            <button class="example" data-example="180">180</button>
+            <button class="example" data-example="FT 10 520">FT 10 520</button>
+          </div>
+        
+    </div>
+  </aside>
+  <button id="chat-fab" class="chat-fab" type="button" aria-label="Open chat" aria-expanded="false">
+    <span class="chat-fab-icon">💬</span>
+    <span class="chat-fab-label">Chat</span>
+  </button>
   <div id="toast" class="toast"></div>
-  <script src="optimizer.js?v=2.2.0"></script>
-  <script src="app.js?v=2.2.0"></script>
+  <script src="optimizer.js?v=4.1.0"></script>
+  <script src="app.js?v=4.1.0"></script>
 </body>
 </html>

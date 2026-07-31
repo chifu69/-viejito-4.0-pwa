@@ -1,10 +1,10 @@
-const CACHE='viejito-4.0.6-sprint-2.2-trend-predictor';
+const CACHE='viejito-4.1.0-floating-chat';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=2.2.0',
-  './optimizer.js?v=2.2.0',
-  './app.js?v=2.2.0',
+  './styles.css?v=4.1.0',
+  './optimizer.js?v=4.1.0',
+  './app.js?v=4.1.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

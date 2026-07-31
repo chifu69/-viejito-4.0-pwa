@@ -19,7 +19,7 @@ const translations = {
     language: 'Language', preferredLanguage: 'Preferred language', online: 'Online', offline: 'No signal',
     changeTheme: 'Change theme', plantMode: 'PLANT MODE', heroTitle: 'What do you need to calculate?',
     heroDescription: 'Works without a signal for BW, FT and S-Wrap.', quickTools: 'Quick tools',
-    chat: 'Chat', chatSubtitle: 'Type naturally', bwSubtitle: '48” or 51” mandrel',
+    chat: 'Chat', chatSubtitle: 'Type naturally', openChat: 'Open chat', closeChat: 'Close chat', assistantOnline: 'Online assistant', bwSubtitle: '48” or 51” mandrel',
     ftSubtitle: 'Calculate length', swrapSubtitle: 'Adjust speed', calculator: 'CALCULATOR',
     weightLb: 'Weight (lb)', lengthFt: 'Length (ft)', mandrel: 'Mandrel', length: 'Length',
     currentWeight: 'Current weight', currentSpeed: 'Current speed', targetWeight: 'Target weight',
@@ -47,7 +47,7 @@ const translations = {
     language: 'Idioma', preferredLanguage: 'Idioma preferido', online: 'En línea', offline: 'Sin señal',
     changeTheme: 'Cambiar tema', plantMode: 'MODO PLANTA', heroTitle: '¿Qué necesitas calcular?',
     heroDescription: 'Funciona sin señal para BW, FT y S-Wrap.', quickTools: 'Herramientas rápidas',
-    chat: 'Chat', chatSubtitle: 'Escribe como hablas', bwSubtitle: 'Mandrel 48” o 51”',
+    chat: 'Chat', chatSubtitle: 'Escribe como hablas', openChat: 'Abrir chat', closeChat: 'Cerrar chat', assistantOnline: 'Asistente en línea', bwSubtitle: 'Mandrel 48” o 51”',
     ftSubtitle: 'Calcula longitud', swrapSubtitle: 'Ajusta velocidad', calculator: 'CALCULADORA',
     weightLb: 'Peso (lb)', lengthFt: 'Longitud (ft)', mandrel: 'Mandrel', length: 'Longitud',
     currentWeight: 'Peso actual', currentSpeed: 'Velocidad actual', targetWeight: 'Peso objetivo',
@@ -75,7 +75,7 @@ const translations = {
     language: 'Langue', preferredLanguage: 'Langue préférée', online: 'En ligne', offline: 'Pas de réseau',
     changeTheme: 'Changer le thème', plantMode: 'MODE USINE', heroTitle: 'Que devez-vous calculer ?',
     heroDescription: 'Fonctionne sans réseau pour BW, FT et S-Wrap.', quickTools: 'Outils rapides',
-    chat: 'Discussion', chatSubtitle: 'Écrivez naturellement', bwSubtitle: 'Mandrin 48” ou 51”',
+    chat: 'Discussion', chatSubtitle: 'Écrivez naturellement', openChat: 'Ouvrir le chat', closeChat: 'Fermer le chat', assistantOnline: 'Assistant en ligne', bwSubtitle: 'Mandrin 48” ou 51”',
     ftSubtitle: 'Calculer la longueur', swrapSubtitle: 'Régler la vitesse', calculator: 'CALCULATRICE',
     weightLb: 'Poids (lb)', lengthFt: 'Longueur (ft)', mandrel: 'Mandrin', length: 'Longueur',
     currentWeight: 'Poids actuel', currentSpeed: 'Vitesse actuelle', targetWeight: 'Poids cible',
@@ -550,6 +550,21 @@ function bubble(role,content){
   $('chat-log').appendChild(div); $('chat-log').scrollTop=$('chat-log').scrollHeight;
 }
 function showToast(msg){const toast=$('toast');toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800);}
+function setChatOpen(open){
+  const chat=$('floating-chat');
+  const fab=$('chat-fab');
+  const backdrop=$('chat-backdrop');
+  chat.classList.toggle('open',open);
+  chat.setAttribute('aria-hidden',String(!open));
+  fab.setAttribute('aria-expanded',String(open));
+  fab.setAttribute('aria-label',open?t('closeChat'):t('openChat'));
+  document.body.classList.toggle('chat-open',open);
+  backdrop.hidden=!open;
+  if(open){
+    requestAnimationFrame(()=>$('chat-input').focus({preventScroll:true}));
+  }
+}
+function toggleChat(){setChatOpen(!$('floating-chat').classList.contains('open'));}
 function switchView(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.quick-card').forEach(v=>v.classList.toggle('active',v.dataset.view===view));
@@ -590,6 +605,10 @@ function applyLanguage(language, announce=false){
   $('hero-description').textContent=t('heroDescription');
   $('quick-grid').setAttribute('aria-label',t('quickTools'));
   document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  $('chat-fab').setAttribute('aria-label',$('floating-chat').classList.contains('open')?t('closeChat'):t('openChat'));
+  $('chat-close').setAttribute('aria-label',t('closeChat'));
+  $('floating-chat-status').textContent=t('assistantOnline');
+  $('chat-fab').querySelector('.chat-fab-label').textContent=t('chat');
   $('chat-input').placeholder=t('chatPlaceholder');
   $('chat-input').setAttribute('aria-label',t('chatAria'));
   $('send-button').textContent=t('send');
@@ -598,7 +617,7 @@ function applyLanguage(language, announce=false){
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent='Viejito 4.0 • Smart Process Optimizer';
+  $('footer-text').textContent='Viejito 4.1 • Floating Chat';
   $('target-bw-label').textContent=ot('targetBW');
   $('current-swrap-label').textContent=ot('currentSWrap');
   $('optimizer-target-label').textContent=ot('targetBW');
@@ -650,6 +669,10 @@ $('chat-form').addEventListener('submit',event=>{
 });
 document.querySelectorAll('.example').forEach(button=>button.addEventListener('click',()=>{$('chat-input').value=button.dataset.example;$('chat-form').requestSubmit();}));
 document.querySelectorAll('.quick-card').forEach(button=>button.addEventListener('click',()=>switchView(button.dataset.view)));
+$('chat-fab').addEventListener('click',toggleChat);
+$('chat-close').addEventListener('click',()=>setChatOpen(false));
+$('chat-backdrop').addEventListener('click',()=>setChatOpen(false));
+document.addEventListener('keydown',event=>{if(event.key==='Escape')setChatOpen(false);});
 document.querySelectorAll('.mandrel').forEach(button=>button.addEventListener('click',()=>selectMandrel(button.dataset.target,Number(button.dataset.value))));
 $('language-select').addEventListener('change',event=>applyLanguage(event.target.value,true));
 $('personality-select').addEventListener('change',event=>{
@@ -683,7 +706,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=2.2.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=4.1.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
