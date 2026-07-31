@@ -1,36 +1,24 @@
-# Viejito 4.0 PWA — Sprint 1.3
+# Viejito 4.0 PWA — Sprint 1.3.1 Sarcasm Hotfix
 
-## Nueva personalidad sarcástica
+## Problema corregido
 
-Esta actualización agrega un selector de personalidad para el chat:
+El selector de personalidad aparecía, pero algunos iPhone seguían usando una copia anterior de `app.js` guardada por el modo offline. Por eso el resultado aparecía sin comentario sarcástico.
 
-- Professional
-- Light sarcasm
-- Heavy sarcasm — predeterminado
-- Off
+## Correcciones
 
-El resultado correcto siempre aparece primero. El comentario sarcástico aparece debajo y nunca cambia el cálculo.
-
-La preferencia queda guardada localmente en el teléfono y funciona sin conexión.
-
-También incluye frases distintas en:
-
-- English
-- Español
-- Français
-
-La aplicación evita repetir inmediatamente la misma frase.
+- Nueva versión de caché offline.
+- `app.js` y `styles.css` ahora usan identificadores de versión.
+- El Service Worker busca inmediatamente la versión nueva.
+- Los archivos principales usan prioridad de red cuando hay conexión.
+- Se agregó una verificación adicional que garantiza el comentario sarcástico después de un cálculo cuando está seleccionado Light o Heavy sarcasm.
 
 ## Archivos para reemplazar en GitHub
 
-Sube estos archivos a la raíz del repositorio:
-
 - `index.html`
 - `app.js`
-- `styles.css`
 - `sw.js`
 - `README.md`
 
-Mensaje sugerido para el commit:
+Mensaje sugerido:
 
-`Add sarcastic chat personality`
+`Fix sarcasm cache on iPhone`

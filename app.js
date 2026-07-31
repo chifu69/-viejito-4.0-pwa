@@ -393,7 +393,13 @@ $('chat-form').addEventListener('submit',event=>{
   if(!text)return;
   bubble('user',text);
   input.value='';
-  setTimeout(()=>bubble('bot',interpret(text)),120);
+  setTimeout(()=>{
+    const response=interpret(text);
+    if(response?.kind==='result' && !response.sarcasm && (state.personality==='light' || state.personality==='heavy')){
+      response.sarcasm=getSarcasmLine();
+    }
+    bubble('bot',response);
+  },120);
 });
 document.querySelectorAll('.example').forEach(button=>button.addEventListener('click',()=>{$('chat-input').value=button.dataset.example;$('chat-form').requestSubmit();}));
 document.querySelectorAll('.quick-card').forEach(button=>button.addEventListener('click',()=>switchView(button.dataset.view)));
@@ -417,4 +423,13 @@ selectMandrel('bw',state.mandrel);
 selectMandrel('ft',state.mandrel);
 applyLanguage(state.language);
 bubble('bot',{title:t('introTitle'),message:t('intro')});
-if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.error));
+if('serviceWorker' in navigator){
+  window.addEventListener('load',async()=>{
+    try{
+      const registration=await navigator.serviceWorker.register('./sw.js?v=1.3.1',{updateViaCache:'none'});
+      await registration.update();
+    }catch(error){
+      console.error(error);
+    }
+  });
+}
