@@ -21,3 +21,10 @@ Upload every file in this folder to the root of the GitHub Pages repository, rep
 - Animated process puppy in the Basis Weight result card.
 - Happy in green, concerned in yellow, and very sad with animated tears in red.
 - Puppy status follows the existing Smart Optimizer tolerances.
+
+
+## Industrial IA 4.4
+- Replaced Viejito branding with a damaged industrial robot and INDUSTRIAL IA.
+- Removed the animated puppy completely.
+- Added compact color-coded result status.
+- Preserved calculators, optimizer, trend predictor, learning, chat, languages and offline support.

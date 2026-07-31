@@ -36,9 +36,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Viejito 4.0',
+    introTitle: 'Industrial IA 4.4',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Viejito 4.0 • First functional PWA'
+    footer: 'Industrial IA 4.4 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -64,9 +64,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Viejito 4.0',
+    introTitle: 'Industrial IA 4.4',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Viejito 4.0 • Primera PWA funcional'
+    footer: 'Industrial IA 4.4 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -92,9 +92,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Viejito 4.0',
+    introTitle: 'Industrial IA 4.4',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Viejito 4.0 • Première PWA fonctionnelle'
+    footer: 'Industrial IA 4.4 • Assistant industriel'
   }
 };
 
@@ -275,22 +275,17 @@ function optimizerMarkup(result){
   return `<div class="chat-optimizer ${result.level}"><strong>${escapeHTML(status.title)}</strong><small>${escapeHTML(status.message)}</small><div class="chat-optimizer-grid"><span>${escapeHTML(ot('targetBW'))}: <b>${escapeHTML(fmt(result.targetBW))}</b></span><span>${escapeHTML(ot('difference'))}: <b>${escapeHTML(result.difference>0?`+${fmt(result.difference)}`:fmt(result.difference))}</b></span><span>${escapeHTML(ot('formulaSuggestion'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.formulaSuggestion,1):'—')}</b></span><span>${escapeHTML(ot('learnedSuggestion'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—')}</b></span><span>${escapeHTML(ot('confidence'))}: <b>${escapeHTML(result.learning.confidence+'%')}</b></span><span>${escapeHTML(ot('rollsLearned'))}: <b>${escapeHTML(result.learning.count)}</b></span></div><p>${escapeHTML(optimizerAction(result))}</p></div>`;
 }
 
-function renderPuppyStatus(result){
-  const puppy=$('puppy-status');
-  if(!puppy) return;
+function renderResultStatus(result){
+  const statusBox=$('result-status');
+  if(!statusBox) return;
   const status=optimizerStatus(result);
-  puppy.classList.remove('idle','green','yellow','red','animate-pop');
-  puppy.classList.add(result.level);
-  // Restart the entrance animation after every calculation.
-  void puppy.offsetWidth;
-  puppy.classList.add('animate-pop');
-  $('puppy-title').textContent=status.title;
-  $('puppy-message').textContent=result.level==='green'
-    ? (state.language==='es'?'¡Buen trabajo!':state.language==='fr'?'Très bien !':'Good job!')
-    : result.level==='yellow'
-      ? (state.language==='es'?'Revísalo pronto':state.language==='fr'?'À surveiller':'Check it soon')
-      : (state.language==='es'?'Necesita ajuste':state.language==='fr'?'Réglage requis':'Adjustment needed');
-  puppy.setAttribute('aria-label',`${status.title}. ${status.message}`);
+  statusBox.classList.remove('idle','green','yellow','red','status-pop');
+  statusBox.classList.add(result.level);
+  void statusBox.offsetWidth;
+  statusBox.classList.add('status-pop');
+  $('result-status-title').textContent=status.title;
+  $('result-status-message').textContent=status.message;
+  statusBox.setAttribute('aria-label',`${status.title}. ${status.message}`);
 }
 
 function renderOptimizerPanel(result){
@@ -322,7 +317,7 @@ function renderOptimizerPanel(result){
   const span=result.warningTolerance*2;
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
-  renderPuppyStatus(result);
+  renderResultStatus(result);
 }
 
 function sanitizeTrendHistory(){
@@ -637,7 +632,7 @@ function applyLanguage(language, announce=false){
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent='Viejito 4.1 • Floating Chat';
+  $('footer-text').textContent='Industrial IA 4.4 • Floating Chat';
   $('target-bw-label').textContent=ot('targetBW');
   $('current-swrap-label').textContent=ot('currentSWrap');
   $('optimizer-target-label').textContent=ot('targetBW');

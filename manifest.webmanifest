@@ -1,6 +1,6 @@
 {
-  "name": "Viejito Industrial Assistant",
-  "short_name": "Viejito",
+  "name": "Industrial IA",
+  "short_name": "Industrial IA",
   "description": "Offline industrial BW, FT and S-Wrap calculators with English, Spanish and French.",
   "lang": "en",
   "start_url": "./",
