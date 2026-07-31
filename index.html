@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101820">
+  <meta name="description" content="Viejito Industrial Assistant: BW, FT y S-Wrap con funcionamiento sin conexión.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Viejito">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Viejito Industrial</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="icons/icon-192.png" alt="" class="brand-icon">
+        <div>
+          <h1>Viejito</h1>
+          <p>Industrial Assistant</p>
+        </div>
+      </div>
+      <div class="status-area">
+        <span id="connection-pill" class="pill online">En línea</span>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Cambiar tema">☾</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">MODO PLANTA</p>
+        <h2>¿Qué necesitas calcular?</h2>
+        <p>Funciona sin señal para BW, FT y S-Wrap.</p>
+      </section>
+
+      <nav class="quick-grid" aria-label="Herramientas rápidas">
+        <button class="quick-card active" data-view="chat"><span>💬</span><strong>Chat</strong><small>Escribe como hablas</small></button>
+        <button class="quick-card" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small>Mandrel 48” o 51”</small></button>
+        <button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small>Calcula longitud</small></button>
+        <button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small>Ajusta velocidad</small></button>
+      </nav>
+
+      <section id="view-chat" class="view active">
+        <div class="panel chat-panel">
+          <div id="chat-log" class="chat-log" aria-live="polite"></div>
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" autocomplete="off" inputmode="decimal" placeholder="Ej.: 520 6578, 180, FT 520 10..." aria-label="Mensaje para Viejito">
+            <button type="submit">Enviar</button>
+          </form>
+          <div class="hint-row">
+            <button class="example" data-example="520 6578">520 6578</button>
+            <button class="example" data-example="520 6578 51">520 6578 51</button>
+            <button class="example" data-example="180">180</button>
+            <button class="example" data-example="FT 10 520">FT 10 520</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-bw" class="view">
+        <div class="panel calculator-card">
+          <div class="panel-heading"><div><p class="eyebrow">CALCULADORA</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
+          <div class="field-grid">
+            <label>Peso (lb)<input id="bw-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
+            <label>Longitud (ft)<input id="bw-length" type="number" inputmode="decimal" min="0" step="any" placeholder="6578"></label>
+          </div>
+          <div class="mandrel-row"><span>Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
+          <div class="result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">Mandrel 48” predeterminado</small></div>
+          <button id="bw-calc" class="primary" type="button">Calcular BW</button>
+        </div>
+      </section>
+
+      <section id="view-ft" class="view">
+        <div class="panel calculator-card">
+          <div class="panel-heading"><div><p class="eyebrow">CALCULADORA</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
+          <div class="field-grid">
+            <label>Basis Weight<input id="ft-bw" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
+            <label>Peso (lb)<input id="ft-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
+          </div>
+          <div class="mandrel-row"><span>Mandrel</span><button class="mandrel active" data-target="ft" data-value="48">48”</button><button class="mandrel" data-target="ft" data-value="51">51”</button></div>
+          <div class="result-box"><span>Longitud</span><strong id="ft-result">—</strong><small id="ft-meta">Mandrel 48” predeterminado</small></div>
+          <button id="ft-calc" class="primary" type="button">Calcular FT</button>
+        </div>
+      </section>
+
+      <section id="view-swrap" class="view">
+        <div class="panel calculator-card">
+          <div class="panel-heading"><div><p class="eyebrow">CALCULADORA</p><h3>S-Wrap Speed</h3></div><span class="offline-ready">Offline</span></div>
+          <div class="field-grid three">
+            <label>Peso actual<input id="sw-current" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
+            <label>Velocidad actual<input id="sw-speed" type="number" inputmode="decimal" min="0" step="any" placeholder="180"></label>
+            <label>Peso objetivo<input id="sw-target" type="number" inputmode="decimal" min="0" step="any" placeholder="12"></label>
+          </div>
+          <div class="result-box"><span>Nueva velocidad</span><strong id="sw-result">—</strong><small>Peso actual × velocidad ÷ peso objetivo</small></div>
+          <button id="sw-calc" class="primary" type="button">Calcular S-Wrap</button>
+        </div>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="panel-heading"><div><p class="eyebrow">LOCAL</p><h3>Historial reciente</h3></div><button id="clear-history" class="text-button" type="button">Borrar</button></div>
+        <div id="history-list" class="history-list"></div>
+      </section>
+    </main>
+
+    <footer>Viejito 4.0 • Primera PWA funcional</footer>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
