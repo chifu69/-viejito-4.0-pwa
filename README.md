@@ -1,24 +1,18 @@
-# Viejito 4.0 PWA — Sprint 1.3.1 Sarcasm Hotfix
+# Viejito 4.0 — Sprint 2.0 Smart Process Optimizer
 
-## Problema corregido
+## New in this version
 
-El selector de personalidad aparecía, pero algunos iPhone seguían usando una copia anterior de `app.js` guardada por el modo offline. Por eso el resultado aparecía sin comentario sarcástico.
+- Target BW and Current S-Wrap fields in the BW calculator.
+- Global tolerance for every product:
+  - Green: difference up to ±0.25; no S-Wrap change.
+  - Yellow: difference from 0.26 through 0.30; preventive S-Wrap adjustment.
+  - Red: difference greater than 0.30; S-Wrap adjustment recommended.
+- Suggested S-Wrap formula: `current S-Wrap × actual BW ÷ target BW`.
+- Visual range indicator and colored BW result.
+- Smart chat format: `520 6578 6.35 170`.
+- Target BW and current S-Wrap are saved locally.
+- Works offline after the first load.
 
-## Correcciones
+## Upload to GitHub Pages
 
-- Nueva versión de caché offline.
-- `app.js` y `styles.css` ahora usan identificadores de versión.
-- El Service Worker busca inmediatamente la versión nueva.
-- Los archivos principales usan prioridad de red cuando hay conexión.
-- Se agregó una verificación adicional que garantiza el comentario sarcástico después de un cálculo cuando está seleccionado Light o Heavy sarcasm.
-
-## Archivos para reemplazar en GitHub
-
-- `index.html`
-- `app.js`
-- `sw.js`
-- `README.md`
-
-Mensaje sugerido:
-
-`Fix sarcasm cache on iPhone`
+Upload all files and the `icons` folder, replacing the previous files. Wait about one minute, then reopen the site. The new service worker cache is versioned to force the update.

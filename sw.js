@@ -1,9 +1,10 @@
-const CACHE='viejito-4.0.3.1-sarcasm-hotfix';
+const CACHE='viejito-4.0.4-sprint-2-smart-optimizer';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=1.3.1',
-  './app.js?v=1.3.1',
+  './styles.css?v=2.0.0',
+  './optimizer.js?v=2.0.0',
+  './app.js?v=2.0.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=1.3.1">
+  <link rel="stylesheet" href="styles.css?v=2.0.0">
   <title>Viejito Industrial</title>
 </head>
 <body>
@@ -85,7 +85,29 @@
             <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" type="number" inputmode="decimal" min="0" step="any" placeholder="6578"></label>
           </div>
           <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
-          <div class="result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
+          <div class="field-grid optimizer-inputs">
+            <label><span id="target-bw-label">Target BW</span><input id="bw-target" type="number" inputmode="decimal" min="0" step="0.01" placeholder="6.35"></label>
+            <label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" type="number" inputmode="decimal" min="0" step="1" placeholder="170"></label>
+          </div>
+          <div id="bw-result-box" class="result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
+          <section id="optimizer-panel" class="optimizer-panel hidden" aria-live="polite">
+            <div class="optimizer-status-row">
+              <span id="optimizer-status-dot" class="status-dot"></span>
+              <div><strong id="optimizer-status">—</strong><small id="optimizer-message">—</small></div>
+            </div>
+            <div class="optimizer-values">
+              <div><span id="optimizer-target-label">Target BW</span><strong id="optimizer-target">—</strong></div>
+              <div><span id="optimizer-difference-label">Difference</span><strong id="optimizer-difference">—</strong></div>
+              <div><span id="optimizer-current-label">Current S-Wrap</span><strong id="optimizer-current">—</strong></div>
+              <div><span id="optimizer-suggested-label">Suggested S-Wrap</span><strong id="optimizer-suggested">—</strong></div>
+            </div>
+            <div class="range-track-wrap">
+              <div class="range-labels"><span id="too-light-label">Too light</span><span id="too-heavy-label">Too heavy</span></div>
+              <div class="range-track"><span class="range-green"></span><span class="range-yellow left"></span><span class="range-yellow right"></span><span id="range-marker" class="range-marker"></span></div>
+              <div class="range-numbers"><span id="range-low">—</span><span id="range-target">—</span><span id="range-high">—</span></div>
+            </div>
+            <p id="optimizer-action" class="optimizer-action"></p>
+          </section>
           <button id="bw-calc" class="primary" type="button">Calculate BW</button>
         </div>
       </section>
@@ -122,9 +144,10 @@
       </section>
     </main>
 
-    <footer id="footer-text">Viejito 4.0 • First functional PWA</footer>
+    <footer id="footer-text">Viejito 4.0 • Smart Process Optimizer</footer>
   </div>
   <div id="toast" class="toast"></div>
-  <script src="app.js?v=1.3.1"></script>
+  <script src="optimizer.js?v=2.0.0"></script>
+  <script src="app.js?v=2.0.0"></script>
 </body>
 </html>

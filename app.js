@@ -5,6 +5,9 @@ const DEFAULT_LANGUAGE = 'en';
 const VALID_LANGUAGES = ['en', 'es', 'fr'];
 const DEFAULT_PERSONALITY = 'heavy';
 const VALID_PERSONALITIES = ['professional', 'light', 'heavy', 'off'];
+const DEFAULT_TARGET_BW = 6.35;
+const DEFAULT_CURRENT_SWRAP = 170;
+
 
 const translations = {
   en: {
@@ -177,7 +180,9 @@ const state = {
   personality: VALID_PERSONALITIES.includes(localStorage.getItem('viejitoPersonality')) ? localStorage.getItem('viejitoPersonality') : DEFAULT_PERSONALITY,
   mandrel: Number(localStorage.getItem('viejitoMandrel')) || DEFAULT_MANDREL,
   context: JSON.parse(localStorage.getItem('viejitoContext') || '{}'),
-  history: JSON.parse(localStorage.getItem('viejitoHistory') || '[]')
+  history: JSON.parse(localStorage.getItem('viejitoHistory') || '[]'),
+  targetBW: Number(localStorage.getItem('viejitoTargetBW')) || DEFAULT_TARGET_BW,
+  currentSWrap: Number(localStorage.getItem('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP
 };
 
 const $ = (id) => document.getElementById(id);
@@ -203,6 +208,110 @@ function calculateSWrap(currentWeight,currentSpeed,targetWeight){
   return currentWeight * currentSpeed / targetWeight;
 }
 
+
+const optimizerText = {
+  en: {
+    targetBW:'Target BW', currentSWrap:'Current S-Wrap', difference:'Difference', suggestedSWrap:'Suggested S-Wrap',
+    tooLight:'Too light', tooHeavy:'Too heavy', greenStatus:'ON TARGET', yellowStatus:'NEAR LIMIT', redStatus:'OUT OF RANGE',
+    greenMessage:'Within ±0.25. No adjustment needed.', yellowMessage:'Within 0.26–0.30. Make a preventive S-Wrap adjustment.',
+    redMessage:'More than 0.30 from target. Adjust S-Wrap.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
+    decrease:'Decrease S-Wrap by {amount}, from {current} to {suggested}.', increase:'Increase S-Wrap by {amount}, from {current} to {suggested}.',
+    hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}'
+  },
+  es: {
+    targetBW:'BW objetivo', currentSWrap:'S-Wrap actual', difference:'Diferencia', suggestedSWrap:'S-Wrap sugerido',
+    tooLight:'Muy liviano', tooHeavy:'Muy pesado', greenStatus:'DENTRO DEL OBJETIVO', yellowStatus:'CERCA DEL LÍMITE', redStatus:'FUERA DE RANGO',
+    greenMessage:'Dentro de ±0.25. No se necesita ajuste.', yellowMessage:'Entre 0.26 y 0.30. Haz un ajuste preventivo del S-Wrap.',
+    redMessage:'Más de 0.30 del objetivo. Ajusta el S-Wrap.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
+    decrease:'Baja el S-Wrap {amount}, de {current} a {suggested}.', increase:'Sube el S-Wrap {amount}, de {current} a {suggested}.',
+    hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}'
+  },
+  fr: {
+    targetBW:'BW cible', currentSWrap:'S-Wrap actuel', difference:'Différence', suggestedSWrap:'S-Wrap suggéré',
+    tooLight:'Trop léger', tooHeavy:'Trop lourd', greenStatus:'DANS LA CIBLE', yellowStatus:'PRÈS DE LA LIMITE', redStatus:'HORS PLAGE',
+    greenMessage:'Dans ±0,25. Aucun réglage nécessaire.', yellowMessage:'Entre 0,26 et 0,30. Faites un réglage préventif du S-Wrap.',
+    redMessage:'Écart supérieur à 0,30. Réglez le S-Wrap.', noChange:'Gardez le S-Wrap à {speed}. Aucun changement recommandé.',
+    decrease:'Réduisez le S-Wrap de {amount}, de {current} à {suggested}.', increase:'Augmentez le S-Wrap de {amount}, de {current} à {suggested}.',
+    hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}'
+  }
+};
+function ot(key,vars={}){
+  let value=(optimizerText[state.language]||optimizerText.en)[key]||optimizerText.en[key]||key;
+  Object.entries(vars).forEach(([name,replacement])=>value=value.replaceAll(`{${name}}`,replacement));
+  return value;
+}
+function saveOptimizerSettings(targetBW,currentSWrap){
+  if(!positive(targetBW,currentSWrap)) throw new Error(t('invalidNumbers'));
+  state.targetBW=Number(targetBW);
+  state.currentSWrap=Number(currentSWrap);
+  localStorage.setItem('viejitoTargetBW',String(state.targetBW));
+  localStorage.setItem('viejitoCurrentSWrap',String(state.currentSWrap));
+}
+function optimizeBasisWeight(actualBW,targetBW=state.targetBW,currentSWrap=state.currentSWrap){
+  saveOptimizerSettings(targetBW,currentSWrap);
+  const optimizer=new SmartOptimizer({targetBW:state.targetBW,currentSWrap:state.currentSWrap,roundMode:'nearest1'});
+  return optimizer.evaluate(actualBW);
+}
+function optimizerAction(result){
+  if(!result.suggestAdjustment) return ot('noChange',{speed:fmt(result.currentSWrap,1)});
+  const amount=fmt(Math.abs(result.adjustment),1);
+  if(result.direction==='decrease') return ot('decrease',{amount,current:fmt(result.currentSWrap,1),suggested:fmt(result.suggestedSWrap,1)});
+  if(result.direction==='increase') return ot('increase',{amount,current:fmt(result.currentSWrap,1),suggested:fmt(result.suggestedSWrap,1)});
+  return ot('hold',{speed:fmt(result.currentSWrap,1)});
+}
+function optimizerStatus(result){
+  if(result.level==='green') return {title:ot('greenStatus'),message:ot('greenMessage')};
+  if(result.level==='yellow') return {title:ot('yellowStatus'),message:ot('yellowMessage')};
+  return {title:ot('redStatus'),message:ot('redMessage')};
+}
+function optimizerMarkup(result){
+  const status=optimizerStatus(result);
+  return `<div class="chat-optimizer ${result.level}"><strong>${escapeHTML(status.title)}</strong><small>${escapeHTML(status.message)}</small><div class="chat-optimizer-grid"><span>${escapeHTML(ot('targetBW'))}: <b>${escapeHTML(fmt(result.targetBW))}</b></span><span>${escapeHTML(ot('difference'))}: <b>${escapeHTML(result.difference>0?`+${fmt(result.difference)}`:fmt(result.difference))}</b></span><span>${escapeHTML(ot('currentSWrap'))}: <b>${escapeHTML(fmt(result.currentSWrap,1))}</b></span><span>${escapeHTML(ot('suggestedSWrap'))}: <b>${escapeHTML(result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—')}</b></span></div><p>${escapeHTML(optimizerAction(result))}</p></div>`;
+}
+function renderOptimizerPanel(result){
+  const panel=$('optimizer-panel');
+  const status=optimizerStatus(result);
+  panel.classList.remove('hidden','green','yellow','red');
+  panel.classList.add(result.level);
+  $('bw-result-box').classList.remove('green','yellow','red');
+  $('bw-result-box').classList.add(result.level);
+  $('optimizer-status').textContent=status.title;
+  $('optimizer-message').textContent=status.message;
+  $('optimizer-target').textContent=fmt(result.targetBW);
+  $('optimizer-difference').textContent=result.difference>0?`+${fmt(result.difference)}`:fmt(result.difference);
+  $('optimizer-current').textContent=fmt(result.currentSWrap,1);
+  $('optimizer-suggested').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):'—';
+  $('optimizer-action').textContent=optimizerAction(result);
+  $('range-low').textContent=fmt(result.targetBW-result.warningTolerance);
+  $('range-target').textContent=fmt(result.targetBW);
+  $('range-high').textContent=fmt(result.targetBW+result.warningTolerance);
+  const span=result.warningTolerance*2;
+  const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
+  $('range-marker').style.left=`${position}%`;
+}
+function parseSmartBWRequest(text){
+  const vals=numbers(text);
+  const lower=text.toLowerCase();
+  const hasTarget=/\b(target|objetivo|cible)\b/.test(lower);
+  const hasSpeed=/\b(sw\s*wrap|s[- ]?wrap|swrap|sw\s*\d|speed|velocidad|vitesse)\b/.test(lower);
+  if(vals.length>=4 || (vals.length>=4 && hasTarget && hasSpeed)){
+    return {weight:vals[0],length:vals[1],targetBW:vals[2],currentSWrap:vals[3]};
+  }
+  if(hasTarget && hasSpeed && vals.length>=4){
+    return {weight:vals[0],length:vals[1],targetBW:vals[2],currentSWrap:vals[3]};
+  }
+  return null;
+}
+function handleSmartBW({weight,length,targetBW,currentSWrap},mandrel){
+  try{
+    const result=calculateBW(weight,length,mandrel);
+    const optimizer=optimizeBasisWeight(result,targetBW,currentSWrap);
+    state.context={intent:'bw',weight,length,mandrel,targetBW,currentSWrap,lastCalculation:true}; saveContext();
+    addHistory('BW',`${fmt(result)} • Target ${fmt(targetBW)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()}`);
+    return {kind:'result',title:'Basis Weight',value:fmt(result),meta:ot('smartMeta',{target:fmt(targetBW),speed:fmt(currentSWrap,1)}),optimizer,sarcasm:getSarcasmLine()};
+  }catch(error){return {kind:'error',message:error.message};}
+}
+
 function explicitIntent(text){
   const value=text.toLowerCase();
   if(/\b(s[- ]?wrap|swrap|speed|velocity|velocidad|vitesse)\b/.test(value)) return 'swrap';
@@ -226,8 +335,10 @@ function stripMandrelValue(vals,text){
 }
 
 function interpret(text){
-  const explicit=explicitIntent(text);
   const mandrel=requestedMandrel(text) || state.context.mandrel || state.mandrel || DEFAULT_MANDREL;
+  const smartRequest=parseSmartBWRequest(text);
+  if(smartRequest) return handleSmartBW(smartRequest,mandrel);
+  const explicit=explicitIntent(text);
   let vals=stripMandrelValue(numbers(text),text);
   const lower=text.toLowerCase().trim();
 
@@ -256,7 +367,8 @@ function interpret(text){
         const result=calculateBW(weight,length,mandrel);
         state.context={intent:'bw',weight,length,mandrel,lastCalculation:true}; saveContext();
         addHistory('BW',`${fmt(result)} • ${weight} lb / ${length} ft • ${mandrel}”`);
-        return {kind:'result',title:'Basis Weight',value:fmt(result),meta:mandrel===48?t('defaultMandrel',{m:mandrel}):t('mandrelOnly',{m:mandrel}),sarcasm:getSarcasmLine()};
+        const optimizer=optimizeBasisWeight(result);
+        return {kind:'result',title:'Basis Weight',value:fmt(result),meta:mandrel===48?t('defaultMandrel',{m:mandrel}):t('mandrelOnly',{m:mandrel}),optimizer,sarcasm:getSarcasmLine()};
       }
       const n=vals[0];
       state.context={...state.context,intent:'bw',pendingValue:n,mandrel}; saveContext();
@@ -324,7 +436,7 @@ function escapeHTML(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':
 function bubble(role,content){
   const div=document.createElement('div'); div.className=`bubble ${role}`;
   if(typeof content==='string') div.textContent=content;
-  else div.innerHTML=`${content.title?`<span class="title">${escapeHTML(content.title)}</span>`:''}${content.value?`<strong style="font-size:1.55rem">${escapeHTML(content.value)}</strong>`:''}${content.message?escapeHTML(content.message):''}${content.meta?`<small style="display:block;margin-top:5px;opacity:.72">${escapeHTML(content.meta)}</small>`:''}${content.sarcasm?`<div class="sarcasm-line">${escapeHTML(content.sarcasm)}</div>`:''}`;
+  else div.innerHTML=`${content.title?`<span class="title">${escapeHTML(content.title)}</span>`:''}${content.value?`<strong style="font-size:1.55rem">${escapeHTML(content.value)}</strong>`:''}${content.message?escapeHTML(content.message):''}${content.meta?`<small style="display:block;margin-top:5px;opacity:.72">${escapeHTML(content.meta)}</small>`:''}${content.optimizer?optimizerMarkup(content.optimizer):''}${content.sarcasm?`<div class="sarcasm-line">${escapeHTML(content.sarcasm)}</div>`:''}`;
   $('chat-log').appendChild(div); $('chat-log').scrollTop=$('chat-log').scrollHeight;
 }
 function showToast(msg){const toast=$('toast');toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800);}
@@ -376,7 +488,15 @@ function applyLanguage(language, announce=false){
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent=t('footer');
+  $('footer-text').textContent='Viejito 4.0 • Smart Process Optimizer';
+  $('target-bw-label').textContent=ot('targetBW');
+  $('current-swrap-label').textContent=ot('currentSWrap');
+  $('optimizer-target-label').textContent=ot('targetBW');
+  $('optimizer-difference-label').textContent=ot('difference');
+  $('optimizer-current-label').textContent=ot('currentSWrap');
+  $('optimizer-suggested-label').textContent=ot('suggestedSWrap');
+  $('too-light-label').textContent=ot('tooLight');
+  $('too-heavy-label').textContent=ot('tooHeavy');
   updateMetaText();
   updateConnection();
   renderHistory();
@@ -410,7 +530,7 @@ $('personality-select').addEventListener('change',event=>{
   localStorage.setItem('viejitoPersonality',state.personality);
   showToast(t('personalityChanged',{mode:personalityLabel()}));
 });
-$('bw-calc').addEventListener('click',()=>{try{const w=Number($('bw-weight').value),l=Number($('bw-length').value),m=currentMandrel('bw'),r=calculateBW(w,l,m);$('bw-result').textContent=fmt(r);$('bw-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('BW',`${fmt(r)} • ${w} lb / ${l} ft • ${m}”`);}catch(e){showToast(e.message);}});
+$('bw-calc').addEventListener('click',()=>{try{const w=Number($('bw-weight').value),l=Number($('bw-length').value),m=currentMandrel('bw'),target=Number($('bw-target').value),currentSWrap=Number($('bw-current-swrap').value),r=calculateBW(w,l,m),optimizer=optimizeBasisWeight(r,target,currentSWrap);$('bw-result').textContent=fmt(r);$('bw-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});renderOptimizerPanel(optimizer);addHistory('BW',`${fmt(r)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${m}”`);}catch(e){showToast(e.message);}});
 $('ft-calc').addEventListener('click',()=>{try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
 $('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),r=calculateSWrap(a,s,target);$('sw-result').textContent=fmt(r,1);addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}`);}catch(e){showToast(e.message);}});
 $('clear-history').addEventListener('click',()=>{state.history=[];localStorage.removeItem('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
@@ -421,12 +541,14 @@ window.addEventListener('offline',updateConnection);
 if(localStorage.getItem('viejitoTheme')==='light')document.documentElement.classList.add('light');
 selectMandrel('bw',state.mandrel);
 selectMandrel('ft',state.mandrel);
+$('bw-target').value=fmt(state.targetBW);
+$('bw-current-swrap').value=fmt(state.currentSWrap,1);
 applyLanguage(state.language);
 bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=1.3.1',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=2.0.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
