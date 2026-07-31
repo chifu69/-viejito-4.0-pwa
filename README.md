@@ -1,27 +1,36 @@
-# Viejito 4.0 PWA — Sprint 1.2
+# Viejito 4.0 PWA — Sprint 1.3
 
-## Cambios de esta actualización
+## Nueva personalidad sarcástica
 
-- Inglés como idioma predeterminado.
-- Selector de idioma en la parte superior.
-- Idiomas disponibles:
-  - English
-  - Español
-  - Français
-- La preferencia se guarda en el teléfono y continúa funcionando sin conexión.
-- Se tradujeron la interfaz, los mensajes del chat, los errores, el historial y los avisos de conexión.
-- Se conserva el teclado normal del iPhone para poder escribir números separados por espacios.
-- Se actualizó la caché offline para forzar la nueva versión.
+Esta actualización agrega un selector de personalidad para el chat:
 
-## Archivos que debes reemplazar en GitHub
+- Professional
+- Light sarcasm
+- Heavy sarcasm — predeterminado
+- Off
 
-Sube todos los archivos de este paquete a la raíz del repositorio:
+El resultado correcto siempre aparece primero. El comentario sarcástico aparece debajo y nunca cambia el cálculo.
+
+La preferencia queda guardada localmente en el teléfono y funciona sin conexión.
+
+También incluye frases distintas en:
+
+- English
+- Español
+- Français
+
+La aplicación evita repetir inmediatamente la misma frase.
+
+## Archivos para reemplazar en GitHub
+
+Sube estos archivos a la raíz del repositorio:
 
 - `index.html`
 - `app.js`
 - `styles.css`
-- `manifest.webmanifest`
 - `sw.js`
 - `README.md`
 
-GitHub Pages volverá a publicar la aplicación automáticamente.
+Mensaje sugerido para el commit:
+
+`Add sarcastic chat personality`

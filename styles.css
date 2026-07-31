@@ -9,3 +9,11 @@
 .language-control select{border:0;background:transparent;color:var(--text);font:inherit;font-size:.78rem;font-weight:750;outline:none;max-width:92px}
 .language-control option{color:#111;background:#fff}
 @media(max-width:620px){.language-control span{display:none}.language-control{padding:5px 6px}.language-control select{max-width:86px}}
+
+.personality-control{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:5px 8px;color:var(--muted)}
+.personality-control span{font-size:.68rem;font-weight:750}
+.personality-control select{border:0;background:transparent;color:var(--text);font:inherit;font-size:.78rem;font-weight:750;outline:none;max-width:132px}
+.personality-control option{color:#111;background:#fff}
+.sarcasm-line{margin-top:10px;padding-top:9px;border-top:1px dashed rgba(255,255,255,.18);font-style:italic;opacity:.9;line-height:1.4}
+.light .sarcasm-line{border-top-color:rgba(0,0,0,.16)}
+@media(max-width:760px){.status-area{flex-wrap:wrap;justify-content:flex-end}.personality-control span{display:none}.personality-control{padding:5px 6px}.personality-control select{max-width:112px}}
