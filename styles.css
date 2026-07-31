@@ -104,3 +104,65 @@ body.chat-open{overflow:hidden}
   .chat-fab{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:58px;padding:0;justify-content:center}
   .chat-fab-label{display:none}
 }
+
+
+/* Viejito 4.2 — Compact Plant Mode */
+.compact-hero{padding:4px 2px 10px}
+.tool-workspace{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;align-items:start;margin-bottom:12px}
+.calculator-column{min-width:0}
+.tool-workspace .quick-grid{display:grid;grid-template-columns:1fr;gap:9px;margin:0;position:sticky;top:12px}
+.tool-workspace .quick-card{min-height:82px;padding:12px 13px;border-radius:17px;grid-template-columns:38px minmax(0,1fr);column-gap:9px}
+.tool-workspace .quick-card span{font-size:1.35rem}
+.tool-workspace .quick-card strong{font-size:.88rem}
+.tool-workspace .quick-card small{font-size:.67rem;line-height:1.2}
+.tool-workspace .panel{margin-bottom:0}
+.tool-workspace .calculator-card{padding:14px}
+.tool-workspace .panel-heading{margin-bottom:11px}
+.tool-workspace .panel-heading h3{font-size:1.08rem}
+.tool-workspace input{padding:11px 12px}
+.tool-workspace label input{margin-top:5px}
+.tool-workspace .mandrel-row{margin:10px 0}
+.tool-workspace .mandrel{padding:7px 14px}
+.tool-workspace .result-box{padding:12px;margin:7px 0 10px}
+.tool-workspace .result-box strong{font-size:1.75rem;margin:2px 0}
+.tool-workspace .primary{min-height:44px}
+.trend-panel{margin-top:0;padding:14px}
+.trend-panel .panel-heading{margin-bottom:10px}
+.trend-grid{gap:8px}
+.learning-dashboard,.history-panel{padding:14px}
+
+@media(max-width:620px){
+  .app-shell{padding-left:10px;padding-right:10px}
+  .topbar{padding-bottom:10px;gap:8px}
+  .brand{gap:8px}.brand-icon{width:42px;height:42px}.brand h1{font-size:1.08rem}.brand p{font-size:.7rem}
+  .status-area{gap:5px}.language-control,.personality-control{padding:4px 5px}.icon-button{width:36px;height:36px}
+  .compact-hero{padding:2px 2px 8px}
+  .tool-workspace{grid-template-columns:minmax(0,1fr) 98px;gap:8px}
+  .tool-workspace .quick-grid{gap:7px;top:8px}
+  .tool-workspace .quick-card{min-height:69px;padding:8px 6px;border-radius:15px;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:3px}
+  .tool-workspace .quick-card span{font-size:1.25rem;line-height:1}
+  .tool-workspace .quick-card strong{font-size:.73rem;line-height:1.05}
+  .tool-workspace .quick-card small{display:none}
+  .tool-workspace .calculator-card{padding:11px}
+  .tool-workspace .panel-heading{margin-bottom:9px}
+  .tool-workspace .panel-heading .eyebrow,.tool-workspace .offline-ready{display:none}
+  .tool-workspace .panel-heading h3{margin:0;font-size:1rem}
+  .tool-workspace .field-grid,.tool-workspace .field-grid.three{grid-template-columns:1fr 1fr;gap:7px}
+  .tool-workspace #view-swrap .field-grid.three{grid-template-columns:1fr}
+  .tool-workspace label{font-size:.69rem}
+  .tool-workspace input{padding:9px 10px;font-size:16px;border-radius:11px}
+  .tool-workspace .optimizer-inputs{margin-top:9px}
+  .tool-workspace .mandrel-row{margin:8px 0;gap:5px}.tool-workspace .mandrel{padding:6px 10px}
+  .tool-workspace .result-box{padding:10px;border-radius:14px}.tool-workspace .result-box strong{font-size:1.48rem}
+  .tool-workspace .primary{min-height:41px}
+  .optimizer-panel{margin-top:10px;padding:10px}
+  .trend-panel{padding:12px}.trend-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .learning-dashboard,.history-panel{padding:12px}
+}
+
+@media(max-width:390px){
+  .tool-workspace{grid-template-columns:minmax(0,1fr) 84px;gap:6px}
+  .tool-workspace .quick-card{min-height:64px;padding:7px 4px}
+  .tool-workspace .quick-card strong{font-size:.67rem}
+  .tool-workspace .calculator-card{padding:9px}
+}

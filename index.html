@@ -1,209 +1,198 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#101820">
-  <meta id="meta-description" name="description" content="Viejito Industrial Assistant: offline BW, FT and S-Wrap calculations.">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Viejito">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=4.1.0">
-  <title>Viejito Industrial</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<meta content="#101820" name="theme-color"/>
+<meta content="Viejito Industrial Assistant: offline BW, FT and S-Wrap calculations." id="meta-description" name="description"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Viejito" name="apple-mobile-web-app-title"/>
+<link href="manifest.webmanifest" rel="manifest"/>
+<link href="icons/icon-180.png" rel="apple-touch-icon"/>
+<link href="icons/icon-192.png" rel="icon"/>
+<link href="styles.css?v=4.2.0" rel="stylesheet"/>
+<title>Viejito Industrial</title>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <img src="icons/icon-192.png" alt="" class="brand-icon">
-        <div>
-          <h1>Viejito</h1>
-          <p>Industrial Assistant</p>
-        </div>
-      </div>
-      <div class="status-area">
-        <label class="language-control" for="language-select">
-          <span id="language-label">Language</span>
-          <select id="language-select" aria-label="Preferred language">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-          </select>
-        </label>
-        <label class="personality-control" for="personality-select">
-          <span id="personality-label">Personality</span>
-          <select id="personality-select" aria-label="Chat personality">
-            <option value="professional">Professional</option>
-            <option value="light">Light sarcasm</option>
-            <option value="heavy">Heavy sarcasm</option>
-            <option value="off">Off</option>
-          </select>
-        </label>
-        <span id="connection-pill" class="pill online">Online</span>
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Change theme">☾</button>
-      </div>
-    </header>
-
-    <main>
-      <section class="hero">
-        <p id="hero-eyebrow" class="eyebrow">PLANT MODE</p>
-        <h2 id="hero-title">What do you need to calculate?</h2>
-        <p id="hero-description">Works without a signal for BW, FT and S-Wrap.</p>
-      </section>
-
-      <nav id="quick-grid" class="quick-grid" aria-label="Quick tools">
-        <button class="quick-card active" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
-        <button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small data-i18n="ftSubtitle">Calculate length</small></button>
-        <button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small data-i18n="swrapSubtitle">Adjust speed</small></button>
-      </nav>
-
-      <section id="view-bw" class="view active">
-        <div class="panel calculator-card">
-          <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
-          <div class="field-grid">
-            <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
-            <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" type="number" inputmode="decimal" min="0" step="any" placeholder="6578"></label>
-          </div>
-          <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
-          <div class="field-grid optimizer-inputs">
-            <label><span id="target-bw-label">Target BW</span><input id="bw-target" type="number" inputmode="decimal" min="0" step="0.01" placeholder="6.35"></label>
-            <label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" type="number" inputmode="decimal" min="0" step="1" placeholder="170"></label>
-          </div>
-          <div id="bw-result-box" class="result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
-          <section id="optimizer-panel" class="optimizer-panel hidden" aria-live="polite">
-            <div class="optimizer-status-row">
-              <span id="optimizer-status-dot" class="status-dot"></span>
-              <div><strong id="optimizer-status">—</strong><small id="optimizer-message">—</small></div>
-            </div>
-            <div class="optimizer-values">
-              <div><span id="optimizer-target-label">Target BW</span><strong id="optimizer-target">—</strong></div>
-              <div><span id="optimizer-difference-label">Difference</span><strong id="optimizer-difference">—</strong></div>
-              <div><span id="optimizer-current-label">Current S-Wrap</span><strong id="optimizer-current">—</strong></div>
-              <div><span id="optimizer-suggested-label">Suggested S-Wrap</span><strong id="optimizer-suggested">—</strong></div>
-            </div>
-            <div class="range-track-wrap">
-              <div class="range-labels"><span id="too-light-label">Too light</span><span id="too-heavy-label">Too heavy</span></div>
-              <div class="range-track"><span class="range-green"></span><span class="range-yellow left"></span><span class="range-yellow right"></span><span id="range-marker" class="range-marker"></span></div>
-              <div class="range-numbers"><span id="range-low">—</span><span id="range-target">—</span><span id="range-high">—</span></div>
-            </div>
-            <p id="optimizer-action" class="optimizer-action"></p>
-            <div id="learning-summary" class="learning-summary">
-              <div><span id="formula-label">Formula suggestion</span><strong id="formula-suggestion">—</strong></div>
-              <div><span id="learned-label">Learned suggestion</span><strong id="learned-suggestion">—</strong></div>
-              <div><span id="confidence-label">Confidence</span><strong id="learning-confidence">0%</strong></div>
-              <div><span id="rolls-label">Rolls learned</span><strong id="learning-count">0</strong></div>
-            </div>
-            <button id="record-result-toggle" class="secondary hidden" type="button">Record actual result</button>
-            <div id="learning-form" class="learning-form hidden">
-              <p id="learning-question">After making the change, enter the S-Wrap you used and the final BW.</p>
-              <div class="field-grid">
-                <label><span id="applied-swrap-label">Applied S-Wrap</span><input id="applied-swrap" type="number" inputmode="decimal" min="0" step="1"></label>
-                <label><span id="final-bw-label">Final BW</span><input id="final-bw" type="number" inputmode="decimal" min="0" step="0.01"></label>
-              </div>
-              <div class="learning-actions">
-                <button id="save-learning" class="primary" type="button">Save and learn</button>
-                <button id="cancel-learning" class="text-button" type="button">Cancel</button>
-              </div>
-            </div>
-          </section>
-          <button id="bw-calc" class="primary" type="button">Calculate BW</button>
-        </div>
-      </section>
+<div class="app-shell">
+<header class="topbar">
+<div class="brand">
+<img alt="" class="brand-icon" src="icons/icon-192.png"/>
+<div>
+<h1>Viejito</h1>
+<p>Industrial Assistant</p>
+</div>
+</div>
+<div class="status-area">
+<label class="language-control" for="language-select">
+<span id="language-label">Language</span>
+<select aria-label="Preferred language" id="language-select">
+<option value="en">English</option>
+<option value="es">Español</option>
+<option value="fr">Français</option>
+</select>
+</label>
+<label class="personality-control" for="personality-select">
+<span id="personality-label">Personality</span>
+<select aria-label="Chat personality" id="personality-select">
+<option value="professional">Professional</option>
+<option value="light">Light sarcasm</option>
+<option value="heavy">Heavy sarcasm</option>
+<option value="off">Off</option>
+</select>
+</label>
+<span class="pill online" id="connection-pill">Online</span>
+<button aria-label="Change theme" class="icon-button" id="theme-toggle" type="button">☾</button>
+</div>
+</header>
+<main>
+<section class="hero compact-hero">
+<p class="eyebrow" id="hero-eyebrow">PLANT MODE</p>
 
 
-      <section id="trend-panel" class="panel trend-panel waiting" aria-live="polite">
-        <div class="panel-heading">
-          <div><p class="eyebrow">SPRINT 2.2</p><h3 id="trend-title">Trend Predictor</h3></div>
-          <button id="clear-trend" class="text-button" type="button">Clear trend</button>
-        </div>
-        <p id="trend-message" class="trend-message">Add 5 BW rolls to activate the prediction.</p>
-        <div class="trend-grid">
-          <div><span id="trend-projected-label">Projected next BW</span><strong id="trend-projected">—</strong></div>
-          <div><span id="trend-direction-label">Direction</span><strong id="trend-direction">—</strong></div>
-          <div><span id="trend-consistency-label">Consistency</span><strong id="trend-consistency">—</strong></div>
-          <div><span id="trend-rolls-label">Last rolls</span><strong id="trend-rolls">—</strong></div>
-        </div>
-      </section>
+</section>
+<div class="tool-workspace"><div class="calculator-column"><section class="view active" id="view-bw">
+<div class="panel calculator-card">
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
+<div class="field-grid">
+<label><span data-i18n="weightLb">Weight (lb)</span><input id="bw-weight" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
+<label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
+</div>
+<div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
+<div class="field-grid optimizer-inputs">
+<label><span id="target-bw-label">Target BW</span><input id="bw-target" inputmode="decimal" min="0" placeholder="6.35" step="0.01" type="number"/></label>
+<label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" inputmode="decimal" min="0" placeholder="170" step="1" type="number"/></label>
+</div>
+<div class="result-box" id="bw-result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
+<section aria-live="polite" class="optimizer-panel hidden" id="optimizer-panel">
+<div class="optimizer-status-row">
+<span class="status-dot" id="optimizer-status-dot"></span>
+<div><strong id="optimizer-status">—</strong><small id="optimizer-message">—</small></div>
+</div>
+<div class="optimizer-values">
+<div><span id="optimizer-target-label">Target BW</span><strong id="optimizer-target">—</strong></div>
+<div><span id="optimizer-difference-label">Difference</span><strong id="optimizer-difference">—</strong></div>
+<div><span id="optimizer-current-label">Current S-Wrap</span><strong id="optimizer-current">—</strong></div>
+<div><span id="optimizer-suggested-label">Suggested S-Wrap</span><strong id="optimizer-suggested">—</strong></div>
+</div>
+<div class="range-track-wrap">
+<div class="range-labels"><span id="too-light-label">Too light</span><span id="too-heavy-label">Too heavy</span></div>
+<div class="range-track"><span class="range-green"></span><span class="range-yellow left"></span><span class="range-yellow right"></span><span class="range-marker" id="range-marker"></span></div>
+<div class="range-numbers"><span id="range-low">—</span><span id="range-target">—</span><span id="range-high">—</span></div>
+</div>
+<p class="optimizer-action" id="optimizer-action"></p>
+<div class="learning-summary" id="learning-summary">
+<div><span id="formula-label">Formula suggestion</span><strong id="formula-suggestion">—</strong></div>
+<div><span id="learned-label">Learned suggestion</span><strong id="learned-suggestion">—</strong></div>
+<div><span id="confidence-label">Confidence</span><strong id="learning-confidence">0%</strong></div>
+<div><span id="rolls-label">Rolls learned</span><strong id="learning-count">0</strong></div>
+</div>
+<button class="secondary hidden" id="record-result-toggle" type="button">Record actual result</button>
+<div class="learning-form hidden" id="learning-form">
+<p id="learning-question">After making the change, enter the S-Wrap you used and the final BW.</p>
+<div class="field-grid">
+<label><span id="applied-swrap-label">Applied S-Wrap</span><input id="applied-swrap" inputmode="decimal" min="0" step="1" type="number"/></label>
+<label><span id="final-bw-label">Final BW</span><input id="final-bw" inputmode="decimal" min="0" step="0.01" type="number"/></label>
+</div>
+<div class="learning-actions">
+<button class="primary" id="save-learning" type="button">Save and learn</button>
+<button class="text-button" id="cancel-learning" type="button">Cancel</button>
+</div>
+</div>
+</section>
+<button class="primary" id="bw-calc" type="button">Calculate BW</button>
+</div>
+</section><section class="view" id="view-ft">
+<div class="panel calculator-card">
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
+<div class="field-grid">
+<label>Basis Weight<input id="ft-bw" inputmode="decimal" min="0" placeholder="10" step="any" type="number"/></label>
+<label><span data-i18n="weightLb">Weight (lb)</span><input id="ft-weight" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
+</div>
+<div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="ft" data-value="48">48”</button><button class="mandrel" data-target="ft" data-value="51">51”</button></div>
+<div class="result-box"><span data-i18n="length">Length</span><strong id="ft-result">—</strong><small id="ft-meta">48” mandrel (default)</small></div>
+<button class="primary" id="ft-calc" type="button">Calculate FT</button>
+</div>
+</section><section class="view" id="view-swrap">
+<div class="panel calculator-card">
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>S-Wrap Speed</h3></div><span class="offline-ready">Offline</span></div>
+<div class="field-grid three">
+<label><span data-i18n="currentWeight">Current weight</span><input id="sw-current" inputmode="decimal" min="0" placeholder="10" step="any" type="number"/></label>
+<label><span data-i18n="currentSpeed">Current speed</span><input id="sw-speed" inputmode="decimal" min="0" placeholder="180" step="any" type="number"/></label>
+<label><span data-i18n="targetWeight">Target weight</span><input id="sw-target" inputmode="decimal" min="0" placeholder="12" step="any" type="number"/></label>
+</div>
+<div class="result-box"><span data-i18n="newSpeed">New speed</span><strong id="sw-result">—</strong><small id="sw-formula">Current weight × speed ÷ target weight</small></div>
+<button class="primary" id="sw-calc" type="button">Calculate S-Wrap</button>
+</div>
+</section></div><nav aria-label="Quick tools" class="quick-grid" id="quick-grid">
+<button class="quick-card active" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
+<button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small data-i18n="ftSubtitle">Calculate length</small></button>
+<button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small data-i18n="swrapSubtitle">Adjust speed</small></button>
+</nav></div><section aria-live="polite" class="panel trend-panel waiting" id="trend-panel">
+<div class="panel-heading">
+<div><p class="eyebrow">SPRINT 2.2</p><h3 id="trend-title">Trend Predictor</h3></div>
+<button class="text-button" id="clear-trend" type="button">Clear trend</button>
+</div>
+<p class="trend-message" id="trend-message">Add 5 BW rolls to activate the prediction.</p>
+<div class="trend-grid">
+<div><span id="trend-projected-label">Projected next BW</span><strong id="trend-projected">—</strong></div>
+<div><span id="trend-direction-label">Direction</span><strong id="trend-direction">—</strong></div>
+<div><span id="trend-consistency-label">Consistency</span><strong id="trend-consistency">—</strong></div>
+<div><span id="trend-rolls-label">Last rolls</span><strong id="trend-rolls">—</strong></div>
+</div>
+</section>
 
-      <section id="view-ft" class="view">
-        <div class="panel calculator-card">
-          <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
-          <div class="field-grid">
-            <label>Basis Weight<input id="ft-bw" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
-            <label><span data-i18n="weightLb">Weight (lb)</span><input id="ft-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
-          </div>
-          <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="ft" data-value="48">48”</button><button class="mandrel" data-target="ft" data-value="51">51”</button></div>
-          <div class="result-box"><span data-i18n="length">Length</span><strong id="ft-result">—</strong><small id="ft-meta">48” mandrel (default)</small></div>
-          <button id="ft-calc" class="primary" type="button">Calculate FT</button>
-        </div>
-      </section>
 
-      <section id="view-swrap" class="view">
-        <div class="panel calculator-card">
-          <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>S-Wrap Speed</h3></div><span class="offline-ready">Offline</span></div>
-          <div class="field-grid three">
-            <label><span data-i18n="currentWeight">Current weight</span><input id="sw-current" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
-            <label><span data-i18n="currentSpeed">Current speed</span><input id="sw-speed" type="number" inputmode="decimal" min="0" step="any" placeholder="180"></label>
-            <label><span data-i18n="targetWeight">Target weight</span><input id="sw-target" type="number" inputmode="decimal" min="0" step="any" placeholder="12"></label>
-          </div>
-          <div class="result-box"><span data-i18n="newSpeed">New speed</span><strong id="sw-result">—</strong><small id="sw-formula">Current weight × speed ÷ target weight</small></div>
-          <button id="sw-calc" class="primary" type="button">Calculate S-Wrap</button>
-        </div>
-      </section>
 
-      <section class="panel learning-dashboard">
-        <div class="panel-heading"><div><p class="eyebrow">ADAPTIVE</p><h3 id="machine-learning-title">Machine learning</h3></div><button id="clear-learning" class="text-button" type="button">Reset learning</button></div>
-        <div class="learning-dashboard-grid">
-          <div><span id="dashboard-rolls-label">Rolls learned</span><strong id="dashboard-rolls">0</strong></div>
-          <div><span id="dashboard-correction-label">Average correction</span><strong id="dashboard-correction">0</strong></div>
-          <div><span id="dashboard-success-label">Success rate</span><strong id="dashboard-success">0%</strong></div>
-          <div><span id="dashboard-confidence-label">Confidence</span><strong id="dashboard-confidence">0%</strong></div>
-        </div>
-        <small id="learning-note">Learning is stored only on this device.</small>
-      </section>
 
-      <section class="panel history-panel">
-        <div class="panel-heading"><div><p class="eyebrow" data-i18n="local">LOCAL</p><h3 data-i18n="recentHistory">Recent history</h3></div><button id="clear-history" class="text-button" type="button">Clear</button></div>
-        <div id="history-list" class="history-list"></div>
-      </section>
-    </main>
-
-    <footer id="footer-text">Viejito 4.1 • Floating Chat</footer>
-  </div>
-
-  <div id="chat-backdrop" class="chat-backdrop" hidden></div>
-  <aside id="floating-chat" class="floating-chat" aria-hidden="true" aria-label="Viejito chat">
-    <div class="floating-chat-header">
-      <div>
-        <strong>💬 Viejito AI</strong>
-        <small id="floating-chat-status">Online assistant</small>
-      </div>
-      <button id="chat-close" class="chat-close" type="button" aria-label="Close chat">×</button>
-    </div>
-    <div class="chat-panel">
-          <div id="chat-log" class="chat-log" aria-live="polite"></div>
-          <form id="chat-form" class="chat-form">
-            <input id="chat-input" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Example: 520 6578, 180, FT 10 520..." aria-label="Message for Viejito">
-            <button id="send-button" type="submit">Send</button>
-          </form>
-          <div class="hint-row">
-            <button class="example" data-example="520 6578">520 6578</button>
-            <button class="example" data-example="520 6578 51">520 6578 51</button>
-            <button class="example" data-example="180">180</button>
-            <button class="example" data-example="FT 10 520">FT 10 520</button>
-          </div>
-        
-    </div>
-  </aside>
-  <button id="chat-fab" class="chat-fab" type="button" aria-label="Open chat" aria-expanded="false">
-    <span class="chat-fab-icon">💬</span>
-    <span class="chat-fab-label">Chat</span>
-  </button>
-  <div id="toast" class="toast"></div>
-  <script src="optimizer.js?v=4.1.0"></script>
-  <script src="app.js?v=4.1.0"></script>
+<section class="panel learning-dashboard">
+<div class="panel-heading"><div><p class="eyebrow">ADAPTIVE</p><h3 id="machine-learning-title">Machine learning</h3></div><button class="text-button" id="clear-learning" type="button">Reset learning</button></div>
+<div class="learning-dashboard-grid">
+<div><span id="dashboard-rolls-label">Rolls learned</span><strong id="dashboard-rolls">0</strong></div>
+<div><span id="dashboard-correction-label">Average correction</span><strong id="dashboard-correction">0</strong></div>
+<div><span id="dashboard-success-label">Success rate</span><strong id="dashboard-success">0%</strong></div>
+<div><span id="dashboard-confidence-label">Confidence</span><strong id="dashboard-confidence">0%</strong></div>
+</div>
+<small id="learning-note">Learning is stored only on this device.</small>
+</section>
+<section class="panel history-panel">
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="local">LOCAL</p><h3 data-i18n="recentHistory">Recent history</h3></div><button class="text-button" id="clear-history" type="button">Clear</button></div>
+<div class="history-list" id="history-list"></div>
+</section>
+</main>
+<footer id="footer-text">Viejito 4.2 • Compact Plant Mode</footer>
+</div>
+<div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
+<aside aria-hidden="true" aria-label="Viejito chat" class="floating-chat" id="floating-chat">
+<div class="floating-chat-header">
+<div>
+<strong>💬 Viejito AI</strong>
+<small id="floating-chat-status">Online assistant</small>
+</div>
+<button aria-label="Close chat" class="chat-close" id="chat-close" type="button">×</button>
+</div>
+<div class="chat-panel">
+<div aria-live="polite" class="chat-log" id="chat-log"></div>
+<form class="chat-form" id="chat-form">
+<input aria-label="Message for Viejito" autocapitalize="none" autocomplete="off" autocorrect="off" enterkeyhint="send" id="chat-input" inputmode="text" placeholder="Example: 520 6578, 180, FT 10 520..." spellcheck="false" type="text"/>
+<button id="send-button" type="submit">Send</button>
+</form>
+<div class="hint-row">
+<button class="example" data-example="520 6578">520 6578</button>
+<button class="example" data-example="520 6578 51">520 6578 51</button>
+<button class="example" data-example="180">180</button>
+<button class="example" data-example="FT 10 520">FT 10 520</button>
+</div>
+</div>
+</aside>
+<button aria-expanded="false" aria-label="Open chat" class="chat-fab" id="chat-fab" type="button">
+<span class="chat-fab-icon">💬</span>
+<span class="chat-fab-label">Chat</span>
+</button>
+<div class="toast" id="toast"></div>
+<script src="optimizer.js?v=4.2.0"></script>
+<script src="app.js?v=4.2.0"></script>
 </body>
 </html>

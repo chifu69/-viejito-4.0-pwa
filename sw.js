@@ -1,10 +1,10 @@
-const CACHE='viejito-4.1.0-floating-chat';
+const CACHE='viejito-4.2.0-compact-layout';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=4.1.0',
-  './optimizer.js?v=4.1.0',
-  './app.js?v=4.1.0',
+  './styles.css?v=4.2.0',
+  './optimizer.js?v=4.2.0',
+  './app.js?v=4.2.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',
