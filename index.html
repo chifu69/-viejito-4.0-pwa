@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101820">
-  <meta name="description" content="Viejito Industrial Assistant: BW, FT y S-Wrap con funcionamiento sin conexión.">
+  <meta id="meta-description" name="description" content="Viejito Industrial Assistant: offline BW, FT and S-Wrap calculations.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Viejito">
@@ -25,31 +25,39 @@
         </div>
       </div>
       <div class="status-area">
-        <span id="connection-pill" class="pill online">En línea</span>
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Cambiar tema">☾</button>
+        <label class="language-control" for="language-select">
+          <span id="language-label">Language</span>
+          <select id="language-select" aria-label="Preferred language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+          </select>
+        </label>
+        <span id="connection-pill" class="pill online">Online</span>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Change theme">☾</button>
       </div>
     </header>
 
     <main>
       <section class="hero">
-        <p class="eyebrow">MODO PLANTA</p>
-        <h2>¿Qué necesitas calcular?</h2>
-        <p>Funciona sin señal para BW, FT y S-Wrap.</p>
+        <p id="hero-eyebrow" class="eyebrow">PLANT MODE</p>
+        <h2 id="hero-title">What do you need to calculate?</h2>
+        <p id="hero-description">Works without a signal for BW, FT and S-Wrap.</p>
       </section>
 
-      <nav class="quick-grid" aria-label="Herramientas rápidas">
-        <button class="quick-card active" data-view="chat"><span>💬</span><strong>Chat</strong><small>Escribe como hablas</small></button>
-        <button class="quick-card" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small>Mandrel 48” o 51”</small></button>
-        <button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small>Calcula longitud</small></button>
-        <button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small>Ajusta velocidad</small></button>
+      <nav id="quick-grid" class="quick-grid" aria-label="Quick tools">
+        <button class="quick-card active" data-view="chat"><span>💬</span><strong data-i18n="chat">Chat</strong><small data-i18n="chatSubtitle">Type naturally</small></button>
+        <button class="quick-card" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
+        <button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small data-i18n="ftSubtitle">Calculate length</small></button>
+        <button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small data-i18n="swrapSubtitle">Adjust speed</small></button>
       </nav>
 
       <section id="view-chat" class="view active">
         <div class="panel chat-panel">
           <div id="chat-log" class="chat-log" aria-live="polite"></div>
           <form id="chat-form" class="chat-form">
-            <input id="chat-input" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Ej.: 520 6578, 180, FT 520 10..." aria-label="Mensaje para Viejito">
-            <button type="submit">Enviar</button>
+            <input id="chat-input" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Example: 520 6578, 180, FT 10 520..." aria-label="Message for Viejito">
+            <button id="send-button" type="submit">Send</button>
           </form>
           <div class="hint-row">
             <button class="example" data-example="520 6578">520 6578</button>
@@ -62,50 +70,50 @@
 
       <section id="view-bw" class="view">
         <div class="panel calculator-card">
-          <div class="panel-heading"><div><p class="eyebrow">CALCULADORA</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
+          <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
           <div class="field-grid">
-            <label>Peso (lb)<input id="bw-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
-            <label>Longitud (ft)<input id="bw-length" type="number" inputmode="decimal" min="0" step="any" placeholder="6578"></label>
+            <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
+            <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" type="number" inputmode="decimal" min="0" step="any" placeholder="6578"></label>
           </div>
-          <div class="mandrel-row"><span>Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
-          <div class="result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">Mandrel 48” predeterminado</small></div>
-          <button id="bw-calc" class="primary" type="button">Calcular BW</button>
+          <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
+          <div class="result-box"><span>Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small></div>
+          <button id="bw-calc" class="primary" type="button">Calculate BW</button>
         </div>
       </section>
 
       <section id="view-ft" class="view">
         <div class="panel calculator-card">
-          <div class="panel-heading"><div><p class="eyebrow">CALCULADORA</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
+          <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
           <div class="field-grid">
             <label>Basis Weight<input id="ft-bw" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
-            <label>Peso (lb)<input id="ft-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
+            <label><span data-i18n="weightLb">Weight (lb)</span><input id="ft-weight" type="number" inputmode="decimal" min="0" step="any" placeholder="520"></label>
           </div>
-          <div class="mandrel-row"><span>Mandrel</span><button class="mandrel active" data-target="ft" data-value="48">48”</button><button class="mandrel" data-target="ft" data-value="51">51”</button></div>
-          <div class="result-box"><span>Longitud</span><strong id="ft-result">—</strong><small id="ft-meta">Mandrel 48” predeterminado</small></div>
-          <button id="ft-calc" class="primary" type="button">Calcular FT</button>
+          <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="ft" data-value="48">48”</button><button class="mandrel" data-target="ft" data-value="51">51”</button></div>
+          <div class="result-box"><span data-i18n="length">Length</span><strong id="ft-result">—</strong><small id="ft-meta">48” mandrel (default)</small></div>
+          <button id="ft-calc" class="primary" type="button">Calculate FT</button>
         </div>
       </section>
 
       <section id="view-swrap" class="view">
         <div class="panel calculator-card">
-          <div class="panel-heading"><div><p class="eyebrow">CALCULADORA</p><h3>S-Wrap Speed</h3></div><span class="offline-ready">Offline</span></div>
+          <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>S-Wrap Speed</h3></div><span class="offline-ready">Offline</span></div>
           <div class="field-grid three">
-            <label>Peso actual<input id="sw-current" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
-            <label>Velocidad actual<input id="sw-speed" type="number" inputmode="decimal" min="0" step="any" placeholder="180"></label>
-            <label>Peso objetivo<input id="sw-target" type="number" inputmode="decimal" min="0" step="any" placeholder="12"></label>
+            <label><span data-i18n="currentWeight">Current weight</span><input id="sw-current" type="number" inputmode="decimal" min="0" step="any" placeholder="10"></label>
+            <label><span data-i18n="currentSpeed">Current speed</span><input id="sw-speed" type="number" inputmode="decimal" min="0" step="any" placeholder="180"></label>
+            <label><span data-i18n="targetWeight">Target weight</span><input id="sw-target" type="number" inputmode="decimal" min="0" step="any" placeholder="12"></label>
           </div>
-          <div class="result-box"><span>Nueva velocidad</span><strong id="sw-result">—</strong><small>Peso actual × velocidad ÷ peso objetivo</small></div>
-          <button id="sw-calc" class="primary" type="button">Calcular S-Wrap</button>
+          <div class="result-box"><span data-i18n="newSpeed">New speed</span><strong id="sw-result">—</strong><small id="sw-formula">Current weight × speed ÷ target weight</small></div>
+          <button id="sw-calc" class="primary" type="button">Calculate S-Wrap</button>
         </div>
       </section>
 
       <section class="panel history-panel">
-        <div class="panel-heading"><div><p class="eyebrow">LOCAL</p><h3>Historial reciente</h3></div><button id="clear-history" class="text-button" type="button">Borrar</button></div>
+        <div class="panel-heading"><div><p class="eyebrow" data-i18n="local">LOCAL</p><h3 data-i18n="recentHistory">Recent history</h3></div><button id="clear-history" class="text-button" type="button">Clear</button></div>
         <div id="history-list" class="history-list"></div>
       </section>
     </main>
 
-    <footer>Viejito 4.0 • Primera PWA funcional</footer>
+    <footer id="footer-text">Viejito 4.0 • First functional PWA</footer>
   </div>
   <div id="toast" class="toast"></div>
   <script src="app.js"></script>
