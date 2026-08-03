@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=4.8.0" rel="stylesheet"/>
+<link href="styles.css?v=4.9.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -58,11 +58,7 @@
     <span class="shift-dot" id="shift-dot"></span>
     <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
   </div>
-  <div class="shift-actions">
-    <button class="primary compact-action" id="start-shift" type="button">Start shift</button>
-    <button class="secondary compact-action" id="change-product" type="button" disabled>Change product</button>
-    <button class="text-button compact-action" id="end-shift" type="button" disabled>End shift</button>
-  </div>
+
 </div>
 </section>
 <div class="tool-workspace"><div class="calculator-column"><section class="view active" id="view-bw">
@@ -163,6 +159,11 @@
 <button class="quick-card active" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
 <button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small data-i18n="ftSubtitle">Calculate length</small></button>
 <button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small data-i18n="swrapSubtitle">Adjust speed</small></button>
+<div class="shift-rail-actions" aria-label="Shift controls">
+  <button class="shift-rail-button start" id="start-shift" type="button"><span>▶</span><strong>Start shift</strong></button>
+  <button class="shift-rail-button change" id="change-product" type="button" disabled><span>↻</span><strong>Changeover</strong></button>
+  <button class="shift-rail-button end" id="end-shift" type="button" disabled><span>■</span><strong>End of shift</strong></button>
+</div>
 </nav></div><section aria-live="polite" class="panel trend-panel waiting" id="trend-panel">
 <div class="panel-heading">
 <div><p class="eyebrow">SPRINT 2.2</p><h3 id="trend-title">Trend Predictor</h3></div>
@@ -195,7 +196,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 4.4 • Compact Plant Mode</footer>
+<footer id="footer-text">Industrial IA 4.9 • Smart Shift Mode</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -225,7 +226,7 @@
 <span class="chat-fab-label">Chat</span>
 </button>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=4.8.0"></script>
-<script src="app.js?v=4.8.0"></script>
+<script src="optimizer.js?v=4.9.0"></script>
+<script src="app.js?v=4.9.0"></script>
 </body>
 </html>
