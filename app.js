@@ -185,6 +185,8 @@ const state = {
   history: JSON.parse(localStorage.getItem('viejitoHistory') || '[]'),
   targetBW: Number(localStorage.getItem('viejitoTargetBW')) || DEFAULT_TARGET_BW,
   currentSWrap: Number(localStorage.getItem('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP,
+  product: localStorage.getItem('viejitoProduct') || '',
+  lineSpeed: Number(localStorage.getItem('viejitoLineSpeed')) || 0,
   latestOptimization: null,
   bwTrendHistory: JSON.parse(localStorage.getItem(TREND_HISTORY_KEY) || '[]'),
   latestTrend: null,
@@ -262,9 +264,18 @@ function saveOptimizerSettings(targetBW,currentSWrap){
   localStorage.setItem('viejitoTargetBW',String(state.targetBW));
   localStorage.setItem('viejitoCurrentSWrap',String(state.currentSWrap));
 }
+function currentProcessContext(){
+  const product=String($('bw-product')?.value||state.product||'').trim();
+  const lineSpeed=Number($('bw-line-speed')?.value||state.lineSpeed||0);
+  const mandrel=currentMandrel('bw');
+  state.product=product; state.lineSpeed=lineSpeed;
+  localStorage.setItem('viejitoProduct',product);
+  if(positive(lineSpeed)) localStorage.setItem('viejitoLineSpeed',String(lineSpeed));
+  return {product:product.toUpperCase(),lineSpeed:positive(lineSpeed)?lineSpeed:null,mandrel};
+}
 function optimizeBasisWeight(actualBW,targetBW=state.targetBW,currentSWrap=state.currentSWrap){
   saveOptimizerSettings(targetBW,currentSWrap);
-  const optimizer=new SmartOptimizer({targetBW:state.targetBW,currentSWrap:state.currentSWrap,roundMode:'nearest1',learningEngine:state.learningEngine});
+  const optimizer=new SmartOptimizer({targetBW:state.targetBW,currentSWrap:state.currentSWrap,roundMode:'nearest1',learningEngine:state.learningEngine,context:currentProcessContext()});
   return optimizer.evaluate(actualBW);
 }
 function optimizerAction(result){
@@ -334,7 +345,7 @@ function sanitizeTrendHistory(){
   state.bwTrendHistory=state.bwTrendHistory
     .map(item=>typeof item==='number'?{bw:item,time:new Date().toISOString()}:item)
     .filter(item=>item&&positive(Number(item.bw)))
-    .slice(-TREND_SAMPLE_SIZE);
+    .slice(-250);
 }
 function saveTrendHistory(){
   sanitizeTrendHistory();
@@ -348,7 +359,13 @@ function trendDirectionLabel(direction){
 function analyzeTrend(targetBW=state.targetBW,currentSWrap=state.currentSWrap){
   sanitizeTrendHistory();
   const predictor=new TrendPredictor({sampleSize:TREND_SAMPLE_SIZE,targetBW,tolerance:window.VIEJITO_TOLERANCES?.warning||0.30,preventiveStep:2});
-  state.latestTrend=predictor.analyze(state.bwTrendHistory.map(item=>Number(item.bw)),currentSWrap);
+  const context=currentProcessContext();
+  const matching=state.bwTrendHistory.filter(item=>{
+    const sameProduct=!context.product||String(item.product||'').toUpperCase()===context.product;
+    const sameMandrel=!context.mandrel||Number(item.mandrel||48)===Number(context.mandrel);
+    return sameProduct&&sameMandrel;
+  }).slice(-TREND_SAMPLE_SIZE);
+  state.latestTrend=predictor.analyze(matching.map(item=>Number(item.bw)),currentSWrap);
   return state.latestTrend;
 }
 function trendMessage(trend){
@@ -383,8 +400,9 @@ function renderTrendPanel(trend=analyzeTrend()){
 function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentSWrap,pair=null){
   if(!positive(bw)) return analyzeTrend(targetBW,currentSWrap);
   sanitizeTrendHistory();
-  state.bwTrendHistory.push({bw:Number(bw),winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,time:new Date().toISOString()});
-  state.bwTrendHistory=state.bwTrendHistory.slice(-TREND_SAMPLE_SIZE);
+  const context=currentProcessContext();
+  state.bwTrendHistory.push({bw:Number(bw),winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,lineSpeed:context.lineSpeed,time:new Date().toISOString()});
+  state.bwTrendHistory=state.bwTrendHistory.slice(-250);
   saveTrendHistory();
   const trend=analyzeTrend(targetBW,currentSWrap);
   renderTrendPanel(trend);
@@ -392,7 +410,7 @@ function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentS
 }
 
 function renderLearningDashboard(){
-  const stats=state.learningEngine.stats();
+  const stats=state.learningEngine.stats(currentProcessContext());
   $('dashboard-rolls').textContent=String(stats.count);
   $('dashboard-correction').textContent=stats.correction>0?`+${fmt(stats.correction,1)}`:fmt(stats.correction,1);
   $('dashboard-success').textContent=`${stats.successRate}%`;
@@ -410,7 +428,11 @@ function saveLearningResult(){
       currentSWrap:optimization.currentSWrap,
       formulaSuggestion:optimization.formulaSuggestion,
       appliedSWrap,
-      finalBW
+      finalBW,
+      ...currentProcessContext(),
+      winder1:optimization.winder1,
+      winder2:optimization.winder2,
+      averageBW:optimization.actualBW
     });
     $('learning-form').classList.add('hidden');
     $('final-bw').value='';
@@ -687,9 +709,9 @@ function applyLanguage(language, announce=false){
 }
 
 
-const SESSION_KEY='viejitoSessionV46';
-const SESSION_FIELDS=['bw-weight','bw-length','bw2-weight','bw2-length','bw-target','bw-current-swrap','ft-bw','ft-weight','sw-current','sw-speed','sw-target'];
-let pendingCut={winder1:null,winder2:null,mandrel:null};
+const SESSION_KEY='viejitoSessionV47';
+const SESSION_FIELDS=['bw-weight','bw-length','bw2-weight','bw2-length','bw-product','bw-line-speed','bw-target','bw-current-swrap','ft-bw','ft-weight','sw-current','sw-speed','sw-target'];
+let pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
 function safeJSON(value,fallback){try{return JSON.parse(value)||fallback;}catch{return fallback;}}
 function saveSession(){
   const fields={}; SESSION_FIELDS.forEach(id=>{const el=$(id);if(el)fields[id]=el.value;});
@@ -733,7 +755,7 @@ function calculateSingleWinder(index){
   const length=Number($(index===1?'bw-length':'bw2-length').value);
   const mandrel=currentMandrel('bw');
   const result=calculateBW(weight,length,mandrel);
-  pendingCut[`winder${index}`]=result; pendingCut.mandrel=mandrel;
+  pendingCut[`winder${index}`]=result; pendingCut[`winder${index}Input`]={weight,length}; pendingCut.mandrel=mandrel;
   $('bw-result').textContent=fmt(result);
   $('bw-meta').textContent=`${t(index===1?'winder1':'winder2')} • ${mandrel}” • ${state.language==='es'?'resultado provisional':state.language==='fr'?'résultat provisoire':'provisional result'}`;
   $('optimizer-panel').classList.add('hidden');
@@ -747,6 +769,7 @@ function completeDualWinderCut(){
   const average=(pendingCut.winder1+pendingCut.winder2)/2;
   const difference=Math.abs(pendingCut.winder1-pendingCut.winder2);
   const optimizer=optimizeBasisWeight(average,target,currentSWrap);
+  optimizer.winder1=pendingCut.winder1; optimizer.winder2=pendingCut.winder2; optimizer.mandrel=pendingCut.mandrel; optimizer.product=currentProcessContext().product; optimizer.lineSpeed=currentProcessContext().lineSpeed;
   const pair={winder1:pendingCut.winder1,winder2:pendingCut.winder2,average,hasWinder2:true,difference};
   const trend=recordBWForTrend(average,target,currentSWrap,pair);
   $('bw-result').textContent=fmt(average);
@@ -755,7 +778,7 @@ function completeDualWinderCut(){
   $('winder-imbalance').classList.toggle('warning',difference>0.30);
   renderOptimizerPanel(optimizer); renderTrendPanel(trend);
   addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
-  pendingCut={winder1:null,winder2:null,mandrel:null}; saveSession(); renderPendingCut();
+  pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
 }
 
 $('chat-form').addEventListener('submit',event=>{
@@ -810,6 +833,8 @@ selectMandrel('bw',state.mandrel);
 selectMandrel('ft',state.mandrel);
 $('bw-target').value=fmt(state.targetBW);
 $('bw-current-swrap').value=fmt(state.currentSWrap,1);
+$('bw-product').value=state.product;
+$('bw-line-speed').value=state.lineSpeed?fmt(state.lineSpeed,0):'';
 restoreSession();
 applyLanguage(state.language);
 renderLearningDashboard();
@@ -818,7 +843,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=4.6.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=4.7.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

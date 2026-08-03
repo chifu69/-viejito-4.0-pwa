@@ -14,8 +14,11 @@
 
   const GREEN_TOLERANCE = 0.25;
   const WARNING_TOLERANCE = 0.30;
-  const LEARNING_KEY = 'viejitoMachineLearningV1';
-  const MAX_RECORDS = 300;
+  const LEARNING_KEY = 'viejitoMachineLearningV2';
+  const LEGACY_LEARNING_KEY = 'viejitoMachineLearningV1';
+  const MAX_RECORDS = 1000;
+  const MIN_CONTEXT_RECORDS = 5;
+  const SPEED_TOLERANCE_RATIO = 0.12;
 
   const finitePositive = value => Number.isFinite(Number(value)) && Number(value) > 0;
   const round1 = value => Number(Number(value).toFixed(1));
@@ -28,7 +31,8 @@
 
     load() {
       try {
-        const parsed = JSON.parse(this.storage.getItem(LEARNING_KEY) || '[]');
+        const raw = this.storage.getItem(LEARNING_KEY) || this.storage.getItem(LEGACY_LEARNING_KEY) || '[]';
+        const parsed = JSON.parse(raw);
         return Array.isArray(parsed) ? parsed.filter(r => r && finitePositive(r.targetBW) && finitePositive(r.appliedSWrap) && finitePositive(r.finalBW)) : [];
       } catch (_) {
         return [];
@@ -56,6 +60,12 @@
         finalBW: Number(record.finalBW),
         idealSWrap: round1(idealSWrap),
         correction: round1(correction),
+        product: String(record.product || 'UNSPECIFIED').trim().toUpperCase(),
+        mandrel: finitePositive(record.mandrel) ? Number(record.mandrel) : 48,
+        lineSpeed: finitePositive(record.lineSpeed) ? Number(record.lineSpeed) : null,
+        winder1: finitePositive(record.winder1) ? Number(record.winder1) : null,
+        winder2: finitePositive(record.winder2) ? Number(record.winder2) : null,
+        averageBW: finitePositive(record.averageBW) ? Number(record.averageBW) : Number(record.initialBW),
         success: Math.abs(Number(record.finalBW) - Number(record.targetBW)) <= GREEN_TOLERANCE
       };
       this.records.push(saved);
@@ -68,12 +78,26 @@
       this.storage.removeItem(LEARNING_KEY);
     }
 
-    stats() {
-      const records = this.records.slice(-100);
-      const count = records.length;
-      if (!count) return {count:0, correction:0, confidence:0, successRate:0, spread:0};
+    matchingRecords(context = {}) {
+      const product = String(context.product || '').trim().toUpperCase();
+      const mandrel = finitePositive(context.mandrel) ? Number(context.mandrel) : null;
+      const lineSpeed = finitePositive(context.lineSpeed) ? Number(context.lineSpeed) : null;
+      return this.records.filter(record => {
+        if (product && String(record.product || '').toUpperCase() !== product) return false;
+        if (mandrel && Number(record.mandrel || 48) !== mandrel) return false;
+        if (lineSpeed && finitePositive(record.lineSpeed)) {
+          const allowed = Math.max(10, lineSpeed * SPEED_TOLERANCE_RATIO);
+          if (Math.abs(Number(record.lineSpeed) - lineSpeed) > allowed) return false;
+        }
+        return true;
+      });
+    }
 
-      // More recent rolls receive more weight, but older evidence still matters.
+    stats(context = {}) {
+      const records = this.matchingRecords(context).slice(-100);
+      const count = records.length;
+      if (!count) return {count:0, correction:0, confidence:0, successRate:0, spread:0, contextMatched:true};
+
       let weighted = 0, totalWeight = 0;
       records.forEach((record, index) => {
         const recencyWeight = 0.35 + 0.65 * ((index + 1) / count);
@@ -85,21 +109,21 @@
       const correction = weighted / totalWeight;
       const variance = records.reduce((sum, r) => sum + Math.pow(Number(r.correction) - correction, 2), 0) / count;
       const spread = Math.sqrt(variance);
-      const sampleScore = Math.min(1, count / 25);
-      const consistencyScore = Math.max(0, 1 - spread / 6);
+      const sampleScore = Math.min(1, count / 30);
+      const consistencyScore = Math.max(0, 1 - spread / 5);
       const confidence = Math.round(100 * sampleScore * consistencyScore);
       const successRate = Math.round(100 * records.filter(r => r.success).length / count);
-      return {count, correction:round1(correction), confidence, successRate, spread:round1(spread)};
+      return {count, correction:round1(correction), confidence, successRate, spread:round1(spread), contextMatched:true};
     }
 
-    recommend(formulaSuggestion, roundMode = 'nearest1') {
-      const stats = this.stats();
+    recommend(formulaSuggestion, roundMode = 'nearest1', context = {}) {
+      const stats = this.stats(context);
       let learned = Number(formulaSuggestion);
-      if (stats.count >= 3) learned += stats.correction;
+      if (stats.count >= MIN_CONTEXT_RECORDS) learned += stats.correction;
       if (roundMode === 'nearest5') learned = Math.round(learned / 5) * 5;
       else if (roundMode === 'exact') learned = round1(learned);
       else learned = Math.round(learned);
-      return {...stats, learnedSuggestion: learned, active: stats.count >= 3};
+      return {...stats, learnedSuggestion: learned, active: stats.count >= MIN_CONTEXT_RECORDS, minimumRequired:MIN_CONTEXT_RECORDS};
     }
   }
 
@@ -165,11 +189,12 @@
   }
 
   class SmartOptimizer {
-    constructor({ targetBW = 6.35, currentSWrap = 170, roundMode = 'nearest1', learningEngine = null } = {}) {
+    constructor({ targetBW = 6.35, currentSWrap = 170, roundMode = 'nearest1', learningEngine = null, context = {} } = {}) {
       this.targetBW = Number(targetBW);
       this.currentSWrap = Number(currentSWrap);
       this.roundMode = roundMode;
       this.learningEngine = learningEngine || new AdaptiveLearningEngine();
+      this.context = context || {};
       if (!finitePositive(this.targetBW)) throw new Error('Target BW must be greater than zero.');
       if (!finitePositive(this.currentSWrap)) throw new Error('Current S-Wrap must be greater than zero.');
     }
@@ -191,7 +216,7 @@
 
       const rawSuggested = this.currentSWrap * actual / this.targetBW;
       const formulaSuggestion = this.roundSpeed(rawSuggested);
-      const learning = this.learningEngine.recommend(formulaSuggestion, this.roundMode);
+      const learning = this.learningEngine.recommend(formulaSuggestion, this.roundMode, this.context);
       const suggestedSWrap = learning.active ? learning.learnedSuggestion : formulaSuggestion;
       const adjustment = Number((suggestedSWrap - this.currentSWrap).toFixed(1));
       const direction = adjustment < 0 ? 'decrease' : adjustment > 0 ? 'increase' : 'hold';

@@ -199,3 +199,5 @@ body.chat-open{overflow:hidden}
 .winder-block.measured{border-color:#70b879;box-shadow:0 0 0 2px rgba(112,184,121,.15)}
 .winder-block.measured .winder-heading small{color:#27813a;font-weight:800}
 .winder-block.pending{border-color:#f3a018}
+.process-context-inputs{margin-top:12px}
+.process-context-inputs label:first-child input{text-transform:uppercase}
