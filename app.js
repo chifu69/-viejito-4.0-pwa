@@ -40,9 +40,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.5',
+    introTitle: 'Industrial IA 5.6',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.5 • Plant Assistant'
+    footer: 'Industrial IA 5.6 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -68,9 +68,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.5',
+    introTitle: 'Industrial IA 5.6',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.5 • Asistente de planta'
+    footer: 'Industrial IA 5.6 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -96,9 +96,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.5',
+    introTitle: 'Industrial IA 5.6',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.5 • Assistant industriel'
+    footer: 'Industrial IA 5.6 • Assistant industriel'
   }
 };
 
@@ -591,12 +591,33 @@ function latestCompletedBWContext(){
   return {averageBW:Number(recent.bw),product:recent.product||'',mandrel:Number(recent.mandrel||48),extruder:Number(recent.extruder||0),shiftId:recent.shiftId||null,runId:recent.runId||null,time:recent.time,source:'trend-history',ageMs:age};
 }
 function currentSWrapForChat(){
+  // IMPORTANT: do not pass `positive` directly to Array.find(). Array.find
+  // supplies (value, index, array), while positive() validates every argument.
+  // That made a valid screen value look invalid and forced the chat to ask again.
   const screen=Number($('bw-current-swrap')?.value);
   const shift=Number(state.activeShift?.currentSWrap);
   const run=state.activeShift?.runs?.find(item=>item.id===state.activeShift?.runId);
   const runSpeed=Number(run?.swrap);
   const stored=Number(state.currentSWrap);
-  return [screen,shift,runSpeed,stored].find(positive)||null;
+  const persisted=Number(localStorage.getItem('viejitoCurrentSWrap'));
+  return [screen,shift,runSpeed,stored,persisted].find(value=>positive(Number(value)))||null;
+}
+
+function sharedOperationalContextForChat(){
+  // One source of truth shared by the main calculator and the chat.
+  const swrap=currentSWrapForChat();
+  const completed=latestCompletedBWContext();
+  const liveAverage=Number($('bw-result')?.dataset?.averageBw || $('bw-result')?.dataset?.value || 0);
+  const savedCut=(()=>{try{return JSON.parse(localStorage.getItem(LAST_COMPLETED_CUT_KEY)||'null');}catch(_){return null;}})();
+  const averageBW=positive(Number(completed?.averageBW))
+    ? Number(completed.averageBW)
+    : positive(liveAverage)
+      ? liveAverage
+      : positive(Number(savedCut?.averageBW))
+        ? Number(savedCut.averageBW)
+        : null;
+  const cut=completed || (positive(Number(savedCut?.averageBW)) ? {...savedCut,source:'persistent-completed-cut',ageMs:Date.now()-new Date(savedCut.time||0).getTime()} : null);
+  return {currentSWrap:swrap,averageBW,cut};
 }
 function formatContextAge(ageMs){
   const minutes=Math.max(0,Math.round(Number(ageMs||0)/60000));
@@ -636,12 +657,14 @@ function buildChatChangeoverRecommendation(flow,actualBW){
 function handleChangeoverChat(text){
   const request=detectChatChangeover(text);
   if(request){
-    const detectedSWrap=currentSWrapForChat();
-    const latestCut=latestCompletedBWContext();
+    const sharedContext=sharedOperationalContextForChat();
+    const detectedSWrap=sharedContext.currentSWrap;
+    const latestCut=sharedContext.cut;
+    const detectedAverageBW=sharedContext.averageBW;
     const options=request.matches?.length>1?chatLang(` I found ${request.matches.join(', ')}; I will use target ${request.target.toFixed(2)} unless you name the full sheet type.`,` Encontré ${request.matches.join(', ')}; usaré target ${request.target.toFixed(2)} a menos que escribas el sheet type completo.`,` J’ai trouvé ${request.matches.join(', ')}; j’utiliserai la cible ${request.target.toFixed(2)} sauf si vous indiquez le type complet.`):'';
-    if(positive(detectedSWrap)&&positive(Number(latestCut?.averageBW))){
+    if(positive(detectedSWrap)&&positive(Number(detectedAverageBW))){
       chatWorkflow=null;saveChatWorkflow();
-      return buildAutomaticChangeoverResponse({type:'changeover-advice',product:request.product,target:request.target,matches:request.matches||[],currentSWrap:detectedSWrap},Number(latestCut.averageBW),latestCut);
+      return buildAutomaticChangeoverResponse({type:'changeover-advice',product:request.product,target:request.target,matches:request.matches||[],currentSWrap:detectedSWrap},Number(detectedAverageBW),latestCut);
     }
     const stage=positive(detectedSWrap)?'actual-bw':'swrap';
     chatWorkflow={type:'changeover-advice',stage,product:request.product,target:request.target,matches:request.matches||[],currentSWrap:positive(detectedSWrap)?detectedSWrap:null,startedAt:new Date().toISOString()};
@@ -1281,7 +1304,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.5.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.6.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
