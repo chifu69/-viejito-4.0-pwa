@@ -237,11 +237,11 @@ body.chat-open{overflow:hidden}
 .product-choice-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 16px}.product-choice{border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:14px;padding:11px;text-align:left;display:grid;gap:3px}.product-choice strong{font-size:.95rem}.product-choice small{color:var(--muted)}.product-choice.selected,.product-choice:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent)}
 @media(max-width:520px){.product-dialog{padding:10px}.product-dialog-card{padding:16px;border-radius:20px}.product-choice-list{grid-template-columns:1fr 1fr}.product-choice{padding:10px 8px}}
 
-.optimizer-panel.red{border:2px solid #ff3030;background:radial-gradient(circle at 50% 0,rgba(255,0,0,.25),rgba(90,0,0,.12) 42%,var(--surface) 78%);box-shadow:0 0 0 4px rgba(255,0,0,.10),0 0 40px rgba(255,0,0,.30);animation:dangerPanelPulse 1.15s ease-in-out infinite}
+.optimizer-panel.red{border:2px solid #ff3030;background:radial-gradient(circle at 50% 0,rgba(255,0,0,.25),rgba(90,0,0,.12) 42%,var(--surface) 78%);box-shadow:0 0 0 4px rgba(255,0,0,.10),0 0 40px rgba(255,0,0,.30)}
 .optimizer-panel.red .optimizer-status-row{padding:12px;border-radius:14px;background:linear-gradient(135deg,#9f0b0b,#e11d1d);color:#fff;text-transform:uppercase;letter-spacing:.025em}
 .optimizer-panel.red .optimizer-status-row small{opacity:1;font-weight:800}.optimizer-panel.red .status-dot{background:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.22),0 0 18px #fff}
 .optimizer-panel.red .optimizer-action{font-size:1.08rem;color:#ff5252;text-transform:uppercase;font-weight:950}
-.result-status.red{border:2px solid #ff3030;background:linear-gradient(135deg,rgba(255,0,0,.25),rgba(115,0,0,.18));box-shadow:0 0 24px rgba(255,0,0,.32);animation:dangerStatusPulse .9s ease-in-out infinite}
+.result-status.red{border:2px solid #ff3030;background:linear-gradient(135deg,rgba(255,0,0,.25),rgba(115,0,0,.18));box-shadow:0 0 24px rgba(255,0,0,.32)}
 .result-status.red strong{font-size:.9rem!important;text-transform:uppercase}.result-box.red strong{color:#ff3434;text-shadow:0 0 16px rgba(255,0,0,.55)}
 @keyframes dangerPanelPulse{0%,100%{box-shadow:0 0 0 4px rgba(255,0,0,.08),0 0 24px rgba(255,0,0,.22)}50%{box-shadow:0 0 0 7px rgba(255,0,0,.16),0 0 50px rgba(255,0,0,.48)}}
 @keyframes dangerStatusPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
@@ -252,3 +252,14 @@ body.chat-open{overflow:hidden}
 .extruder-picker{display:grid;gap:8px;margin:4px 0 2px}.extruder-picker>span{font-weight:800;color:var(--muted)}
 .extruder-options{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.extruder-option{min-height:48px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);color:var(--text);font-weight:900;padding:8px 4px}.extruder-option.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}.extruder-picker.hidden{display:none}
 @media(max-width:480px){.extruder-options{grid-template-columns:repeat(2,1fr)}}
+
+
+/* V5.2 — live S-Wrap sync and five-second operator alert */
+.product-swrap-label{display:block;margin:12px 0 4px}.product-swrap-label input{margin-top:7px;border-color:color-mix(in srgb,var(--accent) 45%,var(--line));font-weight:900}
+.optimizer-panel.red.danger-flash{animation:dangerPanelFlash .5s ease-in-out 10}
+.result-status.red.danger-flash{animation:dangerStatusFlash .5s ease-in-out 10}
+#optimizer-suggested.danger-flash,#learned-suggestion.danger-flash,#formula-suggestion.danger-flash{display:inline-block;color:#fff;background:#e00000;border:3px solid #ffef00;border-radius:10px;padding:5px 10px;box-shadow:0 0 22px rgba(255,0,0,.9);animation:suggestedSpeedFlash .5s steps(2,end) 10}
+@keyframes dangerPanelFlash{0%,100%{filter:none;transform:scale(1)}50%{filter:brightness(1.65) saturate(1.5);transform:scale(1.01);box-shadow:0 0 0 8px rgba(255,0,0,.24),0 0 65px rgba(255,0,0,.78)}}
+@keyframes dangerStatusFlash{0%,100%{transform:scale(1);filter:none}50%{transform:scale(1.045);filter:brightness(1.7)}}
+@keyframes suggestedSpeedFlash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.18;transform:scale(1.16)}}
+@media(prefers-reduced-motion:reduce){.danger-flash{animation-duration:1s!important;animation-iteration-count:5!important}}

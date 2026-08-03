@@ -345,6 +345,7 @@ function renderOptimizerPanel(result){
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
   renderResultStatus(result);
+  runDangerFlash(result);
 }
 
 function sanitizeTrendHistory(){
@@ -751,9 +752,9 @@ let productDialogMode='change';
 let selectedExtruder=1;
 function productDialogText(key){
   const copy={
-    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',extruder:'Select extruder',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
-    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',extruder:'Selecciona el extruder',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
-    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',extruder:'Sélectionnez l’extrudeuse',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
+    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',swrap:'Current S-Wrap',extruder:'Select extruder',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
+    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',swrap:'S-Wrap actual',extruder:'Selecciona el extruder',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
+    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',swrap:'S-Wrap actuel',extruder:'Sélectionnez l’extrudeuse',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
   };
   return (copy[state.language]||copy.en)[key]||key;
 }
@@ -780,6 +781,7 @@ function openProductDialog(mode='change'){
   $('product-dialog-title').textContent=productDialogText('title');
   $('product-dialog-hint').textContent=productDialogText('hint');
   $('product-target-copy').textContent=productDialogText('target');
+  if($('product-swrap-copy')) $('product-swrap-copy').textContent=productDialogText('swrap');
   $('product-dialog-confirm').textContent=productDialogText(mode==='start'?'confirmStart':'confirmChange');
   $('product-dialog-cancel').textContent=productDialogText('cancel');
   const picker=$('extruder-picker');
@@ -788,6 +790,7 @@ function openProductDialog(mode='change'){
   selectedExtruder=Number(state.activeShift?.extruder)||selectedExtruder||1;
   document.querySelectorAll('.extruder-option').forEach(button=>button.classList.toggle('selected',Number(button.dataset.extruder)===selectedExtruder));
   $('product-search').value=mode==='start'?($('bw-product').value||state.product||''):'';
+  if($('product-swrap')) $('product-swrap').value=fmt(Number($('bw-current-swrap').value||state.currentSWrap||180),1);
   updateProductDialogPreview();
   dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden','false');
   setTimeout(()=>$('product-search').focus(),50);
@@ -829,17 +832,17 @@ function clearPendingCutForRun(){
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
   renderPendingCut();
 }
-function commitStartShift(product,extruder=selectedExtruder){
+function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null){
   const name=new Date().toLocaleDateString();
   product=normalizeProduct(product);
   if(!product)return showToast(shiftText('needProduct'));
   const target=syncTargetFromProduct(product);
-  const swrap=Number($('bw-current-swrap').value||state.currentSWrap);
+  const swrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
   if(!positive(target,swrap))return showToast(t('invalidNumbers'));
   extruder=Number(extruder);
   if(![1,2,3,4].includes(extruder)) extruder=1;
   const now=new Date().toISOString();
-  state.activeShift={id:newId('shift'),name,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,product,targetBW:target,startedAt:now}]};
+  state.activeShift={id:newId('shift'),name,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,product,targetBW:target,swrap,startedAt:now}]};
   state.activeShift.runs[0].id=state.activeShift.runId;
   $('bw-product').value=product; $('bw-target').value=String(target); $('bw-current-swrap').value=fmt(swrap,1);
   state.product=product; saveOptimizerSettings(target,swrap); clearPendingCutForRun(); saveShift(); saveSession();
@@ -847,20 +850,23 @@ function commitStartShift(product,extruder=selectedExtruder){
   closeProductDialog();
 }
 function startShift(){ openProductDialog('start'); }
-function commitProductChange(product){
-  if(!state.activeShift)return commitStartShift(product);
+function commitProductChange(product,dialogSWrap=null){
+  if(!state.activeShift)return commitStartShift(product,selectedExtruder,dialogSWrap);
   if((Number.isFinite(pendingCut.winder1)||Number.isFinite(pendingCut.winder2))&&!confirm(shiftText('pendingDiscard')))return false;
   product=normalizeProduct(product);
   if(!product)return false;
   const old=state.activeShift.product;
   const target=syncTargetFromProduct(product);
   if(!target)return showToast(shiftText('needProduct'));
-  if(product===old){$('bw-product').value=product;saveOptimizerSettings(target,Number($('bw-current-swrap').value||state.currentSWrap));closeProductDialog();return true;}
+  const swrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
+  if(!positive(swrap)) return showToast(t('invalidNumbers'));
+  $('bw-current-swrap').value=fmt(swrap,1); state.currentSWrap=swrap;
+  if(product===old){$('bw-product').value=product;saveOptimizerSettings(target,swrap);renderShiftPanel();closeProductDialog();return true;}
   const currentRun=state.activeShift.runs.find(r=>r.id===state.activeShift.runId);if(currentRun)currentRun.endedAt=new Date().toISOString();
-  const run={id:newId('run'),extruder:state.activeShift.extruder,product,targetBW:target,startedAt:new Date().toISOString()};
+  const run={id:newId('run'),extruder:state.activeShift.extruder,product,targetBW:target,swrap,startedAt:new Date().toISOString()};
   state.activeShift.product=product;state.activeShift.runId=run.id;state.activeShift.runs.push(run);
   state.product=product;$('bw-product').value=product;$('bw-target').value=String(target);
-  saveOptimizerSettings(target,Number($('bw-current-swrap').value||state.currentSWrap));
+  saveOptimizerSettings(target,swrap);
   clearPendingCutForRun();saveShift();saveSession();
   renderShiftPanel();renderTrendPanel(analyzeTrend());renderLearningDashboard();showToast(shiftText('changed',{product}));closeProductDialog();return true;
 }
@@ -947,6 +953,32 @@ function completeDualWinderCut(){
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
 }
 
+
+function syncCurrentSWrap(value,{save=true}={}){
+  const swrap=Number(value);
+  if(!positive(swrap)) return false;
+  state.currentSWrap=swrap;
+  if(state.activeShift){
+    state.activeShift.currentSWrap=swrap;
+    const run=state.activeShift.runs?.find(item=>item.id===state.activeShift.runId);
+    if(run) run.swrap=swrap;
+    if(save) saveShift();
+  }
+  if(save){ saveOptimizerSettings(Number($('bw-target').value||state.targetBW),swrap); saveSession(); }
+  renderShiftPanel();
+  return true;
+}
+let dangerFlashTimer=null;
+function runDangerFlash(result){
+  const targets=[$('optimizer-panel'),$('result-status'),$('optimizer-suggested'),$('learned-suggestion'),$('formula-suggestion')].filter(Boolean);
+  targets.forEach(el=>el.classList.remove('danger-flash'));
+  if(dangerFlashTimer) clearTimeout(dangerFlashTimer);
+  if(result.level!=='red'||!result.suggestAdjustment) return;
+  void document.body.offsetWidth;
+  targets.forEach(el=>el.classList.add('danger-flash'));
+  dangerFlashTimer=setTimeout(()=>targets.forEach(el=>el.classList.remove('danger-flash')),5000);
+}
+
 $('chat-form').addEventListener('submit',event=>{
   event.preventDefault();
   const input=$('chat-input');
@@ -1008,9 +1040,11 @@ $('product-dialog-cancel')?.addEventListener('click',closeProductDialog);
 $('product-dialog')?.addEventListener('click',event=>{if(event.target===$('product-dialog'))closeProductDialog();});
 $('product-dialog-confirm')?.addEventListener('click',()=>{
   const product=normalizeProduct($('product-search').value);
-  if(productDialogMode==='start')commitStartShift(product,selectedExtruder);else commitProductChange(product);
+  const swrap=Number($('product-swrap')?.value);
+  if(productDialogMode==='start')commitStartShift(product,selectedExtruder,swrap);else commitProductChange(product,swrap);
 });
 $('bw-product').addEventListener('input',()=>{syncTargetFromProduct($('bw-product').value);saveSession();});
+$('bw-current-swrap').addEventListener('input',()=>syncCurrentSWrap($('bw-current-swrap').value));
 $('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem('viejitoTheme',document.documentElement.classList.contains('light')?'light':'dark');});
 window.addEventListener('online',updateConnection);
 window.addEventListener('offline',updateConnection);
@@ -1035,7 +1069,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.0.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.2.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
