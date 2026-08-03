@@ -263,3 +263,34 @@ body.chat-open{overflow:hidden}
 @keyframes dangerStatusFlash{0%,100%{transform:scale(1);filter:none}50%{transform:scale(1.045);filter:brightness(1.7)}}
 @keyframes suggestedSpeedFlash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.18;transform:scale(1.16)}}
 @media(prefers-reduced-motion:reduce){.danger-flash{animation-duration:1s!important;animation-iteration-count:5!important}}
+
+/* V5.3 — immediate per-winder status and operator-first alerts */
+.winder-block{transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.winder-block.green{border:2px solid #31b85c;box-shadow:0 0 0 4px rgba(49,184,92,.12);background:color-mix(in srgb,#31b85c 5%,var(--surface2))}
+.winder-block.yellow{border:2px solid #e7a400;box-shadow:0 0 0 4px rgba(231,164,0,.14);background:color-mix(in srgb,#e7a400 6%,var(--surface2))}
+.winder-block.red{border:2px solid #ff3030;box-shadow:0 0 0 4px rgba(255,48,48,.14),0 0 24px rgba(255,48,48,.18);background:color-mix(in srgb,#ff3030 6%,var(--surface2))}
+.winder-save-display{margin-left:auto;min-width:126px;text-align:right;display:grid;justify-items:end;line-height:1.05}
+.winder-save-display>span{font-size:.68rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.winder-save-display>strong{display:none;font-size:1.55rem;line-height:1;margin-top:4px;font-weight:950;color:var(--text)}
+.winder-save-display>strong.visible{display:block}
+.winder-save-display>small{font-size:.66rem;margin-top:5px;font-weight:950;letter-spacing:.035em}
+.winder-block.green .winder-save-display span,.winder-block.green .winder-save-display strong,.winder-block.green .winder-save-display small{color:#238b43}
+.winder-block.yellow .winder-save-display span,.winder-block.yellow .winder-save-display strong,.winder-block.yellow .winder-save-display small{color:#b27b00}
+.winder-block.red .winder-save-display span,.winder-block.red .winder-save-display strong,.winder-block.red .winder-save-display small{color:#e52222}
+:root:not(.light) .winder-block.green .winder-save-display span,:root:not(.light) .winder-block.green .winder-save-display strong,:root:not(.light) .winder-block.green .winder-save-display small{color:#59db7d}
+:root:not(.light) .winder-block.yellow .winder-save-display span,:root:not(.light) .winder-block.yellow .winder-save-display strong,:root:not(.light) .winder-block.yellow .winder-save-display small{color:#ffc23d}
+:root:not(.light) .winder-block.red .winder-save-display span,:root:not(.light) .winder-block.red .winder-save-display strong,:root:not(.light) .winder-block.red .winder-save-display small{color:#ff5b5b}
+@media(max-width:520px){.winder-save-display{min-width:112px}.winder-save-display>strong{font-size:1.38rem}}
+
+/* iOS-reliable five-second flash: JavaScript toggles flash-on every 300 ms. */
+.danger-flash{transition:filter .08s linear,transform .08s linear,box-shadow .08s linear,opacity .08s linear!important}
+.optimizer-panel.red.danger-flash.flash-on{filter:brightness(1.65) saturate(1.55)!important;transform:scale(1.012)!important;box-shadow:0 0 0 9px rgba(255,0,0,.28),0 0 72px rgba(255,0,0,.85)!important}
+.result-status.red.danger-flash.flash-on{filter:brightness(1.7)!important;transform:scale(1.05)!important;background:#ff1d1d!important}
+#optimizer-suggested.danger-flash{display:inline-block;border-radius:12px;padding:6px 12px;border:3px solid #ffef00;background:#c90000;color:#fff;font-size:1.65rem!important;line-height:1;font-weight:950;box-shadow:0 0 20px rgba(255,0,0,.72)}
+#optimizer-suggested.danger-flash.flash-on{opacity:.18!important;transform:scale(1.18)!important;background:#ff0000!important;box-shadow:0 0 34px rgba(255,0,0,1)!important}
+
+/* Strong contrast for active-shift header in both themes. */
+:root.light .shift-control-panel.active .shift-status-copy strong{color:#172033!important}
+:root.light .shift-control-panel.active .shift-status-copy small{color:#506176!important}
+:root:not(.light) .shift-control-panel.active .shift-status-copy strong{color:#f7f9ff!important}
+:root:not(.light) .shift-control-panel.active .shift-status-copy small{color:#b9c4d4!important}

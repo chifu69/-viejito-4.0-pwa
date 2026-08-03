@@ -23,7 +23,7 @@ const translations = {
     heroDescription: 'Works without a signal for BW, FT and S-Wrap.', quickTools: 'Quick tools',
     chat: 'Chat', chatSubtitle: 'Type naturally', openChat: 'Open chat', closeChat: 'Close chat', assistantOnline: 'Online assistant', bwSubtitle: '48” or 51” mandrel',
     ftSubtitle: 'Calculate length', swrapSubtitle: 'Adjust speed', calculator: 'CALCULATOR',
-    weightLb: 'Weight (lb)', lengthFt: 'Length (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Required', winder2Optional: 'Optional — use when two rolls run together', averageBW: 'Average Basis Weight', imbalance: 'Winder difference', mandrel: 'Mandrel', length: 'Length',
+    weightLb: 'Weight (lb)', lengthFt: 'Length (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Required', winder2Optional: 'Required', averageBW: 'Average Basis Weight', imbalance: 'Winder difference', mandrel: 'Mandrel', length: 'Length',
     currentWeight: 'Current weight', currentSpeed: 'Current speed', targetWeight: 'Target weight',
     newSpeed: 'New speed', swFormula: 'Current weight × speed ÷ target weight',
     local: 'LOCAL', recentHistory: 'Recent history', clear: 'Clear', send: 'Send',
@@ -51,7 +51,7 @@ const translations = {
     heroDescription: 'Funciona sin señal para BW, FT y S-Wrap.', quickTools: 'Herramientas rápidas',
     chat: 'Chat', chatSubtitle: 'Escribe como hablas', openChat: 'Abrir chat', closeChat: 'Cerrar chat', assistantOnline: 'Asistente en línea', bwSubtitle: 'Mandrel 48” o 51”',
     ftSubtitle: 'Calcula longitud', swrapSubtitle: 'Ajusta velocidad', calculator: 'CALCULADORA',
-    weightLb: 'Peso (lb)', lengthFt: 'Longitud (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Obligatorio', winder2Optional: 'Opcional — úsalo cuando salgan dos rollos juntos', averageBW: 'Promedio de Basis Weight', imbalance: 'Diferencia entre winders', mandrel: 'Mandrel', length: 'Longitud',
+    weightLb: 'Peso (lb)', lengthFt: 'Longitud (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Obligatorio', winder2Optional: 'Obligatorio', averageBW: 'Promedio de Basis Weight', imbalance: 'Diferencia entre winders', mandrel: 'Mandrel', length: 'Longitud',
     currentWeight: 'Peso actual', currentSpeed: 'Velocidad actual', targetWeight: 'Peso objetivo',
     newSpeed: 'Nueva velocidad', swFormula: 'Peso actual × velocidad ÷ peso objetivo',
     local: 'LOCAL', recentHistory: 'Historial reciente', clear: 'Borrar', send: 'Enviar',
@@ -79,7 +79,7 @@ const translations = {
     heroDescription: 'Fonctionne sans réseau pour BW, FT et S-Wrap.', quickTools: 'Outils rapides',
     chat: 'Discussion', chatSubtitle: 'Écrivez naturellement', openChat: 'Ouvrir le chat', closeChat: 'Fermer le chat', assistantOnline: 'Assistant en ligne', bwSubtitle: 'Mandrin 48” ou 51”',
     ftSubtitle: 'Calculer la longueur', swrapSubtitle: 'Régler la vitesse', calculator: 'CALCULATRICE',
-    weightLb: 'Poids (lb)', lengthFt: 'Longueur (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Obligatoire', winder2Optional: 'Optionnel — à utiliser lorsque deux rouleaux sortent ensemble', averageBW: 'Moyenne Basis Weight', imbalance: 'Écart entre winders', mandrel: 'Mandrin', length: 'Longueur',
+    weightLb: 'Poids (lb)', lengthFt: 'Longueur (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Obligatoire', winder2Optional: 'Obligatoire', averageBW: 'Moyenne Basis Weight', imbalance: 'Écart entre winders', mandrel: 'Mandrin', length: 'Longueur',
     currentWeight: 'Poids actuel', currentSpeed: 'Vitesse actuelle', targetWeight: 'Poids cible',
     newSpeed: 'Nouvelle vitesse', swFormula: 'Poids actuel × vitesse ÷ poids cible',
     local: 'LOCAL', recentHistory: 'Historique récent', clear: 'Effacer', send: 'Envoyer',
@@ -234,7 +234,7 @@ const optimizerText = {
     targetBW:'Target BW', currentSWrap:'Current S-Wrap', difference:'Difference', suggestedSWrap:'Suggested S-Wrap',
     tooLight:'Too light', tooHeavy:'Too heavy', greenStatus:'ON TARGET', yellowStatus:'NEAR LIMIT', redStatus:'OUT OF RANGE',
     greenMessage:'Within ±0.20. No adjustment needed.', yellowMessage:'Between 0.20 and 0.30 from target. Warning — watch the next cut and prepare an S-Wrap correction.',
-    redMessage:'DANGER: BW is 0.30 or more from target. The operator must change the S-Wrap now.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
+    redMessage:'Adjust the S-Wrap now.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
     decrease:'Decrease S-Wrap by {amount}, from {current} to {suggested}.', increase:'Increase S-Wrap by {amount}, from {current} to {suggested}.',
     hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}', formulaSuggestion:'Formula suggestion', learnedSuggestion:'Learned suggestion', confidence:'Confidence', rollsLearned:'Rolls learned', recordResult:'Record actual result', learningQuestion:'After making the change, enter the S-Wrap you used and the final BW.', appliedSWrap:'Applied S-Wrap', finalBW:'Final BW', saveLearn:'Save and learn', cancel:'Cancel', learningSaved:'Result saved. Viejito learned from this roll.', machineLearning:'Machine learning', resetLearning:'Reset learning', averageCorrection:'Average correction', successRate:'Success rate', deviceOnly:'Learning is stored only on this device.', resetDone:'Machine learning was reset.', trendPredictor:'Trend Predictor', trendWaiting:'Add {remaining} more BW roll(s) to activate the prediction.', trendStable:'The last 5 rolls are stable. No preventive change is recommended.', trendUp:'BW is increasing by about {slope} per roll. The next roll is projected at {projected}. Lower S-Wrap by {amount} points now, from {current} to {suggested}.', trendDown:'BW is decreasing by about {slope} per roll. The next roll is projected at {projected}. Raise S-Wrap by {amount} points now, from {current} to {suggested}.', trendProjected:'Projected next BW', trendDirection:'Direction', trendConsistency:'Consistency', trendRolls:'Last rolls', trendClear:'Clear trend', trendCleared:'BW trend history cleared.', trendUpLabel:'Increasing', trendDownLabel:'Decreasing', trendStableLabel:'Stable'
   },
@@ -250,7 +250,7 @@ const optimizerText = {
     targetBW:'BW cible', currentSWrap:'S-Wrap actuel', difference:'Différence', suggestedSWrap:'S-Wrap suggéré',
     tooLight:'Trop léger', tooHeavy:'Trop lourd', greenStatus:'DANS LA CIBLE', yellowStatus:'PRÈS DE LA LIMITE', redStatus:'HORS PLAGE',
     greenMessage:'Dans ±0,20. Aucun réglage nécessaire.', yellowMessage:'Entre 0,20 et moins de 0,30 de la cible. Attention : surveillez la prochaine coupe et préparez une correction du S-Wrap.',
-    redMessage:'DANGER : le BW est à 0,30 ou plus de la cible. L’opérateur doit modifier le S-Wrap maintenant.', noChange:'Gardez le S-Wrap à {speed}. Aucun changement recommandé.',
+    redMessage:'Modifiez le S-Wrap maintenant.', noChange:'Gardez le S-Wrap à {speed}. Aucun changement recommandé.',
     decrease:'Réduisez le S-Wrap de {amount}, de {current} à {suggested}.', increase:'Augmentez le S-Wrap de {amount}, de {current} à {suggested}.',
     hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}', formulaSuggestion:'Suggestion par formule', learnedSuggestion:'Suggestion apprise', confidence:'Confiance', rollsLearned:'Rouleaux appris', recordResult:'Enregistrer le résultat réel', learningQuestion:'Après le changement, saisissez le S-Wrap utilisé et le BW final.', appliedSWrap:'S-Wrap appliqué', finalBW:'BW final', saveLearn:'Enregistrer et apprendre', cancel:'Annuler', learningSaved:'Résultat enregistré. Viejito a appris de ce rouleau.', machineLearning:'Apprentissage machine', resetLearning:'Réinitialiser', averageCorrection:'Correction moyenne', successRate:'Taux de réussite', deviceOnly:'Les données restent uniquement sur cet appareil.', resetDone:'Apprentissage réinitialisé.', trendPredictor:'Prédicteur de tendance', trendWaiting:'Ajoutez encore {remaining} rouleau(x) BW pour activer la prévision.', trendStable:'Les 5 derniers rouleaux sont stables. Aucun changement préventif recommandé.', trendUp:'Le BW augmente d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Réduisez le S-Wrap de {amount} points, de {current} à {suggested}.', trendDown:'Le BW diminue d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Augmentez le S-Wrap de {amount} points, de {current} à {suggested}.', trendProjected:'Prochain BW estimé', trendDirection:'Direction', trendConsistency:'Cohérence', trendRolls:'Derniers rouleaux', trendClear:'Effacer la tendance', trendCleared:'Historique de tendance BW effacé.', trendUpLabel:'En hausse', trendDownLabel:'En baisse', trendStableLabel:'Stable'
   }
@@ -295,7 +295,15 @@ function optimizerAction(result){
 function optimizerStatus(result){
   if(result.level==='green') return {title:ot('greenStatus'),message:ot('greenMessage')};
   if(result.level==='yellow') return {title:ot('yellowStatus'),message:ot('yellowMessage')};
-  return {title:ot('redStatus'),message:ot('redMessage')};
+  const current=Number(result.currentSWrap);
+  const suggested=Number(result.suggestedSWrap);
+  const change=Number.isFinite(current)&&Number.isFinite(suggested)?suggested-current:0;
+  const direction=change>0
+    ? (state.language==='es'?'SUBIR':state.language==='fr'?'AUGMENTER':'INCREASE')
+    : (state.language==='es'?'BAJAR':state.language==='fr'?'RÉDUIRE':'DECREASE');
+  const label=state.language==='es'?'S-Wrap sugerido':state.language==='fr'?'S-Wrap suggéré':'Suggested S-Wrap';
+  const amount=Math.abs(change);
+  return {title:ot('redStatus'),message:`${label}: ${fmt(suggested,1)} • ${direction} ${amount?fmt(amount,1):''}`.trim()};
 }
 function optimizerMarkup(result){
   const status=optimizerStatus(result);
@@ -911,13 +919,31 @@ function waitingSecondMessage(){
   if(state.language==='fr') return "Winder enregistré. En attente de l’autre winder; aucune tendance ni suggestion pour le moment.";
   return 'Winder saved. Waiting for the other winder; no trend or recommendation is recorded yet.';
 }
+function individualWinderStatus(value){
+  if(!Number.isFinite(value)) return {level:'idle',label:'',difference:null};
+  const target=Number($('bw-target')?.value||state.targetBW);
+  if(!positive(target)) return {level:'idle',label:'',difference:null};
+  const difference=Math.abs(value-target);
+  if(difference<=0.20) return {level:'green',label:state.language==='es'?'EN OBJETIVO':state.language==='fr'?'DANS LA CIBLE':'ON TARGET',difference};
+  if(difference<0.30) return {level:'yellow',label:state.language==='es'?'ADVERTENCIA':state.language==='fr'?'ATTENTION':'WARNING',difference};
+  return {level:'red',label:state.language==='es'?'FUERA DE RANGO':state.language==='fr'?'HORS PLAGE':'OUT OF RANGE',difference};
+}
+function renderWinderSaved(index,value){
+  const block=document.querySelector(index===1?'#bw-weight':'#bw2-weight')?.closest('.winder-block');
+  const label=$(index===1?'winder1-required':'winder2-optional');
+  const valueEl=$(index===1?'winder1-saved-bw':'winder2-saved-bw');
+  const stateEl=$(index===1?'winder1-state':'winder2-state');
+  const status=individualWinderStatus(value);
+  block?.classList.remove('measured','green','yellow','red');
+  if(Number.isFinite(value)) block?.classList.add('measured',status.level);
+  label.textContent=Number.isFinite(value)?'Saved BW':t('required');
+  valueEl.textContent=Number.isFinite(value)?fmt(value):'—';
+  valueEl.classList.toggle('visible',Number.isFinite(value));
+  stateEl.textContent=Number.isFinite(value)?status.label:'';
+}
 function renderPendingCut(){
-  const b1=document.querySelector('#bw-weight')?.closest('.winder-block');
-  const b2=document.querySelector('#bw2-weight')?.closest('.winder-block');
-  b1?.classList.toggle('measured',Number.isFinite(pendingCut.winder1));
-  b2?.classList.toggle('measured',Number.isFinite(pendingCut.winder2));
-  $('winder1-required').textContent=Number.isFinite(pendingCut.winder1)?`${state.language==='es'?'Guardado':state.language==='fr'?'Enregistré':'Saved'}: ${fmt(pendingCut.winder1)}`:t('required');
-  $('winder2-optional').textContent=Number.isFinite(pendingCut.winder2)?`${state.language==='es'?'Guardado':state.language==='fr'?'Enregistré':'Saved'}: ${fmt(pendingCut.winder2)}`:t('winder2Optional');
+  renderWinderSaved(1,pendingCut.winder1);
+  renderWinderSaved(2,pendingCut.winder2);
   $('winder-results').classList.toggle('hidden',!(Number.isFinite(pendingCut.winder1)||Number.isFinite(pendingCut.winder2)));
   $('bw1-result').textContent=Number.isFinite(pendingCut.winder1)?fmt(pendingCut.winder1):'—';
   $('bw2-result').textContent=Number.isFinite(pendingCut.winder2)?fmt(pendingCut.winder2):'—';
@@ -969,16 +995,23 @@ function syncCurrentSWrap(value,{save=true}={}){
   return true;
 }
 let dangerFlashTimer=null;
+let dangerFlashInterval=null;
 function runDangerFlash(result){
-  const targets=[$('optimizer-panel'),$('result-status'),$('optimizer-suggested'),$('learned-suggestion'),$('formula-suggestion')].filter(Boolean);
-  targets.forEach(el=>el.classList.remove('danger-flash'));
+  const targets=[$('optimizer-panel'),$('result-status'),$('optimizer-suggested')].filter(Boolean);
   if(dangerFlashTimer) clearTimeout(dangerFlashTimer);
+  if(dangerFlashInterval) clearInterval(dangerFlashInterval);
+  targets.forEach(el=>el.classList.remove('danger-flash','flash-on'));
   if(result.level!=='red'||!result.suggestAdjustment) return;
-  void document.body.offsetWidth;
+  let on=false;
+  const toggle=()=>{on=!on;targets.forEach(el=>el.classList.toggle('flash-on',on));};
   targets.forEach(el=>el.classList.add('danger-flash'));
-  dangerFlashTimer=setTimeout(()=>targets.forEach(el=>el.classList.remove('danger-flash')),5000);
+  toggle();
+  dangerFlashInterval=setInterval(toggle,300);
+  dangerFlashTimer=setTimeout(()=>{
+    clearInterval(dangerFlashInterval); dangerFlashInterval=null;
+    targets.forEach(el=>el.classList.remove('danger-flash','flash-on'));
+  },5000);
 }
-
 $('chat-form').addEventListener('submit',event=>{
   event.preventDefault();
   const input=$('chat-input');
@@ -1049,6 +1082,7 @@ $('theme-toggle').addEventListener('click',()=>{document.documentElement.classLi
 window.addEventListener('online',updateConnection);
 window.addEventListener('offline',updateConnection);
 SESSION_FIELDS.forEach(id=>$(id)?.addEventListener('input',saveSession));
+$('bw-target')?.addEventListener('input',renderPendingCut);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveSession();});
 window.addEventListener('pagehide',saveSession);
 

@@ -65,15 +65,15 @@
 <div class="panel calculator-card">
 <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
 <div class="winder-block">
-<div class="winder-heading"><strong id="winder1-title">Winder 1</strong><small id="winder1-required">Required</small></div>
+<div class="winder-heading"><strong id="winder1-title">Winder 1</strong><div class="winder-save-display" id="winder1-save-display"><span id="winder1-required">Required</span><strong id="winder1-saved-bw">—</strong><small id="winder1-state"></small></div></div>
 <div class="field-grid">
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw-weight" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
 <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
 </div>
 <button class="secondary winder-calc" id="winder1-calc" type="button">Calculate Winder 1</button>
 </div>
-<div class="winder-block optional-winder">
-<div class="winder-heading"><strong id="winder2-title">Winder 2</strong><small id="winder2-optional">Optional — use when two rolls run together</small></div>
+<div class="winder-block">
+<div class="winder-heading"><strong id="winder2-title">Winder 2</strong><div class="winder-save-display" id="winder2-save-display"><span id="winder2-optional">Required</span><strong id="winder2-saved-bw">—</strong><small id="winder2-state"></small></div></div>
 <div class="field-grid">
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw2-weight" inputmode="decimal" min="0" placeholder="515" step="any" type="number"/></label>
 <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw2-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
@@ -250,7 +250,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.2.0"></script>
-<script src="app.js?v=5.2.0"></script>
+<script src="optimizer.js?v=5.3.0"></script>
+<script src="app.js?v=5.3.0"></script>
 </body>
 </html>
