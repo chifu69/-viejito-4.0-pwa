@@ -275,6 +275,7 @@ function currentProcessContext(){
   return {
     product:product.toUpperCase(),
     mandrel,
+    extruder:Number(state.activeShift?.extruder)||null,
     shiftId:state.activeShift?.id||null,
     runId:state.activeShift?.runId||null
   };
@@ -369,8 +370,9 @@ function analyzeTrend(targetBW=state.targetBW,currentSWrap=state.currentSWrap){
   const matching=state.bwTrendHistory.filter(item=>{
     const sameProduct=!context.product||String(item.product||'').toUpperCase()===context.product;
     const sameMandrel=!context.mandrel||Number(item.mandrel||48)===Number(context.mandrel);
+    const sameExtruder=!context.extruder||Number(item.extruder||0)===Number(context.extruder);
     const sameRun=!context.runId||String(item.runId||'')===String(context.runId);
-    return sameProduct&&sameMandrel&&sameRun;
+    return sameProduct&&sameMandrel&&sameExtruder&&sameRun;
   }).slice(-TREND_SAMPLE_SIZE);
   state.latestTrend=predictor.analyze(matching.map(item=>Number(item.bw)),currentSWrap);
   return state.latestTrend;
@@ -408,7 +410,7 @@ function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentS
   if(!positive(bw)) return analyzeTrend(targetBW,currentSWrap);
   sanitizeTrendHistory();
   const context=currentProcessContext();
-  state.bwTrendHistory.push({bw:Number(bw),winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,shiftId:context.shiftId,runId:context.runId,time:new Date().toISOString()});
+  state.bwTrendHistory.push({bw:Number(bw),winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,extruder:context.extruder,shiftId:context.shiftId,runId:context.runId,time:new Date().toISOString()});
   state.bwTrendHistory=state.bwTrendHistory.slice(-250);
   saveTrendHistory();
   const trend=analyzeTrend(targetBW,currentSWrap);
@@ -679,7 +681,7 @@ function applyLanguage(language, announce=false){
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent='Industrial IA 5.0 • Smart Changeover Engine';
+  $('footer-text').textContent='Industrial IA 5.1 • Extruder Learning Engine';
   $('target-bw-label').textContent=ot('targetBW');
   $('current-swrap-label').textContent=ot('currentSWrap');
   $('optimizer-target-label').textContent=ot('targetBW');
@@ -746,11 +748,12 @@ function syncTargetFromProduct(product,{save=true}={}){
   return target;
 }
 let productDialogMode='change';
+let selectedExtruder=1;
 function productDialogText(key){
   const copy={
-    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
-    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
-    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
+    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',extruder:'Select extruder',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
+    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',extruder:'Selecciona el extruder',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
+    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',extruder:'Sélectionnez l’extrudeuse',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
   };
   return (copy[state.language]||copy.en)[key]||key;
 }
@@ -779,6 +782,11 @@ function openProductDialog(mode='change'){
   $('product-target-copy').textContent=productDialogText('target');
   $('product-dialog-confirm').textContent=productDialogText(mode==='start'?'confirmStart':'confirmChange');
   $('product-dialog-cancel').textContent=productDialogText('cancel');
+  const picker=$('extruder-picker');
+  picker?.classList.toggle('hidden',mode!=='start');
+  if($('extruder-picker-label')) $('extruder-picker-label').textContent=productDialogText('extruder');
+  selectedExtruder=Number(state.activeShift?.extruder)||selectedExtruder||1;
+  document.querySelectorAll('.extruder-option').forEach(button=>button.classList.toggle('selected',Number(button.dataset.extruder)===selectedExtruder));
   $('product-search').value=mode==='start'?($('bw-product').value||state.product||''):'';
   updateProductDialogPreview();
   dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden','false');
@@ -791,9 +799,9 @@ function closeProductDialog(){
 const SESSION_KEY='viejitoSessionV50';
 function shiftText(key,vars={}){
   const text={
-    en:{inactive:'No active shift',inactiveMeta:'Start a shift to separate products and predictions.',active:'Shift active',start:'Start shift',change:'Changeover',end:'End of shift',productPrompt:'Product running now:',targetPrompt:'Target BW:',swrapPrompt:'Current S-Wrap:',started:'Shift started for {product}.',changed:'Product changed to {product}. Same shift, new prediction run.',ended:'Shift ended. Learning was saved.',needProduct:'Enter a product first.',confirmChange:'Product changed from {old} to {next}. Start a new product run in the same shift?',pendingDiscard:'A winder is pending. Changing product will clear that incomplete cut. Continue?'},
-    es:{inactive:'Sin turno activo',inactiveMeta:'Empieza el turno para separar productos y predicciones.',active:'Turno activo',start:'Empezar turno',change:'Cambio de producto',end:'Fin de turno',productPrompt:'Producto que estás corriendo:',targetPrompt:'Target BW:',swrapPrompt:'S-Wrap actual:',started:'Turno iniciado para {product}.',changed:'Producto cambiado a {product}. Mismo turno, nueva corrida y predicción.',ended:'Turno finalizado. El aprendizaje quedó guardado.',needProduct:'Escribe el producto primero.',confirmChange:'Cambiaste de {old} a {next}. ¿Iniciar una nueva corrida dentro del mismo turno?',pendingDiscard:'Hay un winder pendiente. Cambiar producto borrará ese corte incompleto. ¿Continuar?'},
-    fr:{inactive:'Aucun quart actif',inactiveMeta:'Démarrez un quart pour séparer les produits et les prévisions.',active:'Quart actif',start:'Démarrer le quart',change:'Changement de produit',end:'Fin du quart',productPrompt:'Produit en cours :',targetPrompt:'BW cible :',swrapPrompt:'S-Wrap actuel :',started:'Quart démarré pour {product}.',changed:'Produit changé pour {product}. Même quart, nouvelle série de prévisions.',ended:'Quart terminé. L’apprentissage a été enregistré.',needProduct:'Entrez d’abord un produit.',confirmChange:'Produit changé de {old} à {next}. Démarrer une nouvelle série dans le même quart ?',pendingDiscard:'Un winder est en attente. Changer de produit effacera cette coupe incomplète. Continuer ?'}
+    en:{inactive:'No active shift',inactiveMeta:'Start a shift to separate products and predictions.',active:'Shift active',start:'Start shift',change:'Changeover',end:'End of shift',productPrompt:'Product running now:',targetPrompt:'Target BW:',swrapPrompt:'Current S-Wrap:',started:'Shift started on Extruder {extruder} for {product}.',changed:'Product changed to {product}. Same shift, new prediction run.',ended:'Shift ended. Learning was saved.',needProduct:'Enter a product first.',confirmChange:'Product changed from {old} to {next}. Start a new product run in the same shift?',pendingDiscard:'A winder is pending. Changing product will clear that incomplete cut. Continue?'},
+    es:{inactive:'Sin turno activo',inactiveMeta:'Empieza el turno para separar productos y predicciones.',active:'Turno activo',start:'Empezar turno',change:'Cambio de producto',end:'Fin de turno',productPrompt:'Producto que estás corriendo:',targetPrompt:'Target BW:',swrapPrompt:'S-Wrap actual:',started:'Turno iniciado en Extruder {extruder} para {product}.',changed:'Producto cambiado a {product}. Mismo turno, nueva corrida y predicción.',ended:'Turno finalizado. El aprendizaje quedó guardado.',needProduct:'Escribe el producto primero.',confirmChange:'Cambiaste de {old} a {next}. ¿Iniciar una nueva corrida dentro del mismo turno?',pendingDiscard:'Hay un winder pendiente. Cambiar producto borrará ese corte incompleto. ¿Continuar?'},
+    fr:{inactive:'Aucun quart actif',inactiveMeta:'Démarrez un quart pour séparer les produits et les prévisions.',active:'Quart actif',start:'Démarrer le quart',change:'Changement de produit',end:'Fin du quart',productPrompt:'Produit en cours :',targetPrompt:'BW cible :',swrapPrompt:'S-Wrap actuel :',started:'Quart démarré sur Extrudeuse {extruder} pour {product}.',changed:'Produit changé pour {product}. Même quart, nouvelle série de prévisions.',ended:'Quart terminé. L’apprentissage a été enregistré.',needProduct:'Entrez d’abord un produit.',confirmChange:'Produit changé de {old} à {next}. Démarrer une nouvelle série dans le même quart ?',pendingDiscard:'Un winder est en attente. Changer de produit effacera cette coupe incomplète. Continuer ?'}
   };
   let value=(text[state.language]||text.en)[key]||key;
   Object.entries(vars).forEach(([k,v])=>value=value.replaceAll(`{${k}}`,v));
@@ -808,7 +816,7 @@ function saveShift(){
 function renderShiftPanel(){
   const panel=$('shift-control-panel'),active=!!state.activeShift;
   panel?.classList.toggle('active',active);
-  $('shift-status-title').textContent=active?`${shiftText('active')} • ${state.activeShift.name||'—'}`:shiftText('inactive');
+  $('shift-status-title').textContent=active?`${shiftText('active')} • Extruder ${state.activeShift.extruder||'—'} • ${state.activeShift.name||'—'}`:shiftText('inactive');
   $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
   $('start-shift').textContent=shiftText('start');
   $('change-product').textContent=shiftText('change');
@@ -821,19 +829,21 @@ function clearPendingCutForRun(){
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
   renderPendingCut();
 }
-function commitStartShift(product){
+function commitStartShift(product,extruder=selectedExtruder){
   const name=new Date().toLocaleDateString();
   product=normalizeProduct(product);
   if(!product)return showToast(shiftText('needProduct'));
   const target=syncTargetFromProduct(product);
   const swrap=Number($('bw-current-swrap').value||state.currentSWrap);
   if(!positive(target,swrap))return showToast(t('invalidNumbers'));
+  extruder=Number(extruder);
+  if(![1,2,3,4].includes(extruder)) extruder=1;
   const now=new Date().toISOString();
-  state.activeShift={id:newId('shift'),name,startedAt:now,product,runId:newId('run'),runs:[{id:null,product,targetBW:target,startedAt:now}]};
+  state.activeShift={id:newId('shift'),name,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,product,targetBW:target,startedAt:now}]};
   state.activeShift.runs[0].id=state.activeShift.runId;
   $('bw-product').value=product; $('bw-target').value=String(target); $('bw-current-swrap').value=fmt(swrap,1);
   state.product=product; saveOptimizerSettings(target,swrap); clearPendingCutForRun(); saveShift(); saveSession();
-  renderShiftPanel(); renderTrendPanel(analyzeTrend()); renderLearningDashboard(); showToast(shiftText('started',{product}));
+  renderShiftPanel(); renderTrendPanel(analyzeTrend()); renderLearningDashboard(); showToast(shiftText('started',{product,extruder}));
   closeProductDialog();
 }
 function startShift(){ openProductDialog('start'); }
@@ -847,7 +857,7 @@ function commitProductChange(product){
   if(!target)return showToast(shiftText('needProduct'));
   if(product===old){$('bw-product').value=product;saveOptimizerSettings(target,Number($('bw-current-swrap').value||state.currentSWrap));closeProductDialog();return true;}
   const currentRun=state.activeShift.runs.find(r=>r.id===state.activeShift.runId);if(currentRun)currentRun.endedAt=new Date().toISOString();
-  const run={id:newId('run'),product,targetBW:target,startedAt:new Date().toISOString()};
+  const run={id:newId('run'),extruder:state.activeShift.extruder,product,targetBW:target,startedAt:new Date().toISOString()};
   state.activeShift.product=product;state.activeShift.runId=run.id;state.activeShift.runs.push(run);
   state.product=product;$('bw-product').value=product;$('bw-target').value=String(target);
   saveOptimizerSettings(target,Number($('bw-current-swrap').value||state.currentSWrap));
@@ -990,11 +1000,15 @@ $('bw-product').addEventListener('blur',()=>{
   }
 });
 $('product-search')?.addEventListener('input',updateProductDialogPreview);
+document.querySelectorAll('.extruder-option').forEach(button=>button.addEventListener('click',()=>{
+  selectedExtruder=Number(button.dataset.extruder)||1;
+  document.querySelectorAll('.extruder-option').forEach(item=>item.classList.toggle('selected',item===button));
+}));
 $('product-dialog-cancel')?.addEventListener('click',closeProductDialog);
 $('product-dialog')?.addEventListener('click',event=>{if(event.target===$('product-dialog'))closeProductDialog();});
 $('product-dialog-confirm')?.addEventListener('click',()=>{
   const product=normalizeProduct($('product-search').value);
-  if(productDialogMode==='start')commitStartShift(product);else commitProductChange(product);
+  if(productDialogMode==='start')commitStartShift(product,selectedExtruder);else commitProductChange(product);
 });
 $('bw-product').addEventListener('input',()=>{syncTargetFromProduct($('bw-product').value);saveSession();});
 $('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem('viejitoTheme',document.documentElement.classList.contains('light')?'light':'dark');});

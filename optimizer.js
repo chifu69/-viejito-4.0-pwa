@@ -61,6 +61,7 @@
         correction: round1(correction),
         product: String(record.product || 'UNSPECIFIED').trim().toUpperCase(),
         mandrel: finitePositive(record.mandrel) ? Number(record.mandrel) : 48,
+        extruder: [1,2,3,4].includes(Number(record.extruder)) ? Number(record.extruder) : null,
         winder1: finitePositive(record.winder1) ? Number(record.winder1) : null,
         winder2: finitePositive(record.winder2) ? Number(record.winder2) : null,
         averageBW: finitePositive(record.averageBW) ? Number(record.averageBW) : Number(record.initialBW),
@@ -79,9 +80,11 @@
     matchingRecords(context = {}) {
       const product = String(context.product || '').trim().toUpperCase();
       const mandrel = finitePositive(context.mandrel) ? Number(context.mandrel) : null;
+      const extruder = [1,2,3,4].includes(Number(context.extruder)) ? Number(context.extruder) : null;
       return this.records.filter(record => {
         if (product && String(record.product || '').toUpperCase() !== product) return false;
         if (mandrel && Number(record.mandrel || 48) !== mandrel) return false;
+        if (extruder && Number(record.extruder || 0) !== extruder) return false;
         return true;
       });
     }

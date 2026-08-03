@@ -199,7 +199,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.0 • Smart Changeover Engine</footer>
+<footer id="footer-text">Industrial IA 5.1 • Extruder Learning Engine</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -233,6 +233,15 @@
   <div class="product-dialog-card">
     <div class="product-dialog-heading"><div><p class="eyebrow">SMART CHANGEOVER</p><h3 id="product-dialog-title">Select sheet type</h3></div><button class="dialog-close" id="product-dialog-cancel" type="button" aria-label="Close">×</button></div>
     <p class="product-dialog-hint" id="product-dialog-hint">Type 8.6 to show only 8.6 sheet types.</p>
+    <div class="extruder-picker" id="extruder-picker">
+      <span id="extruder-picker-label">Select extruder</span>
+      <div class="extruder-options" role="radiogroup" aria-label="Extruder">
+        <button type="button" class="extruder-option selected" data-extruder="1">Extruder 1</button>
+        <button type="button" class="extruder-option" data-extruder="2">Extruder 2</button>
+        <button type="button" class="extruder-option" data-extruder="3">Extruder 3</button>
+        <button type="button" class="extruder-option" data-extruder="4">Extruder 4</button>
+      </div>
+    </div>
     <label class="product-search-label"><span>Sheet type</span><input id="product-search" list="sheet-type-list" autocomplete="off" placeholder="Example: 8.6" type="text"/></label>
     <div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
     <div class="product-choice-list" id="product-choice-list"></div>
@@ -240,7 +249,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.0.0"></script>
-<script src="app.js?v=5.0.0"></script>
+<script src="optimizer.js?v=5.1.0"></script>
+<script src="app.js?v=5.1.0"></script>
 </body>
 </html>

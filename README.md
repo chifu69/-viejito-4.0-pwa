@@ -1,8 +1,7 @@
-# Industrial IA V5.0 — Smart Changeover Engine
+# Industrial IA 5.1 — Extruder Learning Engine
 
-- Searchable sheet-type selector for Start Shift and Changeover.
-- Target BW is derived automatically from the selected sheet type.
-- New tolerance bands: green ≤ 0.20, warning > 0.20 and < 0.30, red ≥ 0.30.
-- Dramatic red S-Wrap action warning.
-- Light-mode shift status contrast corrected.
-- Existing dual-winder, shift, learning, trend, offline, and local-memory features retained.
+- Start Shift now asks for Extruder 1, 2, 3, or 4.
+- Shift, product runs, trend records, and confirmed machine-learning results carry the selected extruder.
+- Predictions and learned corrections are separated by extruder + product + mandrel.
+- Changeover stays on the same extruder and same shift.
+- Existing dual-winder, smart sheet selection, tolerances, persistent memory, and offline behavior retained.

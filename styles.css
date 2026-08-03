@@ -246,3 +246,9 @@ body.chat-open{overflow:hidden}
 @keyframes dangerPanelPulse{0%,100%{box-shadow:0 0 0 4px rgba(255,0,0,.08),0 0 24px rgba(255,0,0,.22)}50%{box-shadow:0 0 0 7px rgba(255,0,0,.16),0 0 50px rgba(255,0,0,.48)}}
 @keyframes dangerStatusPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
 @media(prefers-reduced-motion:reduce){.optimizer-panel.red,.result-status.red{animation:none}}
+
+
+/* V5.1: extruder selection and per-extruder learning */
+.extruder-picker{display:grid;gap:8px;margin:4px 0 2px}.extruder-picker>span{font-weight:800;color:var(--muted)}
+.extruder-options{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.extruder-option{min-height:48px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);color:var(--text);font-weight:900;padding:8px 4px}.extruder-option.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}.extruder-picker.hidden{display:none}
+@media(max-width:480px){.extruder-options{grid-template-columns:repeat(2,1fr)}}
