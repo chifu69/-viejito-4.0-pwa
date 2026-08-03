@@ -11,6 +11,8 @@ const TREND_HISTORY_KEY = 'viejitoBWTrendHistoryV3';
 const SHIFT_KEY = 'viejitoActiveShiftV1';
 const SHIFT_ARCHIVE_KEY = 'viejitoShiftArchiveV1';
 const TREND_SAMPLE_SIZE = 5;
+const LAST_COMPLETED_CUT_KEY = 'viejitoLastCompletedCutV1';
+const MAX_AUTO_CONTEXT_AGE_MS = 12 * 60 * 60 * 1000;
 
 
 const translations = {
@@ -38,9 +40,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 4.8',
+    introTitle: 'Industrial IA 5.5',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 4.8 • Plant Assistant'
+    footer: 'Industrial IA 5.5 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -66,9 +68,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 4.8',
+    introTitle: 'Industrial IA 5.5',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 4.8 • Asistente de planta'
+    footer: 'Industrial IA 5.5 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -94,9 +96,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 4.8',
+    introTitle: 'Industrial IA 5.5',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 4.8 • Assistant industriel'
+    footer: 'Industrial IA 5.5 • Assistant industriel'
   }
 };
 
@@ -193,6 +195,7 @@ const state = {
   latestOptimization: null,
   bwTrendHistory: JSON.parse(localStorage.getItem(TREND_HISTORY_KEY) || '[]'),
   latestTrend: null,
+  lastCompletedCut: JSON.parse(localStorage.getItem(LAST_COMPLETED_CUT_KEY) || 'null'),
   learningEngine: new AdaptiveLearningEngine()
 };
 
@@ -242,7 +245,7 @@ const optimizerText = {
     targetBW:'BW objetivo', currentSWrap:'S-Wrap actual', difference:'Diferencia', suggestedSWrap:'S-Wrap sugerido',
     tooLight:'Muy liviano', tooHeavy:'Muy pesado', greenStatus:'DENTRO DEL OBJETIVO', yellowStatus:'CERCA DEL LÍMITE', redStatus:'FUERA DE RANGO',
     greenMessage:'Dentro de ±0.20. No se necesita ajuste.', yellowMessage:'Entre 0.20 y menos de 0.30 del objetivo. ADVERTENCIA: vigila el próximo corte y prepárate para corregir el S-Wrap.',
-    redMessage:'¡PELIGRO! El BW está a 0.30 o más del objetivo. El operador necesita hacer cambios al S-Wrap ahora.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
+    redMessage:'FUERA DE RANGO. Ajusta el S-Wrap ahora.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
     decrease:'Baja el S-Wrap {amount}, de {current} a {suggested}.', increase:'Sube el S-Wrap {amount}, de {current} a {suggested}.',
     hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}', formulaSuggestion:'Sugerencia por fórmula', learnedSuggestion:'Sugerencia aprendida', confidence:'Confianza', rollsLearned:'Rollos aprendidos', recordResult:'Registrar resultado real', learningQuestion:'Después del cambio, escribe el S-Wrap que usaste y el BW final.', appliedSWrap:'S-Wrap aplicado', finalBW:'BW final', saveLearn:'Guardar y aprender', cancel:'Cancelar', learningSaved:'Resultado guardado. Viejito aprendió de este rollo.', machineLearning:'Aprendizaje de la máquina', resetLearning:'Borrar aprendizaje', averageCorrection:'Corrección promedio', successRate:'Porcentaje de éxito', deviceOnly:'El aprendizaje se guarda solamente en este dispositivo.', resetDone:'Se borró el aprendizaje de la máquina.', trendPredictor:'Predictor de tendencia', trendWaiting:'Agrega {remaining} rollo(s) de BW para activar la predicción.', trendStable:'Los últimos 5 rollos están estables. No se recomienda ningún cambio preventivo.', trendUp:'El BW está aumentando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Baja el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendDown:'El BW está bajando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Sube el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendProjected:'Próximo BW proyectado', trendDirection:'Dirección', trendConsistency:'Consistencia', trendRolls:'Últimos rollos', trendClear:'Borrar tendencia', trendCleared:'Se borró el historial de tendencia de BW.', trendUpLabel:'Aumentando', trendDownLabel:'Bajando', trendStableLabel:'Estable'
   },
@@ -507,7 +510,179 @@ function stripMandrelValue(vals,text){
   return copy;
 }
 
+
+const CHAT_WORKFLOW_KEY='viejitoChatWorkflowV1';
+let chatWorkflow=(()=>{try{return JSON.parse(localStorage.getItem(CHAT_WORKFLOW_KEY)||'null')||null;}catch(_){return null;}})();
+function saveChatWorkflow(){
+  if(chatWorkflow) localStorage.setItem(CHAT_WORKFLOW_KEY,JSON.stringify(chatWorkflow));
+  else localStorage.removeItem(CHAT_WORKFLOW_KEY);
+}
+function chatLang(en,es,fr){return state.language==='es'?es:state.language==='fr'?fr:en;}
+function targetFromChatProduct(product){
+  const match=String(product||'').match(/\d+(?:\.\d+)?/);
+  return match?Number(match[0]):null;
+}
+function detectChatChangeover(text){
+  const lower=String(text||'').toLowerCase();
+  if(!/(cambiar|cambio|cámbiame|cambiame|change|switch|changeover|changer)/.test(lower)) return null;
+  const exact=lower.match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)(?:\s*(lam))?/i);
+  if(exact){
+    const raw=`${exact[1]}/${exact[2]}${exact[3]?' LAM':''}`.toUpperCase();
+    const found=(typeof SHEET_TYPES!=='undefined'?SHEET_TYPES:[]).find(item=>item.replace(/\s+/g,'').toUpperCase()===raw.replace(/\s+/g,''));
+    return {product:found||raw,target:Number(exact[1]),exact:true};
+  }
+  const values=numbers(lower);
+  const target=values.find(value=>value>3&&value<20);
+  if(!target) return null;
+  const prefix=String(target);
+  const matches=(typeof SHEET_TYPES!=='undefined'?SHEET_TYPES:[]).filter(item=>Math.abs(targetFromChatProduct(item)-target)<0.001);
+  return {product:matches.length===1?matches[0]:prefix,target,exact:matches.length===1,matches};
+}
+function comparableLearningForChat({product,target,mandrel,extruder,formulaSuggestion}){
+  const records=Array.isArray(state.learningEngine?.records)?state.learningEngine.records:[];
+  const productUpper=String(product||'').trim().toUpperCase();
+  const family=String(target);
+  const matched=records.filter(record=>{
+    if(mandrel&&Number(record.mandrel||48)!==Number(mandrel)) return false;
+    if(extruder&&Number(record.extruder||0)!==Number(extruder)) return false;
+    const recordProduct=String(record.product||'').toUpperCase();
+    const exactProduct=productUpper.includes('/');
+    if(exactProduct && recordProduct!==productUpper) return false;
+    if(!exactProduct && !(recordProduct.startsWith(family+'/')||Math.abs(Number(record.targetBW)-Number(target))<0.01)) return false;
+    return Number.isFinite(Number(record.correction));
+  }).slice(-100);
+  const count=matched.length;
+  if(!count) return {count:0,correction:0,confidence:0,successRate:0,spread:0,active:false,learnedSuggestion:Math.round(formulaSuggestion)};
+  let weighted=0,totalWeight=0;
+  matched.forEach((record,index)=>{
+    const recencyWeight=.35+.65*((index+1)/count);
+    const successWeight=record.success?1:.65;
+    const weight=recencyWeight*successWeight;
+    weighted+=Number(record.correction)*weight;
+    totalWeight+=weight;
+  });
+  const correction=weighted/totalWeight;
+  const variance=matched.reduce((sum,r)=>sum+Math.pow(Number(r.correction)-correction,2),0)/count;
+  const spread=Math.sqrt(variance);
+  const confidence=Math.round(100*Math.min(1,count/30)*Math.max(0,1-spread/5));
+  const successRate=Math.round(100*matched.filter(r=>r.success).length/count);
+  const active=count>=5;
+  return {count,correction:Number(correction.toFixed(1)),confidence,successRate,spread:Number(spread.toFixed(1)),active,minimumRequired:5,learnedSuggestion:Math.round(formulaSuggestion+(active?correction:0))};
+}
+function latestCompletedBWContext(){
+  const activeShiftId=state.activeShift?.id||null;
+  const activeRunId=state.activeShift?.runId||null;
+  let cut=state.lastCompletedCut;
+  if(cut&&positive(Number(cut.averageBW))){
+    const age=Date.now()-new Date(cut.time||0).getTime();
+    const sameShift=!activeShiftId||!cut.shiftId||String(cut.shiftId)===String(activeShiftId);
+    if(age<=MAX_AUTO_CONTEXT_AGE_MS&&sameShift) return {...cut,source:'last-completed-cut',ageMs:age};
+  }
+  sanitizeTrendHistory();
+  const candidates=state.bwTrendHistory.filter(item=>{
+    if(!positive(Number(item.bw))) return false;
+    if(activeShiftId&&item.shiftId&&String(item.shiftId)!==String(activeShiftId)) return false;
+    return true;
+  });
+  const recent=candidates[candidates.length-1];
+  if(!recent) return null;
+  const age=Date.now()-new Date(recent.time||0).getTime();
+  if(age>MAX_AUTO_CONTEXT_AGE_MS) return null;
+  return {averageBW:Number(recent.bw),product:recent.product||'',mandrel:Number(recent.mandrel||48),extruder:Number(recent.extruder||0),shiftId:recent.shiftId||null,runId:recent.runId||null,time:recent.time,source:'trend-history',ageMs:age};
+}
+function currentSWrapForChat(){
+  const screen=Number($('bw-current-swrap')?.value);
+  const shift=Number(state.activeShift?.currentSWrap);
+  const run=state.activeShift?.runs?.find(item=>item.id===state.activeShift?.runId);
+  const runSpeed=Number(run?.swrap);
+  const stored=Number(state.currentSWrap);
+  return [screen,shift,runSpeed,stored].find(positive)||null;
+}
+function formatContextAge(ageMs){
+  const minutes=Math.max(0,Math.round(Number(ageMs||0)/60000));
+  if(minutes<2) return chatLang('just now','hace un momento','à l’instant');
+  if(minutes<60) return chatLang(`${minutes} minutes ago`,`hace ${minutes} minutos`,`il y a ${minutes} minutes`);
+  const hours=Math.round(minutes/60);
+  return chatLang(`${hours} hour(s) ago`,`hace ${hours} hora(s)`,`il y a ${hours} heure(s)`);
+}
+function buildAutomaticChangeoverResponse(flow,actual,contextInfo){
+  const optimizer=buildChatChangeoverRecommendation(flow,actual);
+  const learned=optimizer.learning.active
+    ? chatLang(`Viejito used ${optimizer.learning.count} comparable results from this extruder, destination product and mandrel, adjusting the formula by ${optimizer.learning.correction>0?'+':''}${optimizer.learning.correction} S-Wrap point(s).`,`Viejito usó ${optimizer.learning.count} resultados comparables de este extruder, producto destino y mandrel, ajustando la fórmula ${optimizer.learning.correction>0?'+':''}${optimizer.learning.correction} punto(s) de S-Wrap.`,`Viejito a utilisé ${optimizer.learning.count} résultats comparables de cette extrudeuse, du produit cible et du mandrin, en corrigeant la formule de ${optimizer.learning.correction>0?'+':''}${optimizer.learning.correction} point(s).`)
+    : chatLang(`Only ${optimizer.learning.count} comparable result(s) are available, so the safe formula is being used until at least 5 are collected.`,`Solo hay ${optimizer.learning.count} resultado(s) comparable(s), así que usaré la fórmula segura hasta reunir al menos 5.`,`Seulement ${optimizer.learning.count} résultat(s) comparable(s), donc la formule sûre est utilisée jusqu’à 5 résultats.`);
+  const autoMeta=chatLang(
+    `Auto-detected S-Wrap ${fmt(flow.currentSWrap,1)} and last completed average BW ${fmt(actual,3)} (${formatContextAge(contextInfo?.ageMs)}). Formula: ${fmt(optimizer.formulaSuggestion,1)} • Final: ${fmt(optimizer.suggestedSWrap,1)} • Confidence: ${optimizer.learning.confidence}%`,
+    `Detecté automáticamente S-Wrap ${fmt(flow.currentSWrap,1)} y el último BW promedio completo ${fmt(actual,3)} (${formatContextAge(contextInfo?.ageMs)}). Fórmula: ${fmt(optimizer.formulaSuggestion,1)} • Final: ${fmt(optimizer.suggestedSWrap,1)} • Confianza: ${optimizer.learning.confidence}%`,
+    `S-Wrap ${fmt(flow.currentSWrap,1)} et dernier BW moyen complet ${fmt(actual,3)} détectés automatiquement (${formatContextAge(contextInfo?.ageMs)}). Formule : ${fmt(optimizer.formulaSuggestion,1)} • Final : ${fmt(optimizer.suggestedSWrap,1)} • Confiance : ${optimizer.learning.confidence}%`
+  );
+  addHistory('Chat S-Wrap',`${flow.product} • Auto BW ${actual} • Target ${flow.target} • ${flow.currentSWrap} → ${optimizer.suggestedSWrap} • ${optimizer.learning.count} learned`);
+  return {kind:'result',title:`${chatLang('Change to','Cambiar a','Changer à')} ${flow.product}`,value:fmt(optimizer.suggestedSWrap,1),message:learned,meta:autoMeta,optimizer};
+}
+
+function buildChatChangeoverRecommendation(flow,actualBW){
+  const target=Number(flow.target),currentSWrap=Number(flow.currentSWrap),actual=Number(actualBW);
+  if(!positive(target,currentSWrap,actual)) throw new Error(t('invalidNumbers'));
+  const formulaSuggestion=Math.round(currentSWrap*actual/target);
+  const context=currentProcessContext();
+  const learning=comparableLearningForChat({product:flow.product,target,mandrel:context.mandrel,extruder:context.extruder,formulaSuggestion});
+  const suggestedSWrap=learning.active?learning.learnedSuggestion:formulaSuggestion;
+  const difference=Number((actual-target).toFixed(2));
+  const absoluteDifference=Math.abs(difference);
+  const level=absoluteDifference<=.20?'green':absoluteDifference<.30?'yellow':'red';
+  const adjustment=Number((suggestedSWrap-currentSWrap).toFixed(1));
+  const direction=adjustment<0?'decrease':adjustment>0?'increase':'hold';
+  return {actualBW:actual,targetBW:target,difference,absoluteDifference,level,suggestAdjustment:absoluteDifference>.20,currentSWrap,formulaSuggestion,suggestedSWrap,adjustment,direction,learning,greenTolerance:.20,warningTolerance:.30};
+}
+function handleChangeoverChat(text){
+  const request=detectChatChangeover(text);
+  if(request){
+    const detectedSWrap=currentSWrapForChat();
+    const latestCut=latestCompletedBWContext();
+    const options=request.matches?.length>1?chatLang(` I found ${request.matches.join(', ')}; I will use target ${request.target.toFixed(2)} unless you name the full sheet type.`,` Encontré ${request.matches.join(', ')}; usaré target ${request.target.toFixed(2)} a menos que escribas el sheet type completo.`,` J’ai trouvé ${request.matches.join(', ')}; j’utiliserai la cible ${request.target.toFixed(2)} sauf si vous indiquez le type complet.`):'';
+    if(positive(detectedSWrap)&&positive(Number(latestCut?.averageBW))){
+      chatWorkflow=null;saveChatWorkflow();
+      return buildAutomaticChangeoverResponse({type:'changeover-advice',product:request.product,target:request.target,matches:request.matches||[],currentSWrap:detectedSWrap},Number(latestCut.averageBW),latestCut);
+    }
+    const stage=positive(detectedSWrap)?'actual-bw':'swrap';
+    chatWorkflow={type:'changeover-advice',stage,product:request.product,target:request.target,matches:request.matches||[],currentSWrap:positive(detectedSWrap)?detectedSWrap:null,startedAt:new Date().toISOString()};
+    saveChatWorkflow();
+    if(stage==='actual-bw'){
+      return {kind:'info',title:chatLang('Basis Weight needed','Falta el Basis Weight','Basis Weight requis'),message:chatLang(`Target detected: ${request.target.toFixed(2)}.${options} I found your current S-Wrap at ${fmt(detectedSWrap,1)}, but I do not have a recent completed average BW. What was the last complete average BW?`,`Target detectado: ${request.target.toFixed(2)}.${options} Encontré tu S-Wrap actual en ${fmt(detectedSWrap,1)}, pero no tengo un BW promedio completo reciente. ¿Cuál fue el último BW promedio completo?`,`Cible détectée : ${request.target.toFixed(2)}.${options} J’ai trouvé le S-Wrap actuel à ${fmt(detectedSWrap,1)}, mais aucun BW moyen complet récent. Quel était le dernier BW moyen complet ?`)};
+    }
+    return {kind:'info',title:chatLang('Changeover assistant','Asistente de cambio','Assistant de changement'),message:chatLang(`Target detected: ${request.target.toFixed(2)}.${options} I could not detect the current S-Wrap. What is your current S-Wrap speed?`,`Target detectado: ${request.target.toFixed(2)}.${options} No pude detectar el S-Wrap actual. ¿A qué velocidad está tu S-Wrap?`,`Cible détectée : ${request.target.toFixed(2)}.${options} Je n’ai pas pu détecter le S-Wrap actuel. Quelle est sa vitesse ?`)};
+  }
+  if(!chatWorkflow||chatWorkflow.type!=='changeover-advice') return null;
+  const vals=numbers(text);
+  if(/\b(cancel|cancelar|cancela|annuler)\b/i.test(text)){
+    chatWorkflow=null;saveChatWorkflow();
+    return {kind:'info',title:chatLang('Cancelled','Cancelado','Annulé'),message:chatLang('The changeover calculation was cancelled.','Se canceló el cálculo del cambio de producto.','Le calcul du changement a été annulé.')};
+  }
+  if(chatWorkflow.stage==='swrap'){
+    const speed=vals.find(v=>v>=15&&v<=400);
+    if(!speed) return {kind:'info',title:chatLang('Current S-Wrap','S-Wrap actual','S-Wrap actuel'),message:chatLang('Enter the current S-Wrap speed, for example 150.','Escribe la velocidad actual del S-Wrap, por ejemplo 150.','Entrez la vitesse actuelle du S-Wrap, par exemple 150.')};
+    chatWorkflow.currentSWrap=speed;chatWorkflow.stage='actual-bw';saveChatWorkflow();
+    return {kind:'info',title:chatLang('Basis Weight needed','Falta el Basis Weight','Basis Weight requis'),message:chatLang(`Current S-Wrap saved: ${speed}. What is your actual Basis Weight now?`,`S-Wrap actual guardado: ${speed}. ¿Cuál es tu Basis Weight actual?`,`S-Wrap actuel enregistré : ${speed}. Quel est votre Basis Weight actuel ?`)};
+  }
+  if(chatWorkflow.stage==='actual-bw'){
+    const actual=vals.find(v=>v>3&&v<20);
+    if(!actual) return {kind:'info',title:'Basis Weight',message:chatLang('Enter the actual BW, for example 6.25.','Escribe el BW actual, por ejemplo 6.25.','Entrez le BW actuel, par exemple 6.25.')};
+    try{
+      const flow={...chatWorkflow};
+      const optimizer=buildChatChangeoverRecommendation(flow,actual);
+      chatWorkflow=null;saveChatWorkflow();
+      const learned=optimizer.learning.active
+        ? chatLang(`Based on ${optimizer.learning.count} comparable results from this extruder/product context, Viejito adjusted the formula by ${optimizer.learning.correction>0?'+':''}${optimizer.learning.correction} S-Wrap point(s).`,`Basado en ${optimizer.learning.count} resultados comparables de este extruder/producto, Viejito ajustó la fórmula ${optimizer.learning.correction>0?'+':''}${optimizer.learning.correction} punto(s) de S-Wrap.`,`D’après ${optimizer.learning.count} résultats comparables, Viejito a corrigé la formule de ${optimizer.learning.correction>0?'+':''}${optimizer.learning.correction} point(s).`)
+        : chatLang(`Only ${optimizer.learning.count} comparable result(s) are available; the safe formula is being used until at least 5 are collected.`,`Solo hay ${optimizer.learning.count} resultado(s) comparable(s); usaré la fórmula segura hasta reunir al menos 5.`,`Seulement ${optimizer.learning.count} résultat(s) comparable(s) ; la formule sûre est utilisée jusqu’à 5 résultats.`);
+      addHistory('Chat S-Wrap',`${flow.product} • Actual BW ${actual} • Target ${flow.target} • ${flow.currentSWrap} → ${optimizer.suggestedSWrap} • ${optimizer.learning.count} learned`);
+      return {kind:'result',title:`${chatLang('Change to','Cambiar a','Changer à')} ${flow.product}`,value:fmt(optimizer.suggestedSWrap,1),message:learned,meta:chatLang(`Formula: ${fmt(optimizer.formulaSuggestion,1)} • Final recommendation: ${fmt(optimizer.suggestedSWrap,1)} • Confidence: ${optimizer.learning.confidence}%`,`Fórmula: ${fmt(optimizer.formulaSuggestion,1)} • Recomendación final: ${fmt(optimizer.suggestedSWrap,1)} • Confianza: ${optimizer.learning.confidence}%`,`Formule : ${fmt(optimizer.formulaSuggestion,1)} • Recommandation finale : ${fmt(optimizer.suggestedSWrap,1)} • Confiance : ${optimizer.learning.confidence}%`),optimizer};
+    }catch(error){chatWorkflow=null;saveChatWorkflow();return {kind:'error',message:error.message};}
+  }
+  return null;
+}
+
 function interpret(text){
+  const workflowResponse=handleChangeoverChat(text);
+  if(workflowResponse) return workflowResponse;
   const mandrel=requestedMandrel(text) || state.context.mandrel || state.mandrel || DEFAULT_MANDREL;
   const smartRequest=parseSmartBWRequest(text);
   if(smartRequest) return handleSmartBW(smartRequest,mandrel);
@@ -976,6 +1151,9 @@ function completeDualWinderCut(){
   $('winder-imbalance').classList.toggle('warning',difference>0.30);
   renderOptimizerPanel(optimizer); renderTrendPanel(trend);
   addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
+  const processContext=currentProcessContext();
+  state.lastCompletedCut={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString()};
+  localStorage.setItem(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
 }
 
@@ -1103,7 +1281,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.2.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.5.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
