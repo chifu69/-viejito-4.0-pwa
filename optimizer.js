@@ -18,7 +18,6 @@
   const LEGACY_LEARNING_KEY = 'viejitoMachineLearningV1';
   const MAX_RECORDS = 1000;
   const MIN_CONTEXT_RECORDS = 5;
-  const SPEED_TOLERANCE_RATIO = 0.12;
 
   const finitePositive = value => Number.isFinite(Number(value)) && Number(value) > 0;
   const round1 = value => Number(Number(value).toFixed(1));
@@ -62,7 +61,6 @@
         correction: round1(correction),
         product: String(record.product || 'UNSPECIFIED').trim().toUpperCase(),
         mandrel: finitePositive(record.mandrel) ? Number(record.mandrel) : 48,
-        lineSpeed: finitePositive(record.lineSpeed) ? Number(record.lineSpeed) : null,
         winder1: finitePositive(record.winder1) ? Number(record.winder1) : null,
         winder2: finitePositive(record.winder2) ? Number(record.winder2) : null,
         averageBW: finitePositive(record.averageBW) ? Number(record.averageBW) : Number(record.initialBW),
@@ -81,14 +79,9 @@
     matchingRecords(context = {}) {
       const product = String(context.product || '').trim().toUpperCase();
       const mandrel = finitePositive(context.mandrel) ? Number(context.mandrel) : null;
-      const lineSpeed = finitePositive(context.lineSpeed) ? Number(context.lineSpeed) : null;
       return this.records.filter(record => {
         if (product && String(record.product || '').toUpperCase() !== product) return false;
         if (mandrel && Number(record.mandrel || 48) !== mandrel) return false;
-        if (lineSpeed && finitePositive(record.lineSpeed)) {
-          const allowed = Math.max(10, lineSpeed * SPEED_TOLERANCE_RATIO);
-          if (Math.abs(Number(record.lineSpeed) - lineSpeed) > allowed) return false;
-        }
         return true;
       });
     }

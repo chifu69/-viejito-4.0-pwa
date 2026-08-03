@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=4.6.0" rel="stylesheet"/>
+<link href="styles.css?v=4.8.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -53,8 +53,17 @@
 <main>
 <section class="hero compact-hero">
 <p class="eyebrow" id="hero-eyebrow">PLANT MODE</p>
-
-
+<div class="shift-control-panel" id="shift-control-panel">
+  <div class="shift-status-copy">
+    <span class="shift-dot" id="shift-dot"></span>
+    <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
+  </div>
+  <div class="shift-actions">
+    <button class="primary compact-action" id="start-shift" type="button">Start shift</button>
+    <button class="secondary compact-action" id="change-product" type="button" disabled>Change product</button>
+    <button class="text-button compact-action" id="end-shift" type="button" disabled>End shift</button>
+  </div>
+</div>
 </section>
 <div class="tool-workspace"><div class="calculator-column"><section class="view active" id="view-bw">
 <div class="panel calculator-card">
@@ -78,7 +87,6 @@
 <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
 <div class="field-grid optimizer-inputs process-context-inputs">
 <label><span id="product-label">Product</span><input id="bw-product" autocomplete="off" placeholder="6.35/43" type="text"/></label>
-<label><span id="line-speed-label">Line Speed</span><input id="bw-line-speed" inputmode="decimal" min="0" placeholder="170" step="1" type="number"/></label>
 <label><span id="target-bw-label">Target BW</span><input id="bw-target" inputmode="decimal" min="0" placeholder="6.35" step="0.01" type="number"/></label>
 <label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" inputmode="decimal" min="0" placeholder="170" step="1" type="number"/></label>
 </div>
@@ -217,7 +225,7 @@
 <span class="chat-fab-label">Chat</span>
 </button>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=4.6.0"></script>
-<script src="app.js?v=4.6.0"></script>
+<script src="optimizer.js?v=4.8.0"></script>
+<script src="app.js?v=4.8.0"></script>
 </body>
 </html>

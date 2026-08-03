@@ -201,3 +201,9 @@ body.chat-open{overflow:hidden}
 .winder-block.pending{border-color:#f3a018}
 .process-context-inputs{margin-top:12px}
 .process-context-inputs label:first-child input{text-transform:uppercase}
+
+/* V4.8 Shift & Product Run Manager */
+.shift-control-panel{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--border,#2b3b4b);border-radius:18px;background:var(--panel,#121d27);margin-top:10px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+.shift-status-copy{display:flex;align-items:center;gap:12px;min-width:0}.shift-status-copy div{display:flex;flex-direction:column;min-width:0}.shift-status-copy strong{font-size:1rem}.shift-status-copy small{opacity:.72;white-space:normal}.shift-dot{width:13px;height:13px;border-radius:50%;background:#7d8b98;box-shadow:0 0 0 5px rgba(125,139,152,.12);flex:0 0 auto}.shift-control-panel.active .shift-dot{background:#37c76f;box-shadow:0 0 0 5px rgba(55,199,111,.14)}
+.shift-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.compact-action{min-height:40px;padding:8px 14px;width:auto}.compact-action:disabled{opacity:.42;cursor:not-allowed}
+@media(max-width:720px){.shift-control-panel{align-items:stretch;flex-direction:column}.shift-actions{display:grid;grid-template-columns:1fr 1fr}.shift-actions #end-shift{grid-column:1/-1}.compact-action{width:100%}}

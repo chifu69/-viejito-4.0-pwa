@@ -1,37 +1,13 @@
-# Viejito 4.0 — Sprint 2.2
+# Industrial IA 4.8 — Shift Learning Engine
 
-## Trend Predictor
+## New in this version
+- Start Shift, Change Product, and End Shift controls.
+- A product change starts a new production run without ending the same shift/day.
+- Trend predictions reset for each product run so products are never mixed.
+- Long-term machine learning remains separated by product and mandrel.
+- No separate Line Speed field: S-Wrap Speed is the process speed used by Viejito.
+- Pending Winder 1/Winder 2 data, history, trend, learning, shift, and active product restore automatically after iOS reloads the PWA.
+- Winder 1 and Winder 2 can still be weighed in either order. Recommendations appear only after both are completed and averaged.
 
-This version keeps the Sprint 2.1 Adaptive Process Intelligence and adds preventive BW trend prediction.
-
-- Stores the five most recent BW calculations locally.
-- Uses linear regression to identify increasing, decreasing, or stable movement.
-- Projects the next BW and measures trend consistency.
-- Warns before the next roll is likely to approach or exceed tolerance.
-- For a consistent rising BW trend, recommends lowering S-Wrap by 2 points now.
-- For a consistent falling BW trend, recommends raising S-Wrap by 2 points now.
-- Shows the prediction in the calculator and in chat.
-- Includes a control to clear trend history independently of machine learning.
-- Works offline and stores all data only on the device.
-
-Upload every file in this folder to the root of the GitHub Pages repository, replacing the older files.
-
-
-## Viejito 4.3
-- Animated process puppy in the Basis Weight result card.
-- Happy in green, concerned in yellow, and very sad with animated tears in red.
-- Puppy status follows the existing Smart Optimizer tolerances.
-
-
-## Industrial IA 4.4
-- Replaced Viejito branding with a damaged industrial robot and INDUSTRIAL IA.
-- Removed the animated puppy completely.
-- Added compact color-coded result status.
-- Preserved calculators, optimizer, trend predictor, learning, chat, languages and offline support.
-
-
-## Version 4.5 — Dual Winder Average
-- Added optional Winder 2 weight and length inputs.
-- BW optimization and trend prediction use the average of both simultaneous rolls.
-- Shows each winder BW and warns when their difference is greater than 0.30.
-- Trend storage moved to V2 so old single-roll history does not distort predictions.
+## Important
+When changing products with one winder still pending, Viejito warns before clearing that incomplete cut.
