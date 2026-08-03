@@ -1,9 +1,9 @@
 /*
   Viejito Adaptive Process Intelligence — Sprint 2.2
   Global tolerances for every product:
-  GREEN  : |actual - target| <= 0.25 (no change)
-  YELLOW : 0.25 < |actual - target| <= 0.30 (preventive adjustment)
-  RED    : |actual - target| > 0.30 (adjust S-Wrap)
+  GREEN  : |actual - target| <= 0.20 (no change)
+  YELLOW : 0.20 < |actual - target| < 0.30 (warning)
+  RED    : |actual - target| >= 0.30 (change S-Wrap now)
 
   Learning stays on this device. Every confirmed result contributes a
   correction to the standard S-Wrap formula. The engine uses a recent,
@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const GREEN_TOLERANCE = 0.25;
+  const GREEN_TOLERANCE = 0.20;
   const WARNING_TOLERANCE = 0.30;
   const LEARNING_KEY = 'viejitoMachineLearningV2';
   const LEGACY_LEARNING_KEY = 'viejitoMachineLearningV1';
@@ -169,7 +169,7 @@
       const adjustment = recommendAdjustment ? (direction === 'up' ? -this.preventiveStep : this.preventiveStep) : 0;
       const suggestedSWrap = finitePositive(speed) ? Math.max(1, Math.round(speed + adjustment)) : null;
       let level = 'stable';
-      if (recommendAdjustment) level = projectedAbsoluteDifference > this.tolerance ? 'danger' : 'warning';
+      if (recommendAdjustment) level = projectedAbsoluteDifference >= this.tolerance ? 'danger' : 'warning';
 
       return {
         ready:true, count:n, required:this.sampleSize, values:rolls, direction,
@@ -205,7 +205,7 @@
       const absoluteDifference = Math.abs(difference);
       let level = 'red', suggestAdjustment = true;
       if (absoluteDifference <= GREEN_TOLERANCE) { level = 'green'; suggestAdjustment = false; }
-      else if (absoluteDifference <= WARNING_TOLERANCE) level = 'yellow';
+      else if (absoluteDifference < WARNING_TOLERANCE) level = 'yellow';
 
       const rawSuggested = this.currentSWrap * actual / this.targetBW;
       const formulaSuggestion = this.roundSpeed(rawSuggested);

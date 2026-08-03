@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=4.9.0" rel="stylesheet"/>
+<link href="styles.css?v=5.0.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -82,10 +82,13 @@
 </div>
 <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
 <div class="field-grid optimizer-inputs process-context-inputs">
-<label><span id="product-label">Product</span><input id="bw-product" autocomplete="off" placeholder="6.35/43" type="text"/></label>
+<label><span id="product-label">Product</span><input id="bw-product" autocomplete="off" list="sheet-type-list" placeholder="6.35/43" type="text"/></label>
 <label><span id="target-bw-label">Target BW</span><input id="bw-target" inputmode="decimal" min="0" placeholder="6.35" step="0.01" type="number"/></label>
 <label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" inputmode="decimal" min="0" placeholder="170" step="1" type="number"/></label>
 </div>
+<datalist id="sheet-type-list">
+<option value="5.3/36"></option><option value="5.3/43"></option><option value="6.1/36"></option><option value="6.1/43"></option><option value="6.1/60"></option><option value="6.35/36"></option><option value="6.35/43"></option><option value="6.4/55"></option><option value="6.5/36"></option><option value="6.5/43"></option><option value="6.5/70"></option><option value="7.1/36"></option><option value="7.1/45"></option><option value="8.0/60"></option><option value="8.5/50 LAM"></option><option value="8.6/60"></option><option value="8.6/80"></option><option value="9.0/80"></option><option value="9.1/55"></option><option value="9.3/50"></option><option value="9.3/90"></option><option value="9.75/50 LAM"></option><option value="9.75/75"></option><option value="9.75/80"></option><option value="9.8/80"></option><option value="10.25/90"></option><option value="10.8/65"></option><option value="10.9/55"></option>
+</datalist>
 <div class="result-box industrial-result" id="bw-result-box">
   <div class="result-copy"><span id="average-bw-label">Average Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small>
 <div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div>
@@ -196,7 +199,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 4.9 • Smart Shift Mode</footer>
+<footer id="footer-text">Industrial IA 5.0 • Smart Changeover Engine</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -225,8 +228,19 @@
 <span class="chat-fab-icon">💬</span>
 <span class="chat-fab-label">Chat</span>
 </button>
+
+<div class="product-dialog hidden" id="product-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="product-dialog-title">
+  <div class="product-dialog-card">
+    <div class="product-dialog-heading"><div><p class="eyebrow">SMART CHANGEOVER</p><h3 id="product-dialog-title">Select sheet type</h3></div><button class="dialog-close" id="product-dialog-cancel" type="button" aria-label="Close">×</button></div>
+    <p class="product-dialog-hint" id="product-dialog-hint">Type 8.6 to show only 8.6 sheet types.</p>
+    <label class="product-search-label"><span>Sheet type</span><input id="product-search" list="sheet-type-list" autocomplete="off" placeholder="Example: 8.6" type="text"/></label>
+    <div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
+    <div class="product-choice-list" id="product-choice-list"></div>
+    <button class="primary" id="product-dialog-confirm" type="button">Start changeover</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=4.9.0"></script>
-<script src="app.js?v=4.9.0"></script>
+<script src="optimizer.js?v=5.0.0"></script>
+<script src="app.js?v=5.0.0"></script>
 </body>
 </html>

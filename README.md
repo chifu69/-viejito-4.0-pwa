@@ -1,7 +1,8 @@
-# Industrial IA V4.9 — Side Shift Controls
+# Industrial IA V5.0 — Smart Changeover Engine
 
-Cambios principales:
-- Start shift, Changeover y End of shift ahora están en la barra lateral derecha, debajo de S-Wrap.
-- Ya no pregunta el nombre/letra del turno. El turno se identifica automáticamente por la fecha.
-- Mantiene el aprendizaje por producto, cambio de producto dentro del mismo turno, dual winder y memoria persistente.
-- Actualización de caché PWA a V4.9 para que iPhone cargue la interfaz nueva.
+- Searchable sheet-type selector for Start Shift and Changeover.
+- Target BW is derived automatically from the selected sheet type.
+- New tolerance bands: green ≤ 0.20, warning > 0.20 and < 0.30, red ≥ 0.30.
+- Dramatic red S-Wrap action warning.
+- Light-mode shift status contrast corrected.
+- Existing dual-winder, shift, learning, trend, offline, and local-memory features retained.
