@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=4.5.0" rel="stylesheet"/>
+<link href="styles.css?v=4.6.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -65,6 +65,7 @@
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw-weight" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
 <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
 </div>
+<button class="secondary winder-calc" id="winder1-calc" type="button">Calculate Winder 1</button>
 </div>
 <div class="winder-block optional-winder">
 <div class="winder-heading"><strong id="winder2-title">Winder 2</strong><small id="winder2-optional">Optional — use when two rolls run together</small></div>
@@ -72,6 +73,7 @@
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw2-weight" inputmode="decimal" min="0" placeholder="515" step="any" type="number"/></label>
 <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw2-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
 </div>
+<button class="secondary winder-calc" id="winder2-calc" type="button">Calculate Winder 2</button>
 </div>
 <div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
 <div class="field-grid optimizer-inputs">
@@ -123,7 +125,7 @@
 </div>
 </div>
 </section>
-<button class="primary" id="bw-calc" type="button">Calculate BW</button>
+<button class="primary" id="bw-calc" type="button">Complete cut / Calculate average</button>
 </div>
 </section><section class="view" id="view-ft">
 <div class="panel calculator-card">
@@ -213,7 +215,7 @@
 <span class="chat-fab-label">Chat</span>
 </button>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=4.5.0"></script>
-<script src="app.js?v=4.5.0"></script>
+<script src="optimizer.js?v=4.6.0"></script>
+<script src="app.js?v=4.6.0"></script>
 </body>
 </html>

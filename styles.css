@@ -193,3 +193,9 @@ body.chat-open{overflow:hidden}
 .winder-block.optional-winder{border-style:dashed}.winder-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}.winder-heading strong{font-size:.84rem;color:var(--text)}.winder-heading small{font-size:.68rem;color:var(--muted);text-align:right}
 .winder-results{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}.winder-results span{font-size:.73rem;color:var(--muted)}.winder-results span strong{display:inline;font-size:.86rem;margin:0;color:var(--text)}.winder-results .imbalance{grid-column:1/-1}.winder-results .imbalance.warning{color:#ffb020;font-weight:800}
 @media(max-width:520px){.winder-heading{align-items:flex-start}.winder-heading small{max-width:58%}.winder-results{grid-template-columns:1fr}}
+
+/* Sprint 4.6: sequential dual-winder workflow */
+.winder-calc{width:100%;margin-top:12px}
+.winder-block.measured{border-color:#70b879;box-shadow:0 0 0 2px rgba(112,184,121,.15)}
+.winder-block.measured .winder-heading small{color:#27813a;font-weight:800}
+.winder-block.pending{border-color:#f3a018}

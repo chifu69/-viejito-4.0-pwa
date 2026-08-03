@@ -643,12 +643,14 @@ function applyLanguage(language, announce=false){
   $('average-bw-label').textContent=t('averageBW');
   $('winder1-result-label').textContent=t('winder1');
   $('winder2-result-label').textContent=t('winder2');
-  $('bw-calc').textContent=t('calculateBW');
+  $('winder1-calc').textContent=winderButtonText(1);
+  $('winder2-calc').textContent=winderButtonText(2);
+  $('bw-calc').textContent=completeCutText();
   $('ft-calc').textContent=t('calculateFT');
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent='Industrial IA 4.5 • Floating Chat';
+  $('footer-text').textContent='Industrial IA 4.6 • Sequential Dual Winder';
   $('target-bw-label').textContent=ot('targetBW');
   $('current-swrap-label').textContent=ot('currentSWrap');
   $('optimizer-target-label').textContent=ot('targetBW');
@@ -674,6 +676,7 @@ function applyLanguage(language, announce=false){
   $('learning-note').textContent=ot('deviceOnly');
   $('too-light-label').textContent=ot('tooLight');
   $('too-heavy-label').textContent=ot('tooHeavy');
+  renderPendingCut();
   updateMetaText();
   updateConnection();
   renderHistory();
@@ -681,6 +684,78 @@ function applyLanguage(language, announce=false){
     $('chat-log').innerHTML='';
     bubble('bot',{title:t('introTitle'),message:t('intro')});
   }
+}
+
+
+const SESSION_KEY='viejitoSessionV46';
+const SESSION_FIELDS=['bw-weight','bw-length','bw2-weight','bw2-length','bw-target','bw-current-swrap','ft-bw','ft-weight','sw-current','sw-speed','sw-target'];
+let pendingCut={winder1:null,winder2:null,mandrel:null};
+function safeJSON(value,fallback){try{return JSON.parse(value)||fallback;}catch{return fallback;}}
+function saveSession(){
+  const fields={}; SESSION_FIELDS.forEach(id=>{const el=$(id);if(el)fields[id]=el.value;});
+  localStorage.setItem(SESSION_KEY,JSON.stringify({fields,pendingCut,mandrel:state.mandrel,updatedAt:Date.now()}));
+}
+function restoreSession(){
+  const saved=safeJSON(localStorage.getItem(SESSION_KEY),{});
+  Object.entries(saved.fields||{}).forEach(([id,value])=>{const el=$(id);if(el&&value!==undefined)el.value=value;});
+  if(saved.pendingCut&&typeof saved.pendingCut==='object') pendingCut=saved.pendingCut;
+  renderPendingCut();
+}
+function winderButtonText(index){
+  const lang=state.language;
+  if(lang==='es') return `Calcular Winder ${index}`;
+  if(lang==='fr') return `Calculer Winder ${index}`;
+  return `Calculate Winder ${index}`;
+}
+function completeCutText(){
+  if(state.language==='es') return 'Completar corte / Calcular promedio';
+  if(state.language==='fr') return 'Terminer la coupe / Calculer la moyenne';
+  return 'Complete cut / Calculate average';
+}
+function waitingSecondMessage(){
+  if(state.language==='es') return 'Winder guardado. Esperando el otro winder; todavía no se registra tendencia ni se da sugerencia.';
+  if(state.language==='fr') return "Winder enregistré. En attente de l’autre winder; aucune tendance ni suggestion pour le moment.";
+  return 'Winder saved. Waiting for the other winder; no trend or recommendation is recorded yet.';
+}
+function renderPendingCut(){
+  const b1=document.querySelector('#bw-weight')?.closest('.winder-block');
+  const b2=document.querySelector('#bw2-weight')?.closest('.winder-block');
+  b1?.classList.toggle('measured',Number.isFinite(pendingCut.winder1));
+  b2?.classList.toggle('measured',Number.isFinite(pendingCut.winder2));
+  $('winder1-required').textContent=Number.isFinite(pendingCut.winder1)?`${state.language==='es'?'Guardado':state.language==='fr'?'Enregistré':'Saved'}: ${fmt(pendingCut.winder1)}`:t('required');
+  $('winder2-optional').textContent=Number.isFinite(pendingCut.winder2)?`${state.language==='es'?'Guardado':state.language==='fr'?'Enregistré':'Saved'}: ${fmt(pendingCut.winder2)}`:t('winder2Optional');
+  $('winder-results').classList.toggle('hidden',!(Number.isFinite(pendingCut.winder1)||Number.isFinite(pendingCut.winder2)));
+  $('bw1-result').textContent=Number.isFinite(pendingCut.winder1)?fmt(pendingCut.winder1):'—';
+  $('bw2-result').textContent=Number.isFinite(pendingCut.winder2)?fmt(pendingCut.winder2):'—';
+}
+function calculateSingleWinder(index){
+  const weight=Number($(index===1?'bw-weight':'bw2-weight').value);
+  const length=Number($(index===1?'bw-length':'bw2-length').value);
+  const mandrel=currentMandrel('bw');
+  const result=calculateBW(weight,length,mandrel);
+  pendingCut[`winder${index}`]=result; pendingCut.mandrel=mandrel;
+  $('bw-result').textContent=fmt(result);
+  $('bw-meta').textContent=`${t(index===1?'winder1':'winder2')} • ${mandrel}” • ${state.language==='es'?'resultado provisional':state.language==='fr'?'résultat provisoire':'provisional result'}`;
+  $('optimizer-panel').classList.add('hidden');
+  renderPendingCut(); saveSession(); showToast(waitingSecondMessage());
+}
+function completeDualWinderCut(){
+  if(!Number.isFinite(pendingCut.winder1)||!Number.isFinite(pendingCut.winder2)){
+    throw new Error(state.language==='es'?'Calcula y guarda los dos winders antes de sacar el promedio.':state.language==='fr'?'Calculez et enregistrez les deux winders avant la moyenne.':'Calculate and save both winders before averaging.');
+  }
+  const target=Number($('bw-target').value),currentSWrap=Number($('bw-current-swrap').value);
+  const average=(pendingCut.winder1+pendingCut.winder2)/2;
+  const difference=Math.abs(pendingCut.winder1-pendingCut.winder2);
+  const optimizer=optimizeBasisWeight(average,target,currentSWrap);
+  const pair={winder1:pendingCut.winder1,winder2:pendingCut.winder2,average,hasWinder2:true,difference};
+  const trend=recordBWForTrend(average,target,currentSWrap,pair);
+  $('bw-result').textContent=fmt(average);
+  $('bw-meta').textContent=`${pendingCut.mandrel||currentMandrel('bw')}” • ${t('averageBW')}`;
+  $('winder-imbalance').textContent=`${t('imbalance')}: ${fmt(difference,2)}`;
+  $('winder-imbalance').classList.toggle('warning',difference>0.30);
+  renderOptimizerPanel(optimizer); renderTrendPanel(trend);
+  addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
+  pendingCut={winder1:null,winder2:null,mandrel:null}; saveSession(); renderPendingCut();
 }
 
 $('chat-form').addEventListener('submit',event=>{
@@ -711,22 +786,9 @@ $('personality-select').addEventListener('change',event=>{
   localStorage.setItem('viejitoPersonality',state.personality);
   showToast(t('personalityChanged',{mode:personalityLabel()}));
 });
-$('bw-calc').addEventListener('click',()=>{try{
-  const w1=Number($('bw-weight').value),l1=Number($('bw-length').value),w2=Number($('bw2-weight').value),l2=Number($('bw2-length').value),m=currentMandrel('bw'),target=Number($('bw-target').value),currentSWrap=Number($('bw-current-swrap').value);
-  const pair=calculateWinderPair(w1,l1,w2,l2,m),r=pair.average,optimizer=optimizeBasisWeight(r,target,currentSWrap),trend=recordBWForTrend(r,target,currentSWrap,pair);
-  $('bw-result').textContent=fmt(r);
-  $('bw-meta').textContent=(m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m}))+(pair.hasWinder2?` • ${t('averageBW')}`:'');
-  $('winder-results').classList.toggle('hidden',!pair.hasWinder2);
-  if(pair.hasWinder2){
-    $('bw1-result').textContent=fmt(pair.winder1);
-    $('bw2-result').textContent=fmt(pair.winder2);
-    $('winder-imbalance').textContent=`${t('imbalance')}: ${fmt(pair.difference,2)}`;
-    $('winder-imbalance').classList.toggle('warning',pair.difference>0.30);
-  }
-  renderOptimizerPanel(optimizer);renderTrendPanel(trend);
-  const detail=pair.hasWinder2?`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(r)}`:fmt(r);
-  addHistory('BW',`${detail} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${m}”`);
-}catch(e){showToast(e.message);}});
+$('winder1-calc').addEventListener('click',()=>{try{calculateSingleWinder(1);}catch(e){showToast(e.message);}});
+$('winder2-calc').addEventListener('click',()=>{try{calculateSingleWinder(2);}catch(e){showToast(e.message);}});
+$('bw-calc').addEventListener('click',()=>{try{completeDualWinderCut();}catch(e){showToast(e.message);}});
 $('ft-calc').addEventListener('click',()=>{try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
 $('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),r=calculateSWrap(a,s,target);$('sw-result').textContent=fmt(r,1);addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}`);}catch(e){showToast(e.message);}});
 
@@ -739,12 +801,16 @@ $('clear-history').addEventListener('click',()=>{state.history=[];localStorage.r
 $('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem('viejitoTheme',document.documentElement.classList.contains('light')?'light':'dark');});
 window.addEventListener('online',updateConnection);
 window.addEventListener('offline',updateConnection);
+SESSION_FIELDS.forEach(id=>$(id)?.addEventListener('input',saveSession));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveSession();});
+window.addEventListener('pagehide',saveSession);
 
 if(localStorage.getItem('viejitoTheme')==='light')document.documentElement.classList.add('light');
 selectMandrel('bw',state.mandrel);
 selectMandrel('ft',state.mandrel);
 $('bw-target').value=fmt(state.targetBW);
 $('bw-current-swrap').value=fmt(state.currentSWrap,1);
+restoreSession();
 applyLanguage(state.language);
 renderLearningDashboard();
 renderTrendPanel(analyzeTrend());
@@ -752,7 +818,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=4.5.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=4.6.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
