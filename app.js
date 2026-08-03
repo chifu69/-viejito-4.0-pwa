@@ -7,7 +7,7 @@ const DEFAULT_PERSONALITY = 'heavy';
 const VALID_PERSONALITIES = ['professional', 'light', 'heavy', 'off'];
 const DEFAULT_TARGET_BW = 6.35;
 const DEFAULT_CURRENT_SWRAP = 170;
-const TREND_HISTORY_KEY = 'viejitoBWTrendHistoryV1';
+const TREND_HISTORY_KEY = 'viejitoBWTrendHistoryV2';
 const TREND_SAMPLE_SIZE = 5;
 
 
@@ -21,7 +21,7 @@ const translations = {
     heroDescription: 'Works without a signal for BW, FT and S-Wrap.', quickTools: 'Quick tools',
     chat: 'Chat', chatSubtitle: 'Type naturally', openChat: 'Open chat', closeChat: 'Close chat', assistantOnline: 'Online assistant', bwSubtitle: '48” or 51” mandrel',
     ftSubtitle: 'Calculate length', swrapSubtitle: 'Adjust speed', calculator: 'CALCULATOR',
-    weightLb: 'Weight (lb)', lengthFt: 'Length (ft)', mandrel: 'Mandrel', length: 'Length',
+    weightLb: 'Weight (lb)', lengthFt: 'Length (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Required', winder2Optional: 'Optional — use when two rolls run together', averageBW: 'Average Basis Weight', imbalance: 'Winder difference', mandrel: 'Mandrel', length: 'Length',
     currentWeight: 'Current weight', currentSpeed: 'Current speed', targetWeight: 'Target weight',
     newSpeed: 'New speed', swFormula: 'Current weight × speed ÷ target weight',
     local: 'LOCAL', recentHistory: 'Recent history', clear: 'Clear', send: 'Send',
@@ -36,9 +36,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 4.4',
+    introTitle: 'Industrial IA 4.5',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 4.4 • Plant Assistant'
+    footer: 'Industrial IA 4.5 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -49,7 +49,7 @@ const translations = {
     heroDescription: 'Funciona sin señal para BW, FT y S-Wrap.', quickTools: 'Herramientas rápidas',
     chat: 'Chat', chatSubtitle: 'Escribe como hablas', openChat: 'Abrir chat', closeChat: 'Cerrar chat', assistantOnline: 'Asistente en línea', bwSubtitle: 'Mandrel 48” o 51”',
     ftSubtitle: 'Calcula longitud', swrapSubtitle: 'Ajusta velocidad', calculator: 'CALCULADORA',
-    weightLb: 'Peso (lb)', lengthFt: 'Longitud (ft)', mandrel: 'Mandrel', length: 'Longitud',
+    weightLb: 'Peso (lb)', lengthFt: 'Longitud (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Obligatorio', winder2Optional: 'Opcional — úsalo cuando salgan dos rollos juntos', averageBW: 'Promedio de Basis Weight', imbalance: 'Diferencia entre winders', mandrel: 'Mandrel', length: 'Longitud',
     currentWeight: 'Peso actual', currentSpeed: 'Velocidad actual', targetWeight: 'Peso objetivo',
     newSpeed: 'Nueva velocidad', swFormula: 'Peso actual × velocidad ÷ peso objetivo',
     local: 'LOCAL', recentHistory: 'Historial reciente', clear: 'Borrar', send: 'Enviar',
@@ -64,9 +64,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 4.4',
+    introTitle: 'Industrial IA 4.5',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 4.4 • Asistente de planta'
+    footer: 'Industrial IA 4.5 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -77,7 +77,7 @@ const translations = {
     heroDescription: 'Fonctionne sans réseau pour BW, FT et S-Wrap.', quickTools: 'Outils rapides',
     chat: 'Discussion', chatSubtitle: 'Écrivez naturellement', openChat: 'Ouvrir le chat', closeChat: 'Fermer le chat', assistantOnline: 'Assistant en ligne', bwSubtitle: 'Mandrin 48” ou 51”',
     ftSubtitle: 'Calculer la longueur', swrapSubtitle: 'Régler la vitesse', calculator: 'CALCULATRICE',
-    weightLb: 'Poids (lb)', lengthFt: 'Longueur (ft)', mandrel: 'Mandrin', length: 'Longueur',
+    weightLb: 'Poids (lb)', lengthFt: 'Longueur (ft)', winder1: 'Winder 1', winder2: 'Winder 2', required: 'Obligatoire', winder2Optional: 'Optionnel — à utiliser lorsque deux rouleaux sortent ensemble', averageBW: 'Moyenne Basis Weight', imbalance: 'Écart entre winders', mandrel: 'Mandrin', length: 'Longueur',
     currentWeight: 'Poids actuel', currentSpeed: 'Vitesse actuelle', targetWeight: 'Poids cible',
     newSpeed: 'Nouvelle vitesse', swFormula: 'Poids actuel × vitesse ÷ poids cible',
     local: 'LOCAL', recentHistory: 'Historique récent', clear: 'Effacer', send: 'Envoyer',
@@ -92,9 +92,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 4.4',
+    introTitle: 'Industrial IA 4.5',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 4.4 • Assistant industriel'
+    footer: 'Industrial IA 4.5 • Assistant industriel'
   }
 };
 
@@ -204,6 +204,15 @@ const t = (key, vars={}) => {
 function calculateBW(weight, length, mandrel=DEFAULT_MANDREL){
   if(!positive(weight,length,mandrel)) throw new Error(t('invalidNumbers'));
   return (weight * FACTOR_GRAMS_PER_LB) / ((length * 12 * mandrel) / 100);
+}
+function calculateWinderPair(weight1,length1,weight2,length2,mandrel=DEFAULT_MANDREL){
+  const winder1=calculateBW(weight1,length1,mandrel);
+  const hasWinder2=positive(weight2,length2);
+  const partialWinder2=(positive(weight2)||positive(length2))&&!hasWinder2;
+  if(partialWinder2) throw new Error(t('invalidNumbers'));
+  const winder2=hasWinder2?calculateBW(weight2,length2,mandrel):null;
+  const average=hasWinder2?(winder1+winder2)/2:winder1;
+  return {winder1,winder2,average,hasWinder2,difference:hasWinder2?Math.abs(winder1-winder2):0};
 }
 function calculateFT(bw, weight, mandrel=DEFAULT_MANDREL){
   if(!positive(bw,weight,mandrel)) throw new Error(t('invalidNumbers'));
@@ -371,10 +380,10 @@ function renderTrendPanel(trend=analyzeTrend()){
   $('trend-consistency').textContent=trend.ready?`${trend.consistency}%`:'—';
   $('trend-rolls').textContent=trend.values.length?trend.values.map(value=>fmt(value,3)).join(' → '):'—';
 }
-function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentSWrap){
+function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentSWrap,pair=null){
   if(!positive(bw)) return analyzeTrend(targetBW,currentSWrap);
   sanitizeTrendHistory();
-  state.bwTrendHistory.push({bw:Number(bw),time:new Date().toISOString()});
+  state.bwTrendHistory.push({bw:Number(bw),winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,time:new Date().toISOString()});
   state.bwTrendHistory=state.bwTrendHistory.slice(-TREND_SAMPLE_SIZE);
   saveTrendHistory();
   const trend=analyzeTrend(targetBW,currentSWrap);
@@ -627,12 +636,19 @@ function applyLanguage(language, announce=false){
   $('chat-input').placeholder=t('chatPlaceholder');
   $('chat-input').setAttribute('aria-label',t('chatAria'));
   $('send-button').textContent=t('send');
+  $('winder1-title').textContent=t('winder1');
+  $('winder2-title').textContent=t('winder2');
+  $('winder1-required').textContent=t('required');
+  $('winder2-optional').textContent=t('winder2Optional');
+  $('average-bw-label').textContent=t('averageBW');
+  $('winder1-result-label').textContent=t('winder1');
+  $('winder2-result-label').textContent=t('winder2');
   $('bw-calc').textContent=t('calculateBW');
   $('ft-calc').textContent=t('calculateFT');
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent='Industrial IA 4.4 • Floating Chat';
+  $('footer-text').textContent='Industrial IA 4.5 • Floating Chat';
   $('target-bw-label').textContent=ot('targetBW');
   $('current-swrap-label').textContent=ot('currentSWrap');
   $('optimizer-target-label').textContent=ot('targetBW');
@@ -695,7 +711,22 @@ $('personality-select').addEventListener('change',event=>{
   localStorage.setItem('viejitoPersonality',state.personality);
   showToast(t('personalityChanged',{mode:personalityLabel()}));
 });
-$('bw-calc').addEventListener('click',()=>{try{const w=Number($('bw-weight').value),l=Number($('bw-length').value),m=currentMandrel('bw'),target=Number($('bw-target').value),currentSWrap=Number($('bw-current-swrap').value),r=calculateBW(w,l,m),optimizer=optimizeBasisWeight(r,target,currentSWrap),trend=recordBWForTrend(r,target,currentSWrap);$('bw-result').textContent=fmt(r);$('bw-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});renderOptimizerPanel(optimizer);renderTrendPanel(trend);addHistory('BW',`${fmt(r)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${m}”`);}catch(e){showToast(e.message);}});
+$('bw-calc').addEventListener('click',()=>{try{
+  const w1=Number($('bw-weight').value),l1=Number($('bw-length').value),w2=Number($('bw2-weight').value),l2=Number($('bw2-length').value),m=currentMandrel('bw'),target=Number($('bw-target').value),currentSWrap=Number($('bw-current-swrap').value);
+  const pair=calculateWinderPair(w1,l1,w2,l2,m),r=pair.average,optimizer=optimizeBasisWeight(r,target,currentSWrap),trend=recordBWForTrend(r,target,currentSWrap,pair);
+  $('bw-result').textContent=fmt(r);
+  $('bw-meta').textContent=(m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m}))+(pair.hasWinder2?` • ${t('averageBW')}`:'');
+  $('winder-results').classList.toggle('hidden',!pair.hasWinder2);
+  if(pair.hasWinder2){
+    $('bw1-result').textContent=fmt(pair.winder1);
+    $('bw2-result').textContent=fmt(pair.winder2);
+    $('winder-imbalance').textContent=`${t('imbalance')}: ${fmt(pair.difference,2)}`;
+    $('winder-imbalance').classList.toggle('warning',pair.difference>0.30);
+  }
+  renderOptimizerPanel(optimizer);renderTrendPanel(trend);
+  const detail=pair.hasWinder2?`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(r)}`:fmt(r);
+  addHistory('BW',`${detail} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${m}”`);
+}catch(e){showToast(e.message);}});
 $('ft-calc').addEventListener('click',()=>{try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
 $('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),r=calculateSWrap(a,s,target);$('sw-result').textContent=fmt(r,1);addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}`);}catch(e){showToast(e.message);}});
 
@@ -721,7 +752,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=4.1.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=4.5.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

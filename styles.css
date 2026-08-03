@@ -187,3 +187,9 @@ body.chat-open{overflow:hidden}
 .result-status.red{border-color:rgba(255,82,82,.68);background:rgba(255,82,82,.09)}.result-status.red .result-status-dot{background:#ff5252}.result-status.red strong{color:#ff5252}
 .status-pop{animation:statusPop .28s ease}@keyframes statusPop{50%{transform:scale(1.025)}}
 @media(max-width:520px){.broken-robot{width:50px;height:50px;flex-basis:50px;transform:scale(.88) rotate(-2deg);transform-origin:left center}.industrial-brand{gap:7px}.industrial-brand h1{font-size:.98rem}.industrial-brand p{font-size:.68rem}.industrial-result{grid-template-columns:minmax(0,1fr) 145px}.result-status{padding:9px;gap:8px}.result-status small{font-size:.62rem}}
+
+/* Dual-winder BW 4.5 */
+.winder-block{border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;background:color-mix(in srgb,var(--surface2) 72%,transparent)}
+.winder-block.optional-winder{border-style:dashed}.winder-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}.winder-heading strong{font-size:.84rem;color:var(--text)}.winder-heading small{font-size:.68rem;color:var(--muted);text-align:right}
+.winder-results{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}.winder-results span{font-size:.73rem;color:var(--muted)}.winder-results span strong{display:inline;font-size:.86rem;margin:0;color:var(--text)}.winder-results .imbalance{grid-column:1/-1}.winder-results .imbalance.warning{color:#ffb020;font-weight:800}
+@media(max-width:520px){.winder-heading{align-items:flex-start}.winder-heading small{max-width:58%}.winder-results{grid-template-columns:1fr}}

@@ -28,3 +28,10 @@ Upload every file in this folder to the root of the GitHub Pages repository, rep
 - Removed the animated puppy completely.
 - Added compact color-coded result status.
 - Preserved calculators, optimizer, trend predictor, learning, chat, languages and offline support.
+
+
+## Version 4.5 — Dual Winder Average
+- Added optional Winder 2 weight and length inputs.
+- BW optimization and trend prediction use the average of both simultaneous rolls.
+- Shows each winder BW and warns when their difference is greater than 0.30.
+- Trend storage moved to V2 so old single-roll history does not distort predictions.
