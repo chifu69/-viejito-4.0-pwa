@@ -1,10 +1,10 @@
-const CACHE='industrial-ia-5.7.0';
+const CACHE='industrial-ia-5.8.0';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.7.0',
-  './optimizer.js?v=5.7.0',
-  './app.js?v=5.7.0',
+  './styles.css?v=5.8.0',
+  './optimizer.js?v=5.8.0',
+  './app.js?v=5.8.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

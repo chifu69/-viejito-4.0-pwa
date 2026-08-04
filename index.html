@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.0.0" rel="stylesheet"/>
+<link href="styles.css?v=5.8.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -57,6 +57,13 @@
   <div class="shift-status-copy">
     <span class="shift-dot" id="shift-dot"></span>
     <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
+  </div>
+  <div class="production-dashboard" id="production-dashboard">
+    <div><span id="prod-current-label">Current rate</span><strong id="prod-current-rate">—</strong><small>lbs/hr</small></div>
+    <div><span id="prod-total-label">Current material</span><strong id="prod-current-material">0</strong><small>lbs</small></div>
+    <div><span id="prod-project-label">Projected end</span><strong id="prod-projected-end">—</strong><small>lbs</small></div>
+    <div><span id="prod-target-label">Shift target</span><strong id="prod-shift-target">—</strong><small>lbs</small></div>
+    <p class="production-forecast" id="production-forecast">Start a shift to begin production tracking.</p>
   </div>
 
 </div>
@@ -166,6 +173,7 @@
   <button class="shift-rail-button start" id="start-shift" type="button"><span>▶</span><strong>Start shift</strong></button>
   <button class="shift-rail-button change" id="change-product" type="button" disabled><span>↻</span><strong>Changeover</strong></button>
   <button class="shift-rail-button end" id="end-shift" type="button" disabled><span>■</span><strong>End of shift</strong></button>
+  <button class="shift-rail-button target" id="production-target" type="button"><span>🎯</span><strong>Target lbs</strong></button>
 </div>
 </nav></div><section aria-live="polite" class="panel trend-panel waiting" id="trend-panel">
 <div class="panel-heading">
@@ -199,7 +207,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.1 • Extruder Learning Engine</footer>
+<footer id="footer-text">Industrial IA 5.8 • Production Intelligence</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -249,8 +257,22 @@
     <button class="primary" id="product-dialog-confirm" type="button">Start changeover</button>
   </div>
 </div>
+
+<div class="product-dialog hidden" id="production-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="production-dialog-title">
+  <div class="product-dialog-card production-dialog-card">
+    <div class="product-dialog-heading"><div><p class="eyebrow">PRODUCTION TRACKING</p><h3 id="production-dialog-title">Targets & product history</h3></div><button class="dialog-close" id="production-dialog-close" type="button" aria-label="Close">×</button></div>
+    <div class="production-target-form">
+      <label><span id="target-hour-label">Target lbs per hour</span><input id="target-lbs-hour" inputmode="decimal" min="1" step="1" type="number" placeholder="1200"></label>
+      <label><span id="shift-hours-label">Shift hours</span><input id="target-shift-hours" inputmode="decimal" min="1" max="24" step="0.5" type="number" value="12"></label>
+      <div class="target-shift-preview"><span id="target-total-label">Target per shift</span><strong id="target-shift-total">—</strong><small>lbs</small></div>
+      <button class="primary" id="save-production-target" type="button">Save target</button>
+    </div>
+    <div class="product-history-heading"><h4 id="product-history-title">Products run today</h4><small id="product-history-summary"></small></div>
+    <div class="product-run-history" id="product-run-history"></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.7.0"></script>
-<script src="app.js?v=5.7.0"></script>
+<script src="optimizer.js?v=5.8.0"></script>
+<script src="app.js?v=5.8.0"></script>
 </body>
 </html>

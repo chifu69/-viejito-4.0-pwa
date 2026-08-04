@@ -192,6 +192,7 @@ const state = {
   product: localStorage.getItem('viejitoProduct') || '',
   activeShift: JSON.parse(localStorage.getItem(SHIFT_KEY) || 'null'),
   shiftArchive: JSON.parse(localStorage.getItem(SHIFT_ARCHIVE_KEY) || '[]'),
+  productionTargets: JSON.parse(localStorage.getItem('viejitoProductionTargetsV1') || '{}'),
   latestOptimization: null,
   bwTrendHistory: JSON.parse(localStorage.getItem(TREND_HISTORY_KEY) || '[]'),
   latestTrend: null,
@@ -1005,6 +1006,109 @@ function closeProductDialog(){
   const dialog=$('product-dialog'); dialog.classList.add('hidden'); dialog.setAttribute('aria-hidden','true');
 }
 
+
+const PRODUCTION_TARGETS_KEY='viejitoProductionTargetsV1';
+function productionCopy(key){
+  const copy={
+    en:{current:'Current rate',material:'Current material',projected:'Projected end',target:'Shift target',start:'Start a shift to begin production tracking.',waiting:'Add completed cuts to calculate a realistic rate.',above:'If you continue at this rate, you will finish {diff} lbs ABOVE target.',below:'If you continue at this rate, you will finish {diff} lbs BELOW target.',on:'You are projected to finish on target.',targetButton:'Target lbs',hour:'Target lbs per hour',hours:'Shift hours',total:'Target per shift',save:'Save target',history:'Products run today',none:'No completed product runs yet.',active:'RUNNING',complete:'COMPLETE',avg:'Average',used:'Material used',duration:'Run time',shiftAvg:'Shift average'},
+    es:{current:'Libras por hora',material:'Material actual',projected:'Proyección final',target:'Meta del turno',start:'Empieza el turno para iniciar el seguimiento.',waiting:'Completa cortes para calcular un ritmo realista.',above:'Si sigues a este ritmo, terminarás {diff} lbs ARRIBA de la meta.',below:'Si sigues a este ritmo, terminarás {diff} lbs ABAJO de la meta.',on:'La proyección indica que terminarás en la meta.',targetButton:'Target lbs',hour:'Target lbs por hora',hours:'Horas del turno',total:'Target por turno',save:'Guardar target',history:'Productos corridos hoy',none:'Todavía no hay productos completados.',active:'CORRIENDO',complete:'TERMINADO',avg:'Promedio',used:'Material usado',duration:'Tiempo corrido',shiftAvg:'Promedio del turno'},
+    fr:{current:'Livres par heure',material:'Matériau actuel',projected:'Projection finale',target:'Objectif du quart',start:'Démarrez un quart pour commencer le suivi.',waiting:'Terminez des coupes pour calculer un rythme réaliste.',above:'À ce rythme, vous finirez {diff} lb AU-DESSUS de la cible.',below:'À ce rythme, vous finirez {diff} lb SOUS la cible.',on:'La projection indique que vous finirez sur la cible.',targetButton:'Cible lb',hour:'Cible lb par heure',hours:'Heures du quart',total:'Cible par quart',save:'Enregistrer',history:'Produits exécutés aujourd’hui',none:'Aucune série terminée.',active:'EN COURS',complete:'TERMINÉ',avg:'Moyenne',used:'Matériau utilisé',duration:'Durée',shiftAvg:'Moyenne du quart'}
+  };
+  return (copy[state.language]||copy.en)[key]||key;
+}
+function productionTargetFor(product){
+  const key=normalizeProduct(product||'');
+  const saved=state.productionTargets?.[key];
+  return {lbsPerHour:Number(saved?.lbsPerHour)||0,shiftHours:Number(saved?.shiftHours)||12};
+}
+function saveProductionTargets(){localStorage.setItem(PRODUCTION_TARGETS_KEY,JSON.stringify(state.productionTargets||{}));}
+function runStats(run,now=Date.now()){
+  if(!run)return {material:0,hours:0,rate:0,projected:0,targetTotal:0,difference:0};
+  const start=new Date(run.startedAt).getTime();
+  const end=run.endedAt?new Date(run.endedAt).getTime():now;
+  const hours=Math.max(0,(end-start)/3600000);
+  const material=Number(run.materialLbs)||0;
+  const rate=hours>0?material/hours:0;
+  const target=productionTargetFor(run.product);
+  const targetTotal=target.lbsPerHour*target.shiftHours;
+  const projected=rate*target.shiftHours;
+  return {material,hours,rate,projected,targetTotal,difference:projected-targetTotal,target};
+}
+function currentProductionRun(){return state.activeShift?.runs?.find(r=>r.id===state.activeShift.runId)||null;}
+function formatHours(hours){
+  if(!Number.isFinite(hours)||hours<=0)return '0m';
+  const h=Math.floor(hours),m=Math.round((hours-h)*60);
+  return h?`${h}h ${m}m`:`${m}m`;
+}
+function allTodayRuns(){
+  const today=new Date().toDateString();
+  const shifts=[...(state.shiftArchive||[]),...(state.activeShift?[state.activeShift]:[])];
+  return shifts.filter(s=>new Date(s.startedAt).toDateString()===today).flatMap(s=>(s.runs||[]).map(r=>({...r,shiftId:s.id,shiftStartedAt:s.startedAt,shiftEndedAt:s.endedAt||null})));
+}
+function renderProductionDashboard(){
+  const active=!!state.activeShift,run=currentProductionRun();
+  const stats=runStats(run);
+  $('prod-current-label').textContent=productionCopy('current');
+  $('prod-total-label').textContent=productionCopy('material');
+  $('prod-project-label').textContent=productionCopy('projected');
+  $('prod-target-label').textContent=productionCopy('target');
+  $('production-target').querySelector('strong').textContent=productionCopy('targetButton');
+  $('prod-current-rate').textContent=active&&stats.rate?fmt(stats.rate,0):'—';
+  $('prod-current-material').textContent=active?fmt(stats.material,0):'0';
+  $('prod-projected-end').textContent=active&&stats.rate?fmt(stats.projected,0):'—';
+  $('prod-shift-target').textContent=active&&stats.targetTotal?fmt(stats.targetTotal,0):'—';
+  const forecast=$('production-forecast');
+  forecast.className='production-forecast';
+  if(!active){forecast.textContent=productionCopy('start');return;}
+  if(!stats.material||stats.hours<0.03){forecast.textContent=productionCopy('waiting');return;}
+  if(!stats.targetTotal){forecast.textContent=state.language==='es'?'Guarda un target lbs/hour para este producto.':'Save a target lbs/hour for this product.';return;}
+  const diff=Math.round(Math.abs(stats.difference));
+  if(diff<=50){forecast.textContent=productionCopy('on');forecast.classList.add('on');}
+  else if(stats.difference>0){forecast.textContent=productionCopy('above').replace('{diff}',diff.toLocaleString());forecast.classList.add('above');}
+  else{forecast.textContent=productionCopy('below').replace('{diff}',diff.toLocaleString());forecast.classList.add('below');}
+}
+function renderProductionHistory(){
+  const currentProduct=state.activeShift?.product||state.product||'';
+  const target=productionTargetFor(currentProduct);
+  $('target-lbs-hour').value=target.lbsPerHour||'';
+  $('target-shift-hours').value=target.shiftHours||12;
+  updateProductionTargetPreview();
+  $('target-hour-label').textContent=productionCopy('hour');$('shift-hours-label').textContent=productionCopy('hours');$('target-total-label').textContent=productionCopy('total');$('save-production-target').textContent=productionCopy('save');$('product-history-title').textContent=productionCopy('history');
+  const runs=allTodayRuns();
+  const box=$('product-run-history');
+  if(!runs.length){box.innerHTML=`<p class="empty">${productionCopy('none')}</p>`;$('product-history-summary').textContent='';return;}
+  let totalMaterial=0,totalHours=0;
+  box.innerHTML=runs.map(run=>{
+    const s=runStats(run); totalMaterial+=s.material; totalHours+=s.hours;
+    const status=run.endedAt?productionCopy('complete'):productionCopy('active');
+    return `<article class="product-run-card ${run.endedAt?'complete':'active'}"><div class="product-run-title"><strong>${escapeHTML(run.product||'—')}</strong><span>${status}</span></div><div class="product-run-grid"><div><small>${productionCopy('duration')}</small><b>${formatHours(s.hours)}</b></div><div><small>${productionCopy('used')}</small><b>${fmt(s.material,0)} lbs</b></div><div><small>${productionCopy('avg')}</small><b>${s.rate?fmt(s.rate,0):'—'} lbs/hr</b></div><div><small>${productionCopy('target')}</small><b>${s.target.lbsPerHour?fmt(s.target.lbsPerHour,0):'—'} lbs/hr</b></div></div></article>`;
+  }).join('');
+  $('product-history-summary').textContent=`${fmt(totalMaterial,0)} lbs • ${productionCopy('shiftAvg')}: ${totalHours?fmt(totalMaterial/totalHours,0):'—'} lbs/hr`;
+}
+function updateProductionTargetPreview(){
+  const perHour=Number($('target-lbs-hour')?.value)||0,hours=Number($('target-shift-hours')?.value)||12;
+  $('target-shift-total').textContent=perHour?fmt(perHour*hours,0):'—';
+}
+function openProductionDialog(){renderProductionHistory();$('production-dialog').classList.remove('hidden');$('production-dialog').setAttribute('aria-hidden','false');}
+function closeProductionDialog(){$('production-dialog').classList.add('hidden');$('production-dialog').setAttribute('aria-hidden','true');}
+function saveCurrentProductionTarget(){
+  const product=normalizeProduct(state.activeShift?.product||$('bw-product')?.value||state.product||'');
+  const lbsPerHour=Number($('target-lbs-hour').value),shiftHours=Number($('target-shift-hours').value);
+  if(!product)return showToast(shiftText('needProduct'));
+  if(!positive(lbsPerHour,shiftHours))return showToast(t('invalidNumbers'));
+  state.productionTargets[product]={lbsPerHour,shiftHours,updatedAt:new Date().toISOString()};saveProductionTargets();renderProductionDashboard();renderProductionHistory();showToast(state.language==='es'?'Target guardado.':'Target saved.');
+}
+function recordProductionMaterial(weight1,weight2){
+  if(!state.activeShift)return;
+  const run=currentProductionRun();if(!run)return;
+  const added=(Number(weight1)||0)+(Number(weight2)||0);if(added<=0)return;
+  run.materialLbs=(Number(run.materialLbs)||0)+added;
+  run.cutCount=(Number(run.cutCount)||0)+1;
+  run.lastMaterialAt=new Date().toISOString();
+  state.activeShift.materialLbs=(Number(state.activeShift.materialLbs)||0)+added;
+  saveShift();renderProductionDashboard();
+}
+
 const SESSION_KEY='viejitoSessionV50';
 function shiftText(key,vars={}){
   const text={
@@ -1027,12 +1131,13 @@ function renderShiftPanel(){
   panel?.classList.toggle('active',active);
   $('shift-status-title').textContent=active?`${shiftText('active')} • Extruder ${state.activeShift.extruder||'—'} • ${state.activeShift.name||'—'}`:shiftText('inactive');
   $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
-  $('start-shift').textContent=shiftText('start');
-  $('change-product').textContent=shiftText('change');
-  $('end-shift').textContent=shiftText('end');
+  $('start-shift').querySelector('strong').textContent=shiftText('start');
+  $('change-product').querySelector('strong').textContent=shiftText('change');
+  $('end-shift').querySelector('strong').textContent=shiftText('end');
   $('change-product').disabled=!active;
   $('end-shift').disabled=!active;
   $('start-shift').disabled=active;
+  renderProductionDashboard();
 }
 function clearPendingCutForRun(){
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
@@ -1048,7 +1153,7 @@ function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null){
   extruder=Number(extruder);
   if(![1,2,3,4].includes(extruder)) extruder=1;
   const now=new Date().toISOString();
-  state.activeShift={id:newId('shift'),name,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,product,targetBW:target,swrap,startedAt:now}]};
+  state.activeShift={id:newId('shift'),name,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
   state.activeShift.runs[0].id=state.activeShift.runId;
   $('bw-product').value=product; $('bw-target').value=String(target); $('bw-current-swrap').value=fmt(swrap,1);
   state.product=product; saveOptimizerSettings(target,swrap); clearPendingCutForRun(); saveShift(); saveSession();
@@ -1069,7 +1174,7 @@ function commitProductChange(product,dialogSWrap=null){
   $('bw-current-swrap').value=fmt(swrap,1); state.currentSWrap=swrap;
   if(product===old){$('bw-product').value=product;saveOptimizerSettings(target,swrap);renderShiftPanel();closeProductDialog();return true;}
   const currentRun=state.activeShift.runs.find(r=>r.id===state.activeShift.runId);if(currentRun)currentRun.endedAt=new Date().toISOString();
-  const run={id:newId('run'),extruder:state.activeShift.extruder,product,targetBW:target,swrap,startedAt:new Date().toISOString()};
+  const run={id:newId('run'),extruder:state.activeShift.extruder,product,targetBW:target,swrap,startedAt:new Date().toISOString(),materialLbs:0,cutCount:0};
   state.activeShift.product=product;state.activeShift.runId=run.id;state.activeShift.runs.push(run);
   state.product=product;$('bw-product').value=product;$('bw-target').value=String(target);
   saveOptimizerSettings(target,swrap);
@@ -1177,6 +1282,7 @@ function completeDualWinderCut(){
   const processContext=currentProcessContext();
   state.lastCompletedCut={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString()};
   localStorage.setItem(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
+  recordProductionMaterial(pendingCut.winder1Input?.weight,pendingCut.winder2Input?.weight);
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
 }
 
@@ -1253,6 +1359,13 @@ $('save-learning').addEventListener('click',saveLearningResult);
 $('clear-learning').addEventListener('click',()=>{state.learningEngine.clear();renderLearningDashboard();showToast(ot('resetDone'));});
 $('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];localStorage.removeItem(TREND_HISTORY_KEY);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
 $('clear-history').addEventListener('click',()=>{state.history=[];localStorage.removeItem('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
+$('production-target')?.addEventListener('click',openProductionDialog);
+$('production-dialog-close')?.addEventListener('click',closeProductionDialog);
+$('production-dialog')?.addEventListener('click',event=>{if(event.target===$('production-dialog'))closeProductionDialog();});
+$('target-lbs-hour')?.addEventListener('input',updateProductionTargetPreview);
+$('target-shift-hours')?.addEventListener('input',updateProductionTargetPreview);
+$('save-production-target')?.addEventListener('click',saveCurrentProductionTarget);
+setInterval(()=>{if(state.activeShift)renderProductionDashboard();},30000);
 $('start-shift').addEventListener('click',startShift);
 $('change-product').addEventListener('click',()=>changeProduct());
 $('end-shift').addEventListener('click',endShift);
@@ -1304,7 +1417,7 @@ bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.6.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.8.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
