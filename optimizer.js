@@ -169,7 +169,7 @@
       const consistent = rSquared >= 0.55;
       const nearOrOutside = projectedAbsoluteDifference > GREEN_TOLERANCE;
       const recommendAdjustment = finitePositive(speed) && direction !== 'stable' && movingAway && consistent && nearOrOutside;
-      const adjustment = recommendAdjustment ? (direction === 'up' ? -this.preventiveStep : this.preventiveStep) : 0;
+      const adjustment = recommendAdjustment ? (direction === 'up' ? this.preventiveStep : -this.preventiveStep) : 0;
       const suggestedSWrap = finitePositive(speed) ? Math.max(1, Math.round(speed + adjustment)) : null;
       let level = 'stable';
       if (recommendAdjustment) level = projectedAbsoluteDifference >= this.tolerance ? 'danger' : 'warning';
