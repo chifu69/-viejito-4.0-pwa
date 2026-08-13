@@ -1,4 +1,4 @@
-# Industrial IA V5.10 — Line Learning Intelligence
+# Industrial IA V5.10.1 — Line Learning Intelligence
 
 ## What changed
 - Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.
@@ -12,8 +12,24 @@
 Viejito does not learn from chat questions. It learns from structured, completed production results and confirmed adjustment results. Low-history jobs fall back to the mathematical formula.
 
 
-## V5.10 — Plant BW Alignment
+## V5.10.1 — Plant BW Alignment
 - BW factor changed from the exact 453.59237 g/lb conversion to the plant/system convention of **450**.
 - Reverse length calculations use the same factor for consistency.
 - Verification example: **535 lb × 7051 ft × 48 in = 5.93 BW**.
 - This is intentionally a plant/system calculation convention, not the exact physical lb-to-gram conversion.
+
+
+## V5.10.1 — Lbs/hr display fix
+The live target calculation was mathematically correct, but the shared number-formatting function removed trailing zeroes from whole numbers when `d=0`.
+
+Example of the bug:
+- 122 × 12 = 1,464 → displayed correctly as 1464
+- 1220 × 12 = 14,640 → incorrectly displayed as 1464 because the final zero was stripped
+
+Fixed behavior:
+- 122 × 12 = **1,464**
+- 1,220 × 12 = **14,640**
+- 1,300 × 12 = **15,600**
+
+The existing live input listeners are preserved, so `Target per shift` updates while typing.
+The plant BW factor of **450** is unchanged.

@@ -1,10 +1,10 @@
-const CACHE='industrial-ia-5.10.0-system-bw-450';
+const CACHE='industrial-ia-5.10.1-lbs-display-fix';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.10.0',
-  './optimizer.js?v=5.10.0',
-  './app.js?v=5.10.0',
+  './styles.css?v=5.10.1',
+  './optimizer.js?v=5.10.1',
+  './app.js?v=5.10.1',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',
