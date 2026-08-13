@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.10.1" rel="stylesheet"/>
+<link href="styles.css?v=5.11.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -59,15 +59,24 @@
     <span class="shift-dot" id="shift-dot"></span>
     <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
   </div>
-  <div class="production-dashboard" id="production-dashboard">
-    <div><span id="prod-current-label">Actual rate</span><strong id="prod-current-rate">—</strong><small>lbs/hr</small></div>
-    <div><span id="prod-total-label">Target rate</span><strong id="prod-current-material">—</strong><small>lbs/hr</small></div>
-    <div><span>Produced</span><strong id="prod-produced-material">0</strong><small>lbs</small></div>
-    <div><span id="prod-project-label">Projected end</span><strong id="prod-projected-end">—</strong><small>lbs</small></div>
-    <div><span id="prod-target-label">Shift target</span><strong id="prod-shift-target">—</strong><small>lbs</small></div>
-    <p class="production-forecast" id="production-forecast">Start a shift to begin production tracking.</p>
-  </div>
-
+  <button class="production-summary-bar" id="production-summary-toggle" type="button" aria-label="Open production details">
+    <span class="production-summary-icon">📊</span>
+    <span class="production-summary-item"><small id="prod-current-label">Actual</small><strong id="prod-current-rate">—</strong><em>lbs/hr</em></span>
+    <span class="production-summary-separator"></span>
+    <span class="production-summary-item"><small id="prod-total-label">Target</small><strong id="prod-current-material">—</strong><em>lbs/hr</em></span>
+    <span class="production-summary-separator"></span>
+    <span class="production-summary-item production-summary-project"><small id="prod-project-label">Projected</small><strong id="prod-projected-end">—</strong><em>lbs</em></span>
+    <span class="production-summary-chevron">›</span>
+    <span class="production-hidden-values" aria-hidden="true"><strong id="prod-produced-material">0</strong><strong id="prod-shift-target">—</strong><span id="prod-target-label">Shift target</span><span id="production-forecast">Start a shift to begin production tracking.</span></span>
+  </button>
+</div>
+<div class="process-priority-summary hidden" id="process-priority-summary" aria-live="assertive">
+  <span class="process-priority-dot"></span>
+  <div class="process-priority-bw"><small>AVERAGE BW</small><strong id="priority-average-bw">—</strong></div>
+  <div class="process-priority-metric"><small>TARGET</small><strong id="priority-target-bw">—</strong></div>
+  <div class="process-priority-metric"><small>Δ BW</small><strong id="priority-difference">—</strong></div>
+  <div class="process-priority-status"><strong id="priority-status">READY</strong><small id="priority-message">Calculate both winders</small></div>
+  <div class="process-priority-swrap"><small>S-WRAP</small><strong><span id="priority-current-swrap">—</span><span class="priority-arrow">→</span><span id="priority-suggested-swrap">—</span></strong></div>
 </div>
 </section>
 <div class="tool-workspace"><div class="calculator-column"><section class="view active" id="view-bw">
@@ -209,7 +218,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.10.1 • Line Learning Intelligence</footer>
+<footer id="footer-text">Industrial IA 5.11.0 • Line Learning Intelligence</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -276,7 +285,31 @@
 
 <div class="product-dialog hidden" id="production-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="production-dialog-title">
   <div class="product-dialog-card production-dialog-card">
-    <div class="product-dialog-heading"><div><p class="eyebrow">PRODUCTION TRACKING</p><h3 id="production-dialog-title">Targets & product history</h3></div><button class="dialog-close" id="production-dialog-close" type="button" aria-label="Close">×</button></div>
+    <div class="product-dialog-heading"><div><p class="eyebrow">PRODUCTION TRACKING</p><h3 id="production-dialog-title">Production details & history</h3></div><button class="dialog-close" id="production-dialog-close" type="button" aria-label="Close">×</button></div>
+    <div class="production-detail-grid">
+      <div><small>Actual rate</small><strong id="detail-current-rate">—</strong><span>lbs/hr</span></div>
+      <div><small>Target rate</small><strong id="detail-target-rate">—</strong><span>lbs/hr</span></div>
+      <div><small>Produced</small><strong id="detail-produced">0</strong><span>lbs</span></div>
+      <div><small>Projected end</small><strong id="detail-projected">—</strong><span>lbs</span></div>
+      <div><small>Shift target</small><strong id="detail-shift-target">—</strong><span>lbs</span></div>
+    </div>
+    <div class="production-detail-forecast" id="detail-production-forecast">Start a shift to begin production tracking.</div>
+    <section class="production-trend-card" aria-labelledby="production-trend-title">
+      <div class="production-trend-heading"><div><small>SHIFT TREND</small><strong id="production-trend-title">Actual vs target lbs/hr</strong></div><span id="production-trend-points">0 cuts</span></div>
+      <div class="production-chart-wrap">
+        <svg id="production-trend-chart" viewBox="0 0 600 190" role="img" aria-label="Production rate trend">
+          <line class="production-chart-grid" x1="34" y1="20" x2="34" y2="162"></line>
+          <line class="production-chart-grid" x1="34" y1="162" x2="582" y2="162"></line>
+          <line class="production-chart-target" id="production-chart-target" x1="34" y1="95" x2="582" y2="95"></line>
+          <polyline class="production-chart-line" id="production-chart-line" points=""></polyline>
+          <g id="production-chart-dots"></g>
+          <text class="production-chart-label" id="production-chart-high" x="4" y="26">—</text>
+          <text class="production-chart-label" id="production-chart-low" x="4" y="164">0</text>
+          <text class="production-chart-target-label" id="production-chart-target-label" x="580" y="89" text-anchor="end">Target —</text>
+        </svg>
+        <p class="production-chart-empty" id="production-chart-empty">Complete cuts to build the trend chart.</p>
+      </div>
+    </section>
     <div class="production-target-form">
       <label><span id="target-hour-label">Target lbs per hour</span><input id="target-lbs-hour" inputmode="decimal" min="1" step="1" type="number" placeholder="1200"></label>
       <label><span id="shift-hours-label">Shift hours</span><input id="target-shift-hours" inputmode="decimal" min="1" max="24" step="0.5" type="number" value="12"></label>
@@ -288,7 +321,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.10.1"></script>
-<script src="app.js?v=5.10.1"></script>
+<script src="optimizer.js?v=5.11.0"></script>
+<script src="app.js?v=5.11.0"></script>
 </body>
 </html>

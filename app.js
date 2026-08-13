@@ -49,9 +49,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.10.1',
+    introTitle: 'Industrial IA 5.11',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.10.1 • Plant Assistant'
+    footer: 'Industrial IA 5.11 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -77,9 +77,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.10.1',
+    introTitle: 'Industrial IA 5.11',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.10.1 • Asistente de planta'
+    footer: 'Industrial IA 5.11 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -105,9 +105,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.10.1',
+    introTitle: 'Industrial IA 5.11',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.10.1 • Assistant industriel'
+    footer: 'Industrial IA 5.11 • Assistant industriel'
   }
 };
 
@@ -340,6 +340,23 @@ function renderResultStatus(result){
   statusBox.setAttribute('aria-label',`${status.title}. ${status.message}`);
 }
 
+
+function renderProcessPrioritySummary(result){
+  const box=$('process-priority-summary');
+  if(!box||!result)return;
+  const status=optimizerStatus(result);
+  box.classList.remove('hidden','green','yellow','red','status-pop');
+  box.classList.add(result.level);
+  void box.offsetWidth;box.classList.add('status-pop');
+  $('priority-average-bw').textContent=fmt(result.actualBW,3);
+  $('priority-target-bw').textContent=fmt(result.targetBW,2);
+  $('priority-difference').textContent=result.difference>0?`+${fmt(result.difference,2)}`:fmt(result.difference,2);
+  $('priority-status').textContent=status.title;
+  $('priority-message').textContent=status.message;
+  $('priority-current-swrap').textContent=fmt(result.currentSWrap,1);
+  $('priority-suggested-swrap').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):fmt(result.currentSWrap,1);
+}
+
 function renderOptimizerPanel(result){
   const panel=$('optimizer-panel');
   const status=optimizerStatus(result);
@@ -370,6 +387,7 @@ function renderOptimizerPanel(result){
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
   renderResultStatus(result);
+  renderProcessPrioritySummary(result);
   runDangerFlash(result);
 }
 
@@ -1108,6 +1126,7 @@ function renderProductionDashboard(){
   if($('prod-produced-material'))$('prod-produced-material').textContent=active?fmt(stats.material,0):'0';
   $('prod-projected-end').textContent=active&&stats.rate?fmt(stats.projected,0):'—';
   $('prod-shift-target').textContent=active&&stats.targetTotal?fmt(stats.targetTotal,0):'—';
+  renderProductionDetails(active,run,stats);
   const forecast=$('production-forecast');
   forecast.className='production-forecast';
   if(!active){forecast.textContent=productionCopy('start');return;}
@@ -1118,6 +1137,65 @@ function renderProductionDashboard(){
   else if(stats.difference>0){forecast.textContent=productionCopy('above').replace('{diff}',diff.toLocaleString());forecast.classList.add('above');}
   else{forecast.textContent=productionCopy('below').replace('{diff}',diff.toLocaleString());forecast.classList.add('below');}
 }
+
+function productionForecastText(active,stats){
+  if(!active) return {text:productionCopy('start'),level:''};
+  if(!stats.material||stats.hours<0.25) return {text:productionCopy('waiting'),level:''};
+  if(!stats.targetTotal) return {text:state.language==='es'?'Guarda un target lbs/hour para este producto.':'Save a target lbs/hour for this product.',level:''};
+  const diff=Math.round(Math.abs(stats.difference));
+  if(diff<=50) return {text:productionCopy('on'),level:'on'};
+  if(stats.difference>0) return {text:productionCopy('above').replace('{diff}',diff.toLocaleString()),level:'above'};
+  return {text:productionCopy('below').replace('{diff}',diff.toLocaleString()),level:'below'};
+}
+function renderProductionDetails(active,run,stats){
+  const set=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+  set('detail-current-rate',active&&stats.rate?fmt(stats.rate,0):'—');
+  set('detail-target-rate',active&&stats.target?.lbsPerHour?fmt(stats.target.lbsPerHour,0):'—');
+  set('detail-produced',active?fmt(stats.material,0):'0');
+  set('detail-projected',active&&stats.rate?fmt(stats.projected,0):'—');
+  set('detail-shift-target',active&&stats.targetTotal?fmt(stats.targetTotal,0):'—');
+  const forecast=productionForecastText(active,stats);
+  const box=$('detail-production-forecast');
+  if(box){box.textContent=forecast.text;box.className='production-detail-forecast'+(forecast.level?' '+forecast.level:'');}
+  renderProductionTrendChart(run,stats);
+}
+function productionRateSamples(run){
+  if(!run||!Array.isArray(run.samples)||!run.samples.length)return [];
+  const start=new Date(run.startedAt).getTime();
+  return run.samples.map((sample,index)=>{
+    const elapsed=(new Date(sample.time).getTime()-start)/3600000;
+    const cumulative=Number(sample.cumulative)||0;
+    return {index:index+1,rate:elapsed>0?cumulative/elapsed:0};
+  }).filter(item=>Number.isFinite(item.rate)&&item.rate>0);
+}
+function renderProductionTrendChart(run,stats){
+  const line=$('production-chart-line'),dots=$('production-chart-dots'),empty=$('production-chart-empty');
+  if(!line||!dots||!empty)return;
+  const samples=productionRateSamples(run),target=Number(stats?.target?.lbsPerHour)||0;
+  if($('production-trend-points'))$('production-trend-points').textContent=`${samples.length} cut${samples.length===1?'':'s'}`;
+  if(!samples.length){
+    line.setAttribute('points','');dots.innerHTML='';empty.classList.remove('hidden');
+    if($('production-chart-target-label'))$('production-chart-target-label').textContent=target?`Target ${fmt(target,0)}`:'Target —';
+    return;
+  }
+  empty.classList.add('hidden');
+  const values=samples.map(s=>s.rate).concat(target?[target]:[]);
+  const max=Math.max(...values,1),min=Math.min(...values,0),pad=Math.max(50,(max-min)*0.16);
+  const low=Math.max(0,min-pad),high=max+pad,x0=34,x1=582,y0=20,y1=162;
+  const xFor=i=>samples.length===1?(x0+x1)/2:x0+(i/(samples.length-1))*(x1-x0);
+  const yFor=value=>y1-((value-low)/(high-low||1))*(y1-y0);
+  line.setAttribute('points',samples.map((s,i)=>`${xFor(i).toFixed(1)},${yFor(s.rate).toFixed(1)}`).join(' '));
+  dots.innerHTML=samples.map((s,i)=>`<circle class="production-chart-dot" cx="${xFor(i).toFixed(1)}" cy="${yFor(s.rate).toFixed(1)}" r="4"><title>Cut ${s.index}: ${fmt(s.rate,0)} lbs/hr</title></circle>`).join('');
+  const targetLine=$('production-chart-target');
+  if(targetLine){const ty=target?yFor(target):y1;targetLine.setAttribute('y1',ty);targetLine.setAttribute('y2',ty);targetLine.classList.toggle('hidden',!target);}
+  if($('production-chart-high'))$('production-chart-high').textContent=fmt(high,0);
+  if($('production-chart-low'))$('production-chart-low').textContent=fmt(low,0);
+  if($('production-chart-target-label')){
+    $('production-chart-target-label').textContent=target?`Target ${fmt(target,0)}`:'Target —';
+    $('production-chart-target-label').setAttribute('y',String(Math.max(24,(target?yFor(target):95)-6)));
+  }
+}
+
 function renderProductionHistory(){
   const currentProduct=state.activeShift?.product||state.product||'';
   const target=productionTargetFor(currentProduct);
@@ -1140,7 +1218,7 @@ function updateProductionTargetPreview(){
   const perHour=Number($('target-lbs-hour')?.value)||0,hours=Number($('target-shift-hours')?.value)||12;
   $('target-shift-total').textContent=perHour?fmt(perHour*hours,0):'—';
 }
-function openProductionDialog(){renderProductionHistory();$('production-dialog').classList.remove('hidden');$('production-dialog').setAttribute('aria-hidden','false');}
+function openProductionDialog(){renderProductionDashboard();renderProductionHistory();$('production-dialog').classList.remove('hidden');$('production-dialog').setAttribute('aria-hidden','false');}
 function closeProductionDialog(){$('production-dialog').classList.add('hidden');$('production-dialog').setAttribute('aria-hidden','true');}
 function saveCurrentProductionTarget(){
   const product=normalizeProduct(state.activeShift?.product||$('bw-product')?.value||state.product||'');
@@ -1360,7 +1438,7 @@ function syncCurrentSWrap(value,{save=true}={}){
 let dangerFlashTimer=null;
 let dangerFlashInterval=null;
 function runDangerFlash(result){
-  const targets=[$('optimizer-panel'),$('result-status'),$('optimizer-suggested')].filter(Boolean);
+  const targets=[$('optimizer-panel'),$('result-status'),$('optimizer-suggested'),$('process-priority-summary')].filter(Boolean);
   if(dangerFlashTimer) clearTimeout(dangerFlashTimer);
   if(dangerFlashInterval) clearInterval(dangerFlashInterval);
   targets.forEach(el=>el.classList.remove('danger-flash','flash-on'));
@@ -1443,6 +1521,7 @@ $('clear-learning').addEventListener('click',()=>{state.learningEngine.clear();r
 $('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
 $('clear-history').addEventListener('click',()=>{state.history=[];lineRemove('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
 $('production-target')?.addEventListener('click',openProductionDialog);
+$('production-summary-toggle')?.addEventListener('click',openProductionDialog);
 $('production-dialog-close')?.addEventListener('click',closeProductionDialog);
 $('production-dialog')?.addEventListener('click',event=>{if(event.target===$('production-dialog'))closeProductionDialog();});
 $('target-lbs-hour')?.addEventListener('input',updateProductionTargetPreview);
@@ -1507,7 +1586,7 @@ if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro'
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.10.1',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.11.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

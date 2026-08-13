@@ -1,4 +1,4 @@
-# Industrial IA V5.10.1 — Line Learning Intelligence
+# Industrial IA V5.11 — Line Learning Intelligence
 
 ## What changed
 - Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.
@@ -12,14 +12,14 @@
 Viejito does not learn from chat questions. It learns from structured, completed production results and confirmed adjustment results. Low-history jobs fall back to the mathematical formula.
 
 
-## V5.10.1 — Plant BW Alignment
+## V5.11 — Plant BW Alignment
 - BW factor changed from the exact 453.59237 g/lb conversion to the plant/system convention of **450**.
 - Reverse length calculations use the same factor for consistency.
 - Verification example: **535 lb × 7051 ft × 48 in = 5.93 BW**.
 - This is intentionally a plant/system calculation convention, not the exact physical lb-to-gram conversion.
 
 
-## V5.10.1 — Lbs/hr display fix
+## V5.11 — Lbs/hr display fix
 The live target calculation was mathematically correct, but the shared number-formatting function removed trailing zeroes from whole numbers when `d=0`.
 
 Example of the bug:
@@ -33,3 +33,11 @@ Fixed behavior:
 
 The existing live input listeners are preserved, so `Target per shift` updates while typing.
 The plant BW factor of **450** is unchanged.
+
+
+## V5.11 — Operator Priority UI
+- Production summary is compact and tappable; full production details open on tap.
+- Full production detail includes rate, target, produced, projection, shift target, forecast, and Actual-vs-Target trend chart from completed cuts.
+- Average BW, Target, BW difference, status, and S-Wrap action are surfaced at the top after a completed two-winder cut.
+- Existing green/yellow/red thresholds and 5-second red flash are unchanged.
+- BW factor 450 and V5.10.1 integer display fix are preserved.
