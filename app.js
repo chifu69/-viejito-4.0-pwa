@@ -1,4 +1,5 @@
-const FACTOR_GRAMS_PER_LB = 450; // Plant/system BW factor
+const BW_FACTOR_KEY='viejitoBWFactorV1';
+let FACTOR_GRAMS_PER_LB = Number(localStorage.getItem(BW_FACTOR_KEY)) || 450;
 const DEFAULT_MANDREL = 48;
 const VALID_MANDRELS = [48, 51];
 const DEFAULT_LANGUAGE = 'en';
@@ -49,9 +50,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.11',
+    introTitle: 'Industrial IA 5.13',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.11 • Plant Assistant'
+    footer: 'Industrial IA 5.13 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -77,9 +78,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.11',
+    introTitle: 'Industrial IA 5.13',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.11 • Asistente de planta'
+    footer: 'Industrial IA 5.13 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -105,9 +106,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.11',
+    introTitle: 'Industrial IA 5.13',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.11 • Assistant industriel'
+    footer: 'Industrial IA 5.13 • Assistant industriel'
   }
 };
 
@@ -250,7 +251,7 @@ const optimizerText = {
   en: {
     targetBW:'Target BW', currentSWrap:'Current S-Wrap', difference:'Difference', suggestedSWrap:'Suggested S-Wrap',
     tooLight:'Too light', tooHeavy:'Too heavy', greenStatus:'ON TARGET', yellowStatus:'NEAR LIMIT', redStatus:'OUT OF RANGE',
-    greenMessage:'Within ±0.20. No adjustment needed.', yellowMessage:'Between 0.20 and 0.30 from target. Warning — watch the next cut and prepare an S-Wrap correction.',
+    greenMessage:'Within ±0.17. No adjustment needed.', yellowMessage:'Between 0.17 and 0.30 from target. Warning — watch the next cut and prepare an S-Wrap correction.',
     redMessage:'Adjust the S-Wrap now.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
     decrease:'Decrease S-Wrap by {amount}, from {current} to {suggested}.', increase:'Increase S-Wrap by {amount}, from {current} to {suggested}.',
     hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}', formulaSuggestion:'Formula suggestion', learnedSuggestion:'Learned suggestion', confidence:'Confidence', rollsLearned:'Rolls learned', recordResult:'Record actual result', learningQuestion:'After making the change, enter the S-Wrap you used and the final BW.', appliedSWrap:'Applied S-Wrap', finalBW:'Final BW', saveLearn:'Save and learn', cancel:'Cancel', learningSaved:'Result saved. Viejito learned from this roll.', machineLearning:'Machine learning', resetLearning:'Reset learning', averageCorrection:'Average correction', successRate:'Success rate', deviceOnly:'Learning is stored only on this device.', resetDone:'Machine learning was reset.', trendPredictor:'Trend Predictor', trendWaiting:'Add {remaining} more BW roll(s) to activate the prediction.', trendStable:'The last 5 rolls are stable. No preventive change is recommended.', trendUp:'BW is increasing by about {slope} per roll. The next roll is projected at {projected}. Increase S-Wrap by {amount} points now, from {current} to {suggested}.', trendDown:'BW is decreasing by about {slope} per roll. The next roll is projected at {projected}. Decrease S-Wrap by {amount} points now, from {current} to {suggested}.', trendProjected:'Projected next BW', trendDirection:'Direction', trendConsistency:'Consistency', trendRolls:'Last rolls', trendClear:'Clear trend', trendCleared:'BW trend history cleared.', trendUpLabel:'Increasing', trendDownLabel:'Decreasing', trendStableLabel:'Stable'
@@ -258,7 +259,7 @@ const optimizerText = {
   es: {
     targetBW:'BW objetivo', currentSWrap:'S-Wrap actual', difference:'Diferencia', suggestedSWrap:'S-Wrap sugerido',
     tooLight:'Muy liviano', tooHeavy:'Muy pesado', greenStatus:'DENTRO DEL OBJETIVO', yellowStatus:'CERCA DEL LÍMITE', redStatus:'FUERA DE RANGO',
-    greenMessage:'Dentro de ±0.20. No se necesita ajuste.', yellowMessage:'Entre 0.20 y menos de 0.30 del objetivo. ADVERTENCIA: vigila el próximo corte y prepárate para corregir el S-Wrap.',
+    greenMessage:'Dentro de ±0.17. No se necesita ajuste.', yellowMessage:'Entre 0.17 y menos de 0.30 del objetivo. ADVERTENCIA: vigila el próximo corte y prepárate para corregir el S-Wrap.',
     redMessage:'FUERA DE RANGO. Ajusta el S-Wrap ahora.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
     decrease:'Baja el S-Wrap {amount}, de {current} a {suggested}.', increase:'Sube el S-Wrap {amount}, de {current} a {suggested}.',
     hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}', formulaSuggestion:'Sugerencia por fórmula', learnedSuggestion:'Sugerencia aprendida', confidence:'Confianza', rollsLearned:'Rollos aprendidos', recordResult:'Registrar resultado real', learningQuestion:'Después del cambio, escribe el S-Wrap que usaste y el BW final.', appliedSWrap:'S-Wrap aplicado', finalBW:'BW final', saveLearn:'Guardar y aprender', cancel:'Cancelar', learningSaved:'Resultado guardado. Viejito aprendió de este rollo.', machineLearning:'Aprendizaje de la máquina', resetLearning:'Borrar aprendizaje', averageCorrection:'Corrección promedio', successRate:'Porcentaje de éxito', deviceOnly:'El aprendizaje se guarda solamente en este dispositivo.', resetDone:'Se borró el aprendizaje de la máquina.', trendPredictor:'Predictor de tendencia', trendWaiting:'Agrega {remaining} rollo(s) de BW para activar la predicción.', trendStable:'Los últimos 5 rollos están estables. No se recomienda ningún cambio preventivo.', trendUp:'El BW está aumentando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Sube el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendDown:'El BW está bajando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Baja el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendProjected:'Próximo BW proyectado', trendDirection:'Dirección', trendConsistency:'Consistencia', trendRolls:'Últimos rollos', trendClear:'Borrar tendencia', trendCleared:'Se borró el historial de tendencia de BW.', trendUpLabel:'Aumentando', trendDownLabel:'Bajando', trendStableLabel:'Estable'
@@ -355,6 +356,9 @@ function renderProcessPrioritySummary(result){
   $('priority-message').textContent=status.message;
   $('priority-current-swrap').textContent=fmt(result.currentSWrap,1);
   $('priority-suggested-swrap').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):fmt(result.currentSWrap,1);
+  const outer=Number(result.warningTolerance)||0.30,low=result.targetBW-outer,high=result.targetBW+outer;
+  $('priority-range-low').textContent=fmt(low,2);$('priority-range-target').textContent=fmt(result.targetBW,2);$('priority-range-high').textContent=fmt(high,2);
+  $('priority-range-marker').style.left=`${Math.max(0,Math.min(100,((result.actualBW-low)/(high-low||1))*100))}%`;
 }
 
 function renderOptimizerPanel(result){
@@ -1015,9 +1019,11 @@ function changeoverHistoryRecommendation(product){
   if(!normalized||!newTarget) return null;
   const context={product:normalized.toUpperCase(),mandrel:currentMandrel('bw'),extruder:ACTIVE_LINE,targetBW:newTarget};
   const profile=state.learningEngine.processProfile(context,newTarget);
+  const lastActual=Number(state.lastCompletedCut?.averageBW);
   const currentTarget=Number(state.activeShift?.runs?.find(r=>r.id===state.activeShift?.runId)?.targetBW || state.targetBW);
-  const currentSWrap=Number(state.currentSWrap||$('bw-current-swrap')?.value||170);
-  const formula=positive(currentTarget,currentSWrap,newTarget)?currentSWrap*currentTarget/newTarget:currentSWrap;
+  const currentSWrap=Number(state.lastCompletedCut?.currentSWrap || state.currentSWrap || $('bw-current-swrap')?.value || 170);
+  const referenceBW=positive(lastActual)?lastActual:currentTarget;
+  const formula=positive(referenceBW,currentSWrap,newTarget)?currentSWrap*referenceBW/newTarget:currentSWrap;
   let recommendation=formula,weight=0;
   if(profile.count>=5&&positive(profile.recommendedSWrap)){
     weight=Math.min(.65,Math.max(.15,(profile.confidence||0)/140));
@@ -1037,7 +1043,7 @@ function renderJobHistoryPreview(product){
   if(!p.count){box.innerHTML=`<strong>${title}</strong><small>${noData}</small>`;return;}
   const variation=p.bwSpread!=null?`±${fmt(p.bwSpread,3)}`:'—';
   const effect=p.slope!=null?`${p.slope>0?'+':''}${fmt(p.slope,5)} BW / S-Wrap point`:'Learning…';
-  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math ${result.formula} → <b>Recommended start ${result.recommendation}</b></p>`;
+  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math from last actual BW ${result.formula} → <b>Recommended start ${result.recommendation}</b></p>`;
 }
 function updateProductDialogPreview(){
   const value=$('product-search')?.value||'';
@@ -1262,7 +1268,7 @@ function renderShiftPanel(){
   if($('active-line-label'))$('active-line-label').textContent=`LINE ${ACTIVE_LINE}`;
   const panel=$('shift-control-panel'),active=!!state.activeShift;
   panel?.classList.toggle('active',active);
-  $('shift-status-title').textContent=active?`${shiftText('active')} • Line ${ACTIVE_LINE} • ${state.activeShift.name||'—'}`:shiftText('inactive');
+  $('shift-status-title').innerHTML=active?`<span class="shift-title-prefix">${shiftText('active')}</span><span class="shift-title-line">LINE ${ACTIVE_LINE}</span><span class="shift-title-date">${state.activeShift.name||'—'}</span>`:shiftText('inactive');
   $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
   $('start-shift').querySelector('strong').textContent=shiftText('start');
   $('change-product').querySelector('strong').textContent=shiftText('change');
@@ -1453,6 +1459,11 @@ function runDangerFlash(result){
     targets.forEach(el=>el.classList.remove('danger-flash','flash-on'));
   },5000);
 }
+function currentBWFactor(){return Number(FACTOR_GRAMS_PER_LB)||450;}
+function renderSettingsState(){const f=currentBWFactor();if($('settings-current-factor'))$('settings-current-factor').textContent=String(f);document.querySelectorAll('.bw-factor-choice').forEach(b=>b.classList.toggle('selected',Number(b.dataset.bwFactor)===f));document.querySelectorAll('.settings-choice').forEach(b=>b.classList.toggle('selected',b.dataset.language===state.language));}
+function setBWFactor(value){const f=Number(value);if(![450,453.59237].includes(f))return;FACTOR_GRAMS_PER_LB=f;localStorage.setItem(BW_FACTOR_KEY,String(f));renderSettingsState();showToast(`BW factor set to ${f}.`);}
+function openSettings(){renderSettingsState();const d=$('settings-dialog');d?.classList.remove('hidden');d?.setAttribute('aria-hidden','false');}
+function closeSettings(){const d=$('settings-dialog');d?.classList.add('hidden');d?.setAttribute('aria-hidden','true');}
 function chatMemoryMode(){return $('chat-memory-select')?.value||localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';}
 function saveChatMessage(role,content){
   if(chatMemoryMode()!=='separate') return;
@@ -1503,6 +1514,11 @@ $('chat-backdrop').addEventListener('click',()=>setChatOpen(false));
 document.addEventListener('keydown',event=>{if(event.key==='Escape')setChatOpen(false);});
 document.querySelectorAll('.mandrel').forEach(button=>button.addEventListener('click',()=>selectMandrel(button.dataset.target,Number(button.dataset.value))));
 $('language-select').addEventListener('change',event=>applyLanguage(event.target.value,true));
+$('settings-open')?.addEventListener('click',openSettings);
+$('settings-close')?.addEventListener('click',closeSettings);
+$('settings-dialog')?.addEventListener('click',e=>{if(e.target===$('settings-dialog'))closeSettings();});
+document.querySelectorAll('.settings-choice').forEach(b=>b.addEventListener('click',()=>{const lang=b.dataset.language;$('language-select').value=lang;applyLanguage(lang,true);renderSettingsState();}));
+document.querySelectorAll('.bw-factor-choice').forEach(b=>b.addEventListener('click',()=>setBWFactor(Number(b.dataset.bwFactor))));
 $('personality-select').addEventListener('change',event=>{
   state.personality=VALID_PERSONALITIES.includes(event.target.value)?event.target.value:DEFAULT_PERSONALITY;
   localStorage.setItem('viejitoPersonality',state.personality);
@@ -1586,7 +1602,7 @@ if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro'
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.11.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.13.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

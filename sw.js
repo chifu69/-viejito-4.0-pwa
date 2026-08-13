@@ -1,10 +1,10 @@
-const CACHE='industrial-ia-5.11-operator-priority-ui';
+const CACHE='industrial-ia-5.13-operator-flow-settings';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.11.0',
-  './optimizer.js?v=5.11.0',
-  './app.js?v=5.11.0',
+  './styles.css?v=5.13.0',
+  './optimizer.js?v=5.13.0',
+  './app.js?v=5.13.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

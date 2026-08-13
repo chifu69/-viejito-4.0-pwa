@@ -41,3 +41,14 @@ The plant BW factor of **450** is unchanged.
 - Average BW, Target, BW difference, status, and S-Wrap action are surfaced at the top after a completed two-winder cut.
 - Existing green/yellow/red thresholds and 5-second red flash are unchanged.
 - BW factor 450 and V5.10.1 integer display fix are preserved.
+
+
+## V5.13 — Operator Flow & Settings
+- Settings replaces the visible language selector.
+- Settings includes language plus selectable BW factor 450 / 453.59237.
+- Selected factor persists and drives both BW and Feet calculations.
+- Active Line strip removed; Change line moved to the shift card and LINE number is emphasized.
+- Green early-warning boundary changed to ±0.17; yellow runs from >0.17 to <0.30; red remains ≥0.30.
+- Range bar moved into the top operator-priority BW/S-Wrap summary.
+- Changeover formula now starts from the last completed actual average BW and last/current S-Wrap. Existing learned job history can still refine that mathematical starting point.
+- The recommended changeover S-Wrap is automatically loaded into the changeover dialog and becomes Current S-Wrap when confirmed.

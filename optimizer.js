@@ -1,8 +1,8 @@
 /*
   Viejito Adaptive Process Intelligence — Sprint 2.2
   Global tolerances for every product:
-  GREEN  : |actual - target| <= 0.20 (no change)
-  YELLOW : 0.20 < |actual - target| < 0.30 (warning)
+  GREEN  : |actual - target| <= 0.17 (no change)
+  YELLOW : 0.17 < |actual - target| < 0.30 (warning)
   RED    : |actual - target| >= 0.30 (change S-Wrap now)
 
   Learning stays on this device. Every confirmed result contributes a
@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const GREEN_TOLERANCE = 0.20;
+  const GREEN_TOLERANCE = 0.17;
   const WARNING_TOLERANCE = 0.30;
   const LEARNING_KEY = 'viejitoMachineLearningV2';
   const LEGACY_LEARNING_KEY = 'viejitoMachineLearningV1';
