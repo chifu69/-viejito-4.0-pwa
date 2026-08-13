@@ -1,5 +1,5 @@
 const BW_FACTOR_KEY='viejitoBWFactorV1';
-let FACTOR_GRAMS_PER_LB = Number(localStorage.getItem(BW_FACTOR_KEY)) || 450;
+let FACTOR_GRAMS_PER_LB=Number(localStorage.getItem(BW_FACTOR_KEY))||450;
 const DEFAULT_MANDREL = 48;
 const VALID_MANDRELS = [48, 51];
 const DEFAULT_LANGUAGE = 'en';
@@ -50,9 +50,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.13',
+    introTitle: 'Industrial IA 5.12',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.13 • Plant Assistant'
+    footer: 'Industrial IA 5.12 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -78,9 +78,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.13',
+    introTitle: 'Industrial IA 5.12',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.13 • Asistente de planta'
+    footer: 'Industrial IA 5.12 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -106,9 +106,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.13',
+    introTitle: 'Industrial IA 5.12',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.13 • Assistant industriel'
+    footer: 'Industrial IA 5.12 • Assistant industriel'
   }
 };
 
@@ -357,8 +357,10 @@ function renderProcessPrioritySummary(result){
   $('priority-current-swrap').textContent=fmt(result.currentSWrap,1);
   $('priority-suggested-swrap').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):fmt(result.currentSWrap,1);
   const outer=Number(result.warningTolerance)||0.30,low=result.targetBW-outer,high=result.targetBW+outer;
-  $('priority-range-low').textContent=fmt(low,2);$('priority-range-target').textContent=fmt(result.targetBW,2);$('priority-range-high').textContent=fmt(high,2);
-  $('priority-range-marker').style.left=`${Math.max(0,Math.min(100,((result.actualBW-low)/(high-low||1))*100))}%`;
+  if($('priority-range-low'))$('priority-range-low').textContent=fmt(low,2);
+  if($('priority-range-target'))$('priority-range-target').textContent=fmt(result.targetBW,2);
+  if($('priority-range-high'))$('priority-range-high').textContent=fmt(high,2);
+  if($('priority-range-marker'))$('priority-range-marker').style.left=`${Math.max(0,Math.min(100,((result.actualBW-low)/(high-low||1))*100))}%`;
 }
 
 function renderOptimizerPanel(result){
@@ -392,6 +394,7 @@ function renderOptimizerPanel(result){
   $('range-marker').style.left=`${position}%`;
   renderResultStatus(result);
   renderProcessPrioritySummary(result);
+  renderRecommendationDecision(result);
   runDangerFlash(result);
 }
 
@@ -474,6 +477,75 @@ function renderLearningDashboard(){
   $('dashboard-success').textContent=`${stats.successRate}%`;
   $('dashboard-confidence').textContent=`${stats.confidence}%`;
 }
+
+const PENDING_RECOMMENDATION_KEY='viejitoPendingRecommendationV1';
+function pendingRecommendation(){
+  try{return JSON.parse(lineGet(PENDING_RECOMMENDATION_KEY,'null')||'null');}catch(_){return null;}
+}
+function savePendingRecommendation(value){
+  if(value)lineSet(PENDING_RECOMMENDATION_KEY,JSON.stringify(value));else lineRemove(PENDING_RECOMMENDATION_KEY);
+}
+function predictBWAfterSWrap(result,swrap){
+  const applied=Number(swrap),current=Number(result.currentSWrap),actual=Number(result.actualBW);
+  const profile=result.learning?.profile;
+  if(profile&&Number(profile.confidence)>=45&&Number.isFinite(Number(profile.slope))&&Math.abs(Number(profile.slope))>=0.002){
+    return actual+Number(profile.slope)*(applied-current);
+  }
+  return positive(actual,current,applied)?actual*current/applied:result.targetBW;
+}
+function renderRecommendationDecision(result){
+  const box=$('recommendation-decision');
+  if(!box)return;
+  const show=!!(result&&result.suggestAdjustment&&positive(result.suggestedSWrap));
+  box.classList.toggle('hidden',!show);
+  if(!show)return;
+  const predicted=predictBWAfterSWrap(result,result.suggestedSWrap);
+  $('decision-swrap').textContent=fmt(result.suggestedSWrap,1);
+  $('decision-predicted-bw').textContent=fmt(predicted,3);
+  $('decision-confidence').textContent=`${result.learning?.confidence||0}%`;
+}
+function acceptSWrapRecommendation(){
+  const r=state.latestOptimization;
+  if(!r||!r.suggestAdjustment)return;
+  const applied=Number(r.suggestedSWrap),predicted=predictBWAfterSWrap(r,applied),ctx=currentProcessContext();
+  const pending={
+    acceptedAt:new Date().toISOString(),beforeBW:Number(r.actualBW),targetBW:Number(r.targetBW),
+    beforeSWrap:Number(r.currentSWrap),formulaSuggestion:Number(r.formulaSuggestion),
+    appliedSWrap:applied,predictedBW:Number(predicted),product:ctx.product,mandrel:ctx.mandrel,
+    extruder:ctx.extruder,shiftId:ctx.shiftId,runId:ctx.runId,
+    confidence:Number(r.learning?.confidence)||0
+  };
+  savePendingRecommendation(pending);
+  syncCurrentSWrap(applied,{save:true});
+  if($('bw-current-swrap'))$('bw-current-swrap').value=fmt(applied,1);
+  if($('recommendation-note'))$('recommendation-note').textContent=`Applied ${fmt(applied,1)}. Waiting for the next completed cut to compare predicted ${fmt(predicted,3)} BW with actual BW.`;
+  showToast(`S-Wrap changed to ${fmt(applied,1)}. Viejito is waiting for the next BW to measure its prediction.`);
+}
+function rejectSWrapRecommendation(){
+  savePendingRecommendation(null);
+  if($('recommendation-note'))$('recommendation-note').textContent='Recommendation not applied. Current S-Wrap was kept.';
+  showToast('Recommendation not applied. Current S-Wrap kept.');
+}
+function learnFromPendingRecommendation(finalBW,pair,processContext){
+  const pending=pendingRecommendation();
+  if(!pending)return false;
+  if(Number(pending.extruder)!==Number(processContext.extruder)||String(pending.runId||'')!==String(processContext.runId||''))return false;
+  try{
+    state.learningEngine.add({
+      source:'accepted_prediction',initialBW:pending.beforeBW,targetBW:pending.targetBW,
+      currentSWrap:pending.beforeSWrap,formulaSuggestion:pending.formulaSuggestion,
+      appliedSWrap:pending.appliedSWrap,finalBW:Number(finalBW),predictedBW:pending.predictedBW,
+      operatorAccepted:true,product:pending.product,mandrel:pending.mandrel,extruder:pending.extruder,
+      winder1:pair?.winder1,winder2:pair?.winder2,averageBW:pending.beforeBW
+    });
+    const error=Number(finalBW)-Number(pending.predictedBW);
+    state.lastPredictionOutcome={...pending,actualBW:Number(finalBW),predictionError:error,completedAt:new Date().toISOString()};
+    savePendingRecommendation(null);
+    showToast(`Viejito learned: predicted ${fmt(pending.predictedBW,3)}, actual ${fmt(finalBW,3)}, error ${error>=0?'+':''}${fmt(error,3)} BW.`);
+    return true;
+  }catch(_){return false;}
+}
+
 function saveLearningResult(){
   const optimization=state.latestOptimization;
   if(!optimization) return showToast(t('invalidNumbers'));
@@ -1016,20 +1088,20 @@ function renderProductChoices(query=''){
 function changeoverHistoryRecommendation(product){
   const normalized=normalizeProduct(product||'');
   const newTarget=targetFromProduct(normalized);
-  if(!normalized||!newTarget) return null;
+  if(!normalized||!newTarget)return null;
   const context={product:normalized.toUpperCase(),mandrel:currentMandrel('bw'),extruder:ACTIVE_LINE,targetBW:newTarget};
   const profile=state.learningEngine.processProfile(context,newTarget);
-  const lastActual=Number(state.lastCompletedCut?.averageBW);
-  const currentTarget=Number(state.activeShift?.runs?.find(r=>r.id===state.activeShift?.runId)?.targetBW || state.targetBW);
-  const currentSWrap=Number(state.lastCompletedCut?.currentSWrap || state.currentSWrap || $('bw-current-swrap')?.value || 170);
-  const referenceBW=positive(lastActual)?lastActual:currentTarget;
+  const last=state.lastCompletedCut && Number(state.lastCompletedCut.extruder||ACTIVE_LINE)===ACTIVE_LINE ? state.lastCompletedCut : null;
+  const actualBW=Number(last?.averageBW);
+  const currentSWrap=Number(last?.currentSWrap||state.currentSWrap||$('bw-current-swrap')?.value||170);
+  const referenceBW=positive(actualBW)?actualBW:Number(state.targetBW);
   const formula=positive(referenceBW,currentSWrap,newTarget)?currentSWrap*referenceBW/newTarget:currentSWrap;
   let recommendation=formula,weight=0;
   if(profile.count>=5&&positive(profile.recommendedSWrap)){
     weight=Math.min(.65,Math.max(.15,(profile.confidence||0)/140));
     recommendation=formula*(1-weight)+Number(profile.recommendedSWrap)*weight;
   }
-  return {profile,formula:Math.round(formula),recommendation:Math.round(recommendation),historyWeight:weight};
+  return {profile,referenceBW,currentSWrap,formula:Math.round(formula),recommendation:Math.round(recommendation),historyWeight:weight};
 }
 function renderJobHistoryPreview(product){
   const box=$('job-history-preview'); if(!box)return;
@@ -1043,7 +1115,7 @@ function renderJobHistoryPreview(product){
   if(!p.count){box.innerHTML=`<strong>${title}</strong><small>${noData}</small>`;return;}
   const variation=p.bwSpread!=null?`±${fmt(p.bwSpread,3)}`:'—';
   const effect=p.slope!=null?`${p.slope>0?'+':''}${fmt(p.slope,5)} BW / S-Wrap point`:'Learning…';
-  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math from last actual BW ${result.formula} → <b>Recommended start ${result.recommendation}</b></p>`;
+  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math ${result.formula} → <b>Recommended start ${result.recommendation}</b></p>`;
 }
 function updateProductDialogPreview(){
   const value=$('product-search')?.value||'';
@@ -1053,7 +1125,20 @@ function updateProductDialogPreview(){
   renderJobHistoryPreview(value);
   if(productDialogMode==='change' && target){
     const recommendation=changeoverHistoryRecommendation(value);
-    if(recommendation&&$('product-swrap')) $('product-swrap').value=String(recommendation.recommendation);
+    if(recommendation&&$('product-swrap')){
+      $('product-swrap').value=String(recommendation.recommendation);
+      $('product-swrap').readOnly=true;
+      $('changeover-auto-box')?.classList.remove('hidden');
+      if($('changeover-last-bw'))$('changeover-last-bw').textContent=fmt(recommendation.referenceBW,3);
+      if($('changeover-last-swrap'))$('changeover-last-swrap').textContent=fmt(recommendation.currentSWrap,1);
+      if($('changeover-new-swrap'))$('changeover-new-swrap').textContent=fmt(recommendation.recommendation,1);
+      if($('changeover-auto-note'))$('changeover-auto-note').textContent=recommendation.profile.count>=5
+        ? `Formula ${recommendation.formula} + Line ${ACTIVE_LINE} history (${recommendation.profile.count} comparable rolls, ${recommendation.profile.confidence}% confidence).`
+        : `Formula uses last actual BW ${fmt(recommendation.referenceBW,3)} at S-Wrap ${fmt(recommendation.currentSWrap,1)}.`;
+    }
+  }else{
+    if($('product-swrap'))$('product-swrap').readOnly=false;
+    $('changeover-auto-box')?.classList.add('hidden');
   }
 }
 function openProductDialog(mode='change'){
@@ -1071,7 +1156,7 @@ function openProductDialog(mode='change'){
   selectedExtruder=ACTIVE_LINE;
   document.querySelectorAll('.extruder-option').forEach(button=>button.classList.toggle('selected',Number(button.dataset.extruder)===selectedExtruder));
   $('product-search').value=mode==='start'?($('bw-product').value||state.product||''):'';
-  if($('product-swrap')) $('product-swrap').value=fmt(Number($('bw-current-swrap').value||state.currentSWrap||180),1);
+  if($('product-swrap')){$('product-swrap').readOnly=false;$('product-swrap').value=fmt(Number($('bw-current-swrap').value||state.currentSWrap||180),1);}
   updateProductDialogPreview();
   dialog.classList.remove('hidden'); dialog.setAttribute('aria-hidden','false');
   setTimeout(()=>$('product-search').focus(),50);
@@ -1365,7 +1450,7 @@ function individualWinderStatus(value){
   const target=Number($('bw-target')?.value||state.targetBW);
   if(!positive(target)) return {level:'idle',label:'',difference:null};
   const difference=Math.abs(value-target);
-  if(difference<=0.20) return {level:'green',label:state.language==='es'?'EN OBJETIVO':state.language==='fr'?'DANS LA CIBLE':'ON TARGET',difference};
+  if(difference<=0.17) return {level:'green',label:state.language==='es'?'EN OBJETIVO':state.language==='fr'?'DANS LA CIBLE':'ON TARGET',difference};
   if(difference<0.30) return {level:'yellow',label:state.language==='es'?'ADVERTENCIA':state.language==='fr'?'ATTENTION':'WARNING',difference};
   return {level:'red',label:state.language==='es'?'FUERA DE RANGO':state.language==='fr'?'HORS PLAGE':'OUT OF RANGE',difference};
 }
@@ -1420,7 +1505,8 @@ function completeDualWinderCut(){
   const processContext=currentProcessContext();
   state.lastCompletedCut={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString()};
   lineSet(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
-  state.learningEngine.addObservation({targetBW:target,appliedSWrap:currentSWrap,finalBW:average,...processContext,winder1:pair.winder1,winder2:pair.winder2});
+  const learnedPrediction=learnFromPendingRecommendation(average,pair,processContext);
+  if(!learnedPrediction)state.learningEngine.addObservation({targetBW:target,appliedSWrap:currentSWrap,finalBW:average,...processContext,winder1:pair.winder1,winder2:pair.winder2});
   renderLearningDashboard();
   recordProductionMaterial(pendingCut.winder1Input?.weight,pendingCut.winder2Input?.weight);
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
@@ -1459,11 +1545,25 @@ function runDangerFlash(result){
     targets.forEach(el=>el.classList.remove('danger-flash','flash-on'));
   },5000);
 }
-function currentBWFactor(){return Number(FACTOR_GRAMS_PER_LB)||450;}
-function renderSettingsState(){const f=currentBWFactor();if($('settings-current-factor'))$('settings-current-factor').textContent=String(f);document.querySelectorAll('.bw-factor-choice').forEach(b=>b.classList.toggle('selected',Number(b.dataset.bwFactor)===f));document.querySelectorAll('.settings-choice').forEach(b=>b.classList.toggle('selected',b.dataset.language===state.language));}
-function setBWFactor(value){const f=Number(value);if(![450,453.59237].includes(f))return;FACTOR_GRAMS_PER_LB=f;localStorage.setItem(BW_FACTOR_KEY,String(f));renderSettingsState();showToast(`BW factor set to ${f}.`);}
-function openSettings(){renderSettingsState();const d=$('settings-dialog');d?.classList.remove('hidden');d?.setAttribute('aria-hidden','false');}
-function closeSettings(){const d=$('settings-dialog');d?.classList.add('hidden');d?.setAttribute('aria-hidden','true');}
+
+function renderSettings(){
+  const factor=Number(FACTOR_GRAMS_PER_LB)||450;
+  if($('settings-current-factor'))$('settings-current-factor').textContent=String(factor);
+  document.querySelectorAll('[data-setting-language]').forEach(b=>b.classList.toggle('selected',b.dataset.settingLanguage===state.language));
+  const theme=document.documentElement.classList.contains('light')?'light':'dark';
+  document.querySelectorAll('[data-setting-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.settingTheme===theme));
+  document.querySelectorAll('[data-setting-personality]').forEach(b=>b.classList.toggle('selected',b.dataset.settingPersonality===state.personality));
+  document.querySelectorAll('[data-setting-bw-factor]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.settingBwFactor)===factor));
+}
+function openSettings(){renderSettings();$('settings-dialog')?.classList.remove('hidden');$('settings-dialog')?.setAttribute('aria-hidden','false');}
+function closeSettings(){$('settings-dialog')?.classList.add('hidden');$('settings-dialog')?.setAttribute('aria-hidden','true');}
+function setBWFactor(value){
+  const factor=Number(value);
+  if(![450,453.59237].includes(factor))return;
+  FACTOR_GRAMS_PER_LB=factor;localStorage.setItem(BW_FACTOR_KEY,String(factor));renderSettings();
+  showToast(`BW factor ${factor} active.`);
+}
+
 function chatMemoryMode(){return $('chat-memory-select')?.value||localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';}
 function saveChatMessage(role,content){
   if(chatMemoryMode()!=='separate') return;
@@ -1517,8 +1617,19 @@ $('language-select').addEventListener('change',event=>applyLanguage(event.target
 $('settings-open')?.addEventListener('click',openSettings);
 $('settings-close')?.addEventListener('click',closeSettings);
 $('settings-dialog')?.addEventListener('click',e=>{if(e.target===$('settings-dialog'))closeSettings();});
-document.querySelectorAll('.settings-choice').forEach(b=>b.addEventListener('click',()=>{const lang=b.dataset.language;$('language-select').value=lang;applyLanguage(lang,true);renderSettingsState();}));
-document.querySelectorAll('.bw-factor-choice').forEach(b=>b.addEventListener('click',()=>setBWFactor(Number(b.dataset.bwFactor))));
+document.querySelectorAll('[data-setting-language]').forEach(b=>b.addEventListener('click',()=>{$('language-select').value=b.dataset.settingLanguage;applyLanguage(b.dataset.settingLanguage,true);renderSettings();}));
+document.querySelectorAll('[data-setting-theme]').forEach(b=>b.addEventListener('click',()=>{
+  const light=b.dataset.settingTheme==='light';document.documentElement.classList.toggle('light',light);
+  localStorage.setItem('viejitoTheme',light?'light':'dark');renderSettings();
+}));
+document.querySelectorAll('[data-setting-personality]').forEach(b=>b.addEventListener('click',()=>{
+  state.personality=VALID_PERSONALITIES.includes(b.dataset.settingPersonality)?b.dataset.settingPersonality:DEFAULT_PERSONALITY;
+  $('personality-select').value=state.personality;localStorage.setItem('viejitoPersonality',state.personality);renderSettings();
+}));
+document.querySelectorAll('[data-setting-bw-factor]').forEach(b=>b.addEventListener('click',()=>setBWFactor(b.dataset.settingBwFactor)));
+$('accept-swrap-recommendation')?.addEventListener('click',acceptSWrapRecommendation);
+$('reject-swrap-recommendation')?.addEventListener('click',rejectSWrapRecommendation);
+
 $('personality-select').addEventListener('change',event=>{
   state.personality=VALID_PERSONALITIES.includes(event.target.value)?event.target.value:DEFAULT_PERSONALITY;
   localStorage.setItem('viejitoPersonality',state.personality);
@@ -1602,7 +1713,7 @@ if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro'
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.13.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.12.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

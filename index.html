@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.13.0" rel="stylesheet"/>
+<link href="styles.css?v=5.12.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -29,34 +29,29 @@
   </div>
 </div>
 <div class="status-area">
-<button class="settings-button" id="settings-open" type="button"><span>⚙️</span><strong>Settings</strong></button><select class="settings-hidden-language" aria-hidden="true" tabindex="-1" aria-label="Preferred language" id="language-select">
-<option value="en">English</option>
-<option value="es">Español</option>
-<option value="fr">Français</option>
-</select>
-<label class="personality-control" for="personality-select">
-<span id="personality-label">Personality</span>
-<select aria-label="Chat personality" id="personality-select">
-<option value="professional">Professional</option>
-<option value="light">Light sarcasm</option>
-<option value="heavy">Heavy sarcasm</option>
-<option value="off">Off</option>
-</select>
-</label>
+
+<button class="settings-button" id="settings-open" type="button" aria-label="Open settings"><span>⚙️</span><strong>Settings</strong></button>
 <span class="pill online" id="connection-pill">Online</span>
-<button aria-label="Change theme" class="icon-button" id="theme-toggle" type="button">☾</button>
+<div class="legacy-settings-controls" aria-hidden="true">
+  <select id="language-select" tabindex="-1">
+    <option value="en">English</option><option value="es">Español</option><option value="fr">Français</option>
+  </select>
+  <select id="personality-select" tabindex="-1">
+    <option value="professional">Professional</option><option value="light">Light sarcasm</option><option value="heavy">Heavy sarcasm</option><option value="off">Off</option>
+  </select>
+  <button id="theme-toggle" type="button" tabindex="-1">Theme</button>
+  <span id="language-label">Language</span><span id="personality-label">Personality</span>
+</div>
 </div>
 </header>
 <main>
 <section class="hero compact-hero">
-<p class="eyebrow" id="hero-eyebrow">PLANT MODE</p>
-
 <div class="shift-control-panel" id="shift-control-panel">
   <div class="shift-status-copy">
     <span class="shift-dot" id="shift-dot"></span>
     <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
   </div>
-<button type="button" id="change-line-button" class="change-line-inline">Change line</button>
+  <button class="change-line-inline" id="change-line-button" type="button">Change line</button>
   <button class="production-summary-bar" id="production-summary-toggle" type="button" aria-label="Open production details">
     <span class="production-summary-icon">📊</span>
     <span class="production-summary-item"><small id="prod-current-label">Actual</small><strong id="prod-current-rate">—</strong><em>lbs/hr</em></span>
@@ -75,7 +70,15 @@
   <div class="process-priority-metric"><small>Δ BW</small><strong id="priority-difference">—</strong></div>
   <div class="process-priority-status"><strong id="priority-status">READY</strong><small id="priority-message">Calculate both winders</small></div>
   <div class="process-priority-swrap"><small>S-WRAP</small><strong><span id="priority-current-swrap">—</span><span class="priority-arrow">→</span><span id="priority-suggested-swrap">—</span></strong></div>
-<div class="priority-range-wrap"><div class="priority-range-labels"><span>Too light</span><span>Too heavy</span></div><div class="priority-range-track"><div class="priority-range-yellow left"></div><div class="priority-range-green"></div><div class="priority-range-yellow right"></div><div class="priority-range-marker" id="priority-range-marker"></div></div><div class="priority-range-numbers"><span id="priority-range-low">—</span><span id="priority-range-target">—</span><span id="priority-range-high">—</span></div></div>
+
+  <div class="priority-range-wrap">
+    <div class="priority-range-labels"><span>Too light</span><span>Too heavy</span></div>
+    <div class="priority-range-track">
+      <span class="priority-range-yellow left"></span><span class="priority-range-green"></span><span class="priority-range-yellow right"></span>
+      <span class="priority-range-marker" id="priority-range-marker"></span>
+    </div>
+    <div class="priority-range-numbers"><span id="priority-range-low">—</span><span id="priority-range-target">—</span><span id="priority-range-high">—</span></div>
+  </div>
 </div>
 </section>
 <div class="tool-workspace"><div class="calculator-column"><section class="view active" id="view-bw">
@@ -137,6 +140,19 @@
 <div><span id="learned-label">Learned suggestion</span><strong id="learned-suggestion">—</strong></div>
 <div><span id="confidence-label">Confidence</span><strong id="learning-confidence">0%</strong></div>
 <div><span id="rolls-label">Rolls learned</span><strong id="learning-count">0</strong></div>
+</div>
+
+<div class="recommendation-decision hidden" id="recommendation-decision">
+  <div class="recommendation-prediction">
+    <span>Viejito recommendation</span>
+    <strong>S-Wrap <b id="decision-swrap">—</b></strong>
+    <small>Predicted next BW: <b id="decision-predicted-bw">—</b> • Confidence: <b id="decision-confidence">0%</b></small>
+  </div>
+  <div class="recommendation-actions">
+    <button class="primary" id="accept-swrap-recommendation" type="button">✓ Apply recommendation</button>
+    <button class="text-button" id="reject-swrap-recommendation" type="button">Keep current</button>
+  </div>
+  <p class="recommendation-note" id="recommendation-note">If applied, Viejito will compare its predicted BW with the next actual cut and learn from the error.</p>
 </div>
 <button class="secondary hidden" id="record-result-toggle" type="button">Record actual result</button>
 <div class="learning-form hidden" id="learning-form">
@@ -217,7 +233,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.13.0 • Line Learning Intelligence</footer>
+<footer id="footer-text">Industrial IA 5.12.0 • Line Learning Intelligence</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -260,6 +276,45 @@
   </div>
 </div>
 
+
+<div class="product-dialog hidden" id="settings-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
+  <div class="product-dialog-card settings-dialog-card">
+    <div class="product-dialog-heading"><div><p class="eyebrow">INDUSTRIAL IA</p><h3 id="settings-dialog-title">Settings</h3></div><button class="dialog-close" id="settings-close" type="button" aria-label="Close">×</button></div>
+    <section class="settings-section">
+      <small>LANGUAGE</small><strong>Application language</strong>
+      <div class="settings-choice-grid">
+        <button type="button" class="settings-choice" data-setting-language="en">English</button>
+        <button type="button" class="settings-choice" data-setting-language="es">Español</button>
+        <button type="button" class="settings-choice" data-setting-language="fr">Français</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <small>APPEARANCE</small><strong>Display mode</strong>
+      <div class="settings-choice-grid two">
+        <button type="button" class="settings-choice" data-setting-theme="dark">Dark</button>
+        <button type="button" class="settings-choice" data-setting-theme="light">Light</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <small>CHAT PERSONALITY</small><strong>Sarcasm</strong>
+      <div class="settings-choice-grid two">
+        <button type="button" class="settings-choice" data-setting-personality="professional">Professional</button>
+        <button type="button" class="settings-choice" data-setting-personality="light">Light sarcasm</button>
+        <button type="button" class="settings-choice" data-setting-personality="heavy">Heavy sarcasm</button>
+        <button type="button" class="settings-choice" data-setting-personality="off">Off</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <small>BASIS WEIGHT</small><strong>BW calculation factor</strong>
+      <p class="settings-help">450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.</p>
+      <div class="settings-choice-grid two">
+        <button type="button" class="settings-choice bw-factor-choice" data-setting-bw-factor="450">450<br><small>Plant system</small></button>
+        <button type="button" class="settings-choice bw-factor-choice" data-setting-bw-factor="453.59237">453.59237<br><small>Exact conversion</small></button>
+      </div>
+      <p class="settings-current">Current factor: <b id="settings-current-factor">450</b></p>
+    </section>
+  </div>
+</div>
 <div class="product-dialog hidden" id="product-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="product-dialog-title">
   <div class="product-dialog-card">
     <div class="product-dialog-heading"><div><p class="eyebrow">SMART CHANGEOVER</p><h3 id="product-dialog-title">Select sheet type</h3></div><button class="dialog-close" id="product-dialog-cancel" type="button" aria-label="Close">×</button></div>
@@ -276,18 +331,19 @@
     <label class="product-search-label"><span>Sheet type</span><input id="product-search" list="sheet-type-list" autocomplete="off" placeholder="Example: 8.6" type="text"/></label>
     <div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
     <label class="product-swrap-label"><span id="product-swrap-copy">Current S-Wrap</span><input id="product-swrap" inputmode="decimal" min="1" placeholder="180" step="1" type="number"/></label>
+    <div class="changeover-auto-box hidden" id="changeover-auto-box">
+      <div><small>LAST AVERAGE BW</small><strong id="changeover-last-bw">—</strong></div>
+      <div><small>LAST S-WRAP</small><strong id="changeover-last-swrap">—</strong></div>
+      <div><small>NEW S-WRAP</small><strong id="changeover-new-swrap">—</strong></div>
+      <p id="changeover-auto-note">Calculated automatically from the last completed cut.</p>
+    </div>
+
     <div class="job-history-preview hidden" id="job-history-preview"></div>
     <div class="product-choice-list" id="product-choice-list"></div>
     <button class="primary" id="product-dialog-confirm" type="button">Start changeover</button>
   </div>
 </div>
 
-<div class="product-dialog hidden" id="settings-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
-<div class="product-dialog-card settings-dialog-card">
-<div class="product-dialog-heading"><div><p class="eyebrow">INDUSTRIAL IA</p><h3 id="settings-dialog-title">Settings</h3></div><button class="dialog-close" id="settings-close" type="button" aria-label="Close">×</button></div>
-<section class="settings-section"><div class="settings-section-heading"><small>LANGUAGE</small><strong>Application language</strong></div><div class="settings-language-grid"><button type="button" class="settings-choice" data-language="en">English</button><button type="button" class="settings-choice" data-language="es">Español</button><button type="button" class="settings-choice" data-language="fr">Français</button></div></section>
-<section class="settings-section"><div class="settings-section-heading"><small>BASIS WEIGHT</small><strong>Calculation factor</strong></div><p class="settings-explanation">Choose the factor used for Basis Weight and Feet. S-Wrap, learning, trends and tolerances are unchanged.</p><div class="bw-factor-options"><button type="button" class="bw-factor-choice" data-bw-factor="450"><span class="choice-dot"></span><div><strong>450</strong><small>Plant / system convention</small></div></button><button type="button" class="bw-factor-choice" data-bw-factor="453.59237"><span class="choice-dot"></span><div><strong>453.59237</strong><small>Exact lb → gram conversion</small></div></button></div><div class="settings-current-factor">Current factor: <strong id="settings-current-factor">450</strong></div></section>
-</div></div>
 <div class="product-dialog hidden" id="production-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="production-dialog-title">
   <div class="product-dialog-card production-dialog-card">
     <div class="product-dialog-heading"><div><p class="eyebrow">PRODUCTION TRACKING</p><h3 id="production-dialog-title">Production details & history</h3></div><button class="dialog-close" id="production-dialog-close" type="button" aria-label="Close">×</button></div>
@@ -326,7 +382,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.13.0"></script>
-<script src="app.js?v=5.13.0"></script>
+<script src="optimizer.js?v=5.12.0"></script>
+<script src="app.js?v=5.12.0"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Industrial IA V5.11 — Line Learning Intelligence
+# Industrial IA V5.12 — Line Learning Intelligence
 
 ## What changed
 - Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.
@@ -12,14 +12,14 @@
 Viejito does not learn from chat questions. It learns from structured, completed production results and confirmed adjustment results. Low-history jobs fall back to the mathematical formula.
 
 
-## V5.11 — Plant BW Alignment
+## V5.12 — Plant BW Alignment
 - BW factor changed from the exact 453.59237 g/lb conversion to the plant/system convention of **450**.
 - Reverse length calculations use the same factor for consistency.
 - Verification example: **535 lb × 7051 ft × 48 in = 5.93 BW**.
 - This is intentionally a plant/system calculation convention, not the exact physical lb-to-gram conversion.
 
 
-## V5.11 — Lbs/hr display fix
+## V5.12 — Lbs/hr display fix
 The live target calculation was mathematically correct, but the shared number-formatting function removed trailing zeroes from whole numbers when `d=0`.
 
 Example of the bug:
@@ -35,7 +35,7 @@ The existing live input listeners are preserved, so `Target per shift` updates w
 The plant BW factor of **450** is unchanged.
 
 
-## V5.11 — Operator Priority UI
+## V5.12 — Operator Priority UI
 - Production summary is compact and tappable; full production details open on tap.
 - Full production detail includes rate, target, produced, projection, shift target, forecast, and Actual-vs-Target trend chart from completed cuts.
 - Average BW, Target, BW difference, status, and S-Wrap action are surfaced at the top after a completed two-winder cut.
@@ -43,12 +43,24 @@ The plant BW factor of **450** is unchanged.
 - BW factor 450 and V5.10.1 integer display fix are preserved.
 
 
-## V5.13 — Operator Flow & Settings
-- Settings replaces the visible language selector.
-- Settings includes language plus selectable BW factor 450 / 453.59237.
-- Selected factor persists and drives both BW and Feet calculations.
-- Active Line strip removed; Change line moved to the shift card and LINE number is emphasized.
-- Green early-warning boundary changed to ±0.17; yellow runs from >0.17 to <0.30; red remains ≥0.30.
-- Range bar moved into the top operator-priority BW/S-Wrap summary.
-- Changeover formula now starts from the last completed actual average BW and last/current S-Wrap. Existing learned job history can still refine that mathematical starting point.
-- The recommended changeover S-Wrap is automatically loaded into the changeover dialog and becomes Current S-Wrap when confirmed.
+## V5.12 — Adaptive Recommendation Learning
+- Settings now contains Language, Light/Dark appearance, Sarcasm level, and selectable BW factor.
+- BW factor can switch between 450 (plant/system convention) and 453.59237 (exact lb-to-gram conversion) without changing other process logic.
+- Plant Mode label removed.
+- Active Line strip removed; Change Line moved into the shift card and LINE 1–4 is emphasized in the shift header.
+- Early-warning green range changed from ±0.20 to ±0.17. Yellow is >0.17 and <0.30. Red remains ≥0.30 with the existing flashing alert.
+- Range visualization moved into the top BW/S-Wrap priority summary.
+- Smart Changeover now starts from the last completed Average BW and the S-Wrap actually used on that cut, then combines that mathematical baseline with comparable line/product history when available.
+- Changeover automatically updates Current S-Wrap to the recommended starting value.
+- S-Wrap recommendations now have Apply Recommendation / Keep Current actions.
+- When an operator applies a recommendation, Viejito records:
+  - BW before the change
+  - Current S-Wrap
+  - Formula and learned recommendation
+  - S-Wrap actually applied
+  - Predicted next BW
+  - Next actual BW
+  - Prediction error
+  - Line, product, mandrel, run, and confidence
+- The next completed dual-winder cut closes the prediction loop automatically and feeds the real outcome back into the line/product learning engine.
+- Chat remains isolated from operational learning.

@@ -67,6 +67,9 @@
         winder1: finitePositive(record.winder1) ? Number(record.winder1) : null,
         winder2: finitePositive(record.winder2) ? Number(record.winder2) : null,
         averageBW: finitePositive(record.averageBW) ? Number(record.averageBW) : Number(record.initialBW),
+        predictedBW: finitePositive(record.predictedBW) ? Number(record.predictedBW) : null,
+        predictionError: finitePositive(record.predictedBW) ? Number((Number(record.finalBW)-Number(record.predictedBW)).toFixed(4)) : null,
+        operatorAccepted: record.operatorAccepted === true,
         success: Math.abs(Number(record.finalBW) - Number(record.targetBW)) <= GREEN_TOLERANCE
       };
       this.records.push(saved);
