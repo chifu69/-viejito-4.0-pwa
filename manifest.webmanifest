@@ -1,14 +1,14 @@
 {
   "name": "Industrial IA",
   "short_name": "Industrial IA",
-  "description": "Offline industrial BW, FT and S-Wrap calculators with English, Spanish and French.",
+  "description": "Offline industrial process assistant with line-specific BW, S-Wrap learning, production tracking and isolated chat history.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0b1117",
   "theme_color": "#101820",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "icons/icon-192.png",

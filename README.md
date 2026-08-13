@@ -1,11 +1,12 @@
-# Industrial IA V5.7 — Shared Context Chat Fix
+# Industrial IA V5.9 — Line Learning Intelligence
 
-The changeover chat now automatically uses the current S-Wrap shown in the app and the most recent completed dual-winder average BW. If either value is missing or stale, it asks only for the missing value. Recommendations combine the safe formula with comparable learned results for the active extruder, destination product, and mandrel.
+## What changed
+- Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.
+- Chat is isolated from operational learning. Chat calculations do not enter BW trend history, machine learning or operational history. Chat memory can be Off, Session Only, or Saved Separately.
+- Production dashboard now shows Actual lbs/hr and Target lbs/hr separately. Actual rate waits 15 minutes before projecting to prevent unstable early-run numbers; completed-cut samples are retained with the run.
+- Every completed dual-winder cut becomes a process-learning observation for that exact Line + Product + Mandrel context.
+- Changeover dialog analyzes the destination job history and shows roll count, typical S-Wrap, BW variation, confidence, mathematical starting point and learned starting recommendation.
+- Learning combines the established mathematical S-Wrap formula with recent, comparable historical behavior. History receives more influence only when sample count and consistency support it.
 
-
-## Version 5.8 — Production Intelligence
-- Target lbs/hour and configurable shift duration (default 12 hours).
-- Live material total, current lbs/hour, projected end-of-shift total, and target comparison.
-- Tracking begins at Start Shift and creates a separate run at every Changeover.
-- Product history stores run time, material used, average lbs/hour, and target for each product.
-- Production data persists locally on the device and remains available after closing or backgrounding the PWA.
+## Safety / trust model
+Viejito does not learn from chat questions. It learns from structured, completed production results and confirmed adjustment results. Low-history jobs fall back to the mathematical formula.

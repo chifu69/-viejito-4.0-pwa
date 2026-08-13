@@ -13,6 +13,15 @@ const SHIFT_ARCHIVE_KEY = 'viejitoShiftArchiveV1';
 const TREND_SAMPLE_SIZE = 5;
 const LAST_COMPLETED_CUT_KEY = 'viejitoLastCompletedCutV1';
 const MAX_AUTO_CONTEXT_AGE_MS = 12 * 60 * 60 * 1000;
+const ACTIVE_LINE_KEY = 'viejitoSelectedLineV1';
+const ACTIVE_LINE = [1,2,3,4].includes(Number(localStorage.getItem(ACTIVE_LINE_KEY))) ? Number(localStorage.getItem(ACTIVE_LINE_KEY)) : 1;
+const lineKey = base => `${base}::line${ACTIVE_LINE}`;
+const lineGet = (base, fallback=null) => localStorage.getItem(lineKey(base)) ?? fallback;
+const lineSet = (base, value) => localStorage.setItem(lineKey(base), value);
+const lineRemove = base => localStorage.removeItem(lineKey(base));
+let inChatQuery = false;
+const CHAT_MEMORY_MODE_KEY='viejitoChatMemoryModeV1';
+const CHAT_HISTORY_KEY='viejitoChatHistoryV1';
 
 
 const translations = {
@@ -40,9 +49,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.6',
+    introTitle: 'Industrial IA 5.9',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.6 • Plant Assistant'
+    footer: 'Industrial IA 5.9 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -68,9 +77,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.6',
+    introTitle: 'Industrial IA 5.9',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.6 • Asistente de planta'
+    footer: 'Industrial IA 5.9 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -96,9 +105,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.6',
+    introTitle: 'Industrial IA 5.9',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.6 • Assistant industriel'
+    footer: 'Industrial IA 5.9 • Assistant industriel'
   }
 };
 
@@ -185,19 +194,20 @@ const state = {
   language: VALID_LANGUAGES.includes(localStorage.getItem('viejitoLanguage')) ? localStorage.getItem('viejitoLanguage') : DEFAULT_LANGUAGE,
   personality: VALID_PERSONALITIES.includes(localStorage.getItem('viejitoPersonality')) ? localStorage.getItem('viejitoPersonality') : DEFAULT_PERSONALITY,
   mandrel: Number(localStorage.getItem('viejitoMandrel')) || DEFAULT_MANDREL,
-  context: JSON.parse(localStorage.getItem('viejitoContext') || '{}'),
-  history: JSON.parse(localStorage.getItem('viejitoHistory') || '[]'),
-  targetBW: Number(localStorage.getItem('viejitoTargetBW')) || DEFAULT_TARGET_BW,
-  currentSWrap: Number(localStorage.getItem('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP,
-  product: localStorage.getItem('viejitoProduct') || '',
-  activeShift: JSON.parse(localStorage.getItem(SHIFT_KEY) || 'null'),
-  shiftArchive: JSON.parse(localStorage.getItem(SHIFT_ARCHIVE_KEY) || '[]'),
-  productionTargets: JSON.parse(localStorage.getItem('viejitoProductionTargetsV1') || '{}'),
+  context: JSON.parse(lineGet('viejitoContext','{}') || '{}'),
+  history: JSON.parse(lineGet('viejitoHistory','[]') || '[]'),
+  targetBW: Number(lineGet('viejitoTargetBW')) || DEFAULT_TARGET_BW,
+  currentSWrap: Number(lineGet('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP,
+  product: lineGet('viejitoProduct','') || '',
+  activeShift: JSON.parse(lineGet(SHIFT_KEY,'null') || 'null'),
+  shiftArchive: JSON.parse(lineGet(SHIFT_ARCHIVE_KEY,'[]') || '[]'),
+  productionTargets: JSON.parse(lineGet('viejitoProductionTargetsV1','{}') || '{}'),
   latestOptimization: null,
-  bwTrendHistory: JSON.parse(localStorage.getItem(TREND_HISTORY_KEY) || '[]'),
+  bwTrendHistory: JSON.parse(lineGet(TREND_HISTORY_KEY,'[]') || '[]'),
   latestTrend: null,
-  lastCompletedCut: JSON.parse(localStorage.getItem(LAST_COMPLETED_CUT_KEY) || 'null'),
-  learningEngine: new AdaptiveLearningEngine()
+  lastCompletedCut: JSON.parse(lineGet(LAST_COMPLETED_CUT_KEY,'null') || 'null'),
+  selectedLine: ACTIVE_LINE,
+  learningEngine: new AdaptiveLearningEngine(window.localStorage, lineKey('viejitoMachineLearningV3'))
 };
 
 const $ = (id) => document.getElementById(id);
@@ -268,14 +278,14 @@ function saveOptimizerSettings(targetBW,currentSWrap){
   if(!positive(targetBW,currentSWrap)) throw new Error(t('invalidNumbers'));
   state.targetBW=Number(targetBW);
   state.currentSWrap=Number(currentSWrap);
-  localStorage.setItem('viejitoTargetBW',String(state.targetBW));
-  localStorage.setItem('viejitoCurrentSWrap',String(state.currentSWrap));
+  lineSet('viejitoTargetBW',String(state.targetBW));
+  lineSet('viejitoCurrentSWrap',String(state.currentSWrap));
 }
 function currentProcessContext(){
   const product=String($('bw-product')?.value||state.activeShift?.product||state.product||'').trim();
   const mandrel=currentMandrel('bw');
   state.product=product;
-  localStorage.setItem('viejitoProduct',product);
+  lineSet('viejitoProduct',product);
   return {
     product:product.toUpperCase(),
     mandrel,
@@ -369,7 +379,7 @@ function sanitizeTrendHistory(){
 }
 function saveTrendHistory(){
   sanitizeTrendHistory();
-  localStorage.setItem(TREND_HISTORY_KEY,JSON.stringify(state.bwTrendHistory));
+  lineSet(TREND_HISTORY_KEY,JSON.stringify(state.bwTrendHistory));
 }
 function trendDirectionLabel(direction){
   if(direction==='up') return ot('trendUpLabel');
@@ -420,6 +430,7 @@ function renderTrendPanel(trend=analyzeTrend()){
   $('trend-rolls').textContent=trend.values.length?trend.values.map(value=>fmt(value,3)).join(' → '):'—';
 }
 function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentSWrap,pair=null){
+  if(inChatQuery) return analyzeTrend(targetBW,currentSWrap);
   if(!positive(bw)) return analyzeTrend(targetBW,currentSWrap);
   sanitizeTrendHistory();
   const context=currentProcessContext();
@@ -513,10 +524,10 @@ function stripMandrelValue(vals,text){
 
 
 const CHAT_WORKFLOW_KEY='viejitoChatWorkflowV1';
-let chatWorkflow=(()=>{try{return JSON.parse(localStorage.getItem(CHAT_WORKFLOW_KEY)||'null')||null;}catch(_){return null;}})();
+let chatWorkflow=(()=>{try{return JSON.parse(lineGet(CHAT_WORKFLOW_KEY,'null')||'null')||null;}catch(_){return null;}})();
 function saveChatWorkflow(){
-  if(chatWorkflow) localStorage.setItem(CHAT_WORKFLOW_KEY,JSON.stringify(chatWorkflow));
-  else localStorage.removeItem(CHAT_WORKFLOW_KEY);
+  if(chatWorkflow) lineSet(CHAT_WORKFLOW_KEY,JSON.stringify(chatWorkflow));
+  else lineRemove(CHAT_WORKFLOW_KEY);
 }
 function chatLang(en,es,fr){return state.language==='es'?es:state.language==='fr'?fr:en;}
 function targetFromChatProduct(product){
@@ -600,7 +611,7 @@ function currentSWrapForChat(){
   const run=state.activeShift?.runs?.find(item=>item.id===state.activeShift?.runId);
   const runSpeed=Number(run?.swrap);
   const stored=Number(state.currentSWrap);
-  const persisted=Number(localStorage.getItem('viejitoCurrentSWrap'));
+  const persisted=Number(lineGet('viejitoCurrentSWrap'));
   return [screen,shift,runSpeed,stored,persisted].find(value=>positive(Number(value)))||null;
 }
 
@@ -609,7 +620,7 @@ function sharedOperationalContextForChat(){
   const swrap=currentSWrapForChat();
   const completed=latestCompletedBWContext();
   const liveAverage=Number($('bw-result')?.dataset?.averageBw || $('bw-result')?.dataset?.value || 0);
-  const savedCut=(()=>{try{return JSON.parse(localStorage.getItem(LAST_COMPLETED_CUT_KEY)||'null');}catch(_){return null;}})();
+  const savedCut=(()=>{try{return JSON.parse(lineGet(LAST_COMPLETED_CUT_KEY,'null')||'null');}catch(_){return null;}})();
   const averageBW=positive(Number(completed?.averageBW))
     ? Number(completed.averageBW)
     : positive(liveAverage)
@@ -793,11 +804,12 @@ function recalculateWithMandrel(mandrel){
   return {kind:'info',title:t('mandrel'),message:t('defaultChanged',{m:mandrel})};
 }
 
-function saveContext(){localStorage.setItem('viejitoContext',JSON.stringify(state.context));}
+function saveContext(){lineSet('viejitoContext',JSON.stringify(state.context));}
 function addHistory(type,detail){
-  state.history.unshift({type,detail,time:new Date().toISOString()});
+  if(inChatQuery) return; // Chat questions never enter operational history/learning.
+  state.history.unshift({type,detail,time:new Date().toISOString(),line:ACTIVE_LINE});
   state.history=state.history.slice(0,20);
-  localStorage.setItem('viejitoHistory',JSON.stringify(state.history));
+  lineSet('viejitoHistory',JSON.stringify(state.history));
   renderHistory();
 }
 function renderHistory(){
@@ -952,11 +964,11 @@ function syncTargetFromProduct(product,{save=true}={}){
   const input=$('bw-target');
   if(input) input.value=String(target);
   state.targetBW=target;
-  if(save) localStorage.setItem('viejitoTargetBW',String(target));
+  if(save) lineSet('viejitoTargetBW',String(target));
   return target;
 }
 let productDialogMode='change';
-let selectedExtruder=1;
+let selectedExtruder=ACTIVE_LINE;
 function productDialogText(key){
   const copy={
     en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',swrap:'Current S-Wrap',extruder:'Select extruder',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
@@ -976,11 +988,46 @@ function renderProductChoices(query=''){
     box.querySelectorAll('.product-choice').forEach(b=>b.classList.toggle('selected',b===button));
   }));
 }
+function changeoverHistoryRecommendation(product){
+  const normalized=normalizeProduct(product||'');
+  const newTarget=targetFromProduct(normalized);
+  if(!normalized||!newTarget) return null;
+  const context={product:normalized.toUpperCase(),mandrel:currentMandrel('bw'),extruder:ACTIVE_LINE,targetBW:newTarget};
+  const profile=state.learningEngine.processProfile(context,newTarget);
+  const currentTarget=Number(state.activeShift?.runs?.find(r=>r.id===state.activeShift?.runId)?.targetBW || state.targetBW);
+  const currentSWrap=Number(state.currentSWrap||$('bw-current-swrap')?.value||170);
+  const formula=positive(currentTarget,currentSWrap,newTarget)?currentSWrap*currentTarget/newTarget:currentSWrap;
+  let recommendation=formula,weight=0;
+  if(profile.count>=5&&positive(profile.recommendedSWrap)){
+    weight=Math.min(.65,Math.max(.15,(profile.confidence||0)/140));
+    recommendation=formula*(1-weight)+Number(profile.recommendedSWrap)*weight;
+  }
+  return {profile,formula:Math.round(formula),recommendation:Math.round(recommendation),historyWeight:weight};
+}
+function renderJobHistoryPreview(product){
+  const box=$('job-history-preview'); if(!box)return;
+  const result=changeoverHistoryRecommendation(product);
+  if(!result){box.innerHTML='';box.classList.add('hidden');return;}
+  const p=result.profile;
+  const lang=state.language;
+  const title=lang==='es'?`Historial Línea ${ACTIVE_LINE}`:lang==='fr'?`Historique Ligne ${ACTIVE_LINE}`:`Line ${ACTIVE_LINE} history`;
+  const noData=lang==='es'?'Todavía no hay suficiente historial comparable. Viejito usará la fórmula matemática.':lang==='fr'?"Pas encore assez d’historique comparable. Viejito utilisera la formule mathématique.":'Not enough comparable history yet. Viejito will use the mathematical formula.';
+  box.classList.remove('hidden');
+  if(!p.count){box.innerHTML=`<strong>${title}</strong><small>${noData}</small>`;return;}
+  const variation=p.bwSpread!=null?`±${fmt(p.bwSpread,3)}`:'—';
+  const effect=p.slope!=null?`${p.slope>0?'+':''}${fmt(p.slope,5)} BW / S-Wrap point`:'Learning…';
+  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math ${result.formula} → <b>Recommended start ${result.recommendation}</b></p>`;
+}
 function updateProductDialogPreview(){
   const value=$('product-search')?.value||'';
   const target=targetFromProduct(value);
   $('product-target-preview').textContent=target?String(target):'—';
   renderProductChoices(value);
+  renderJobHistoryPreview(value);
+  if(productDialogMode==='change' && target){
+    const recommendation=changeoverHistoryRecommendation(value);
+    if(recommendation&&$('product-swrap')) $('product-swrap').value=String(recommendation.recommendation);
+  }
 }
 function openProductDialog(mode='change'){
   productDialogMode=mode;
@@ -992,9 +1039,9 @@ function openProductDialog(mode='change'){
   $('product-dialog-confirm').textContent=productDialogText(mode==='start'?'confirmStart':'confirmChange');
   $('product-dialog-cancel').textContent=productDialogText('cancel');
   const picker=$('extruder-picker');
-  picker?.classList.toggle('hidden',mode!=='start');
-  if($('extruder-picker-label')) $('extruder-picker-label').textContent=productDialogText('extruder');
-  selectedExtruder=Number(state.activeShift?.extruder)||selectedExtruder||1;
+  picker?.classList.add('hidden');
+  if($('extruder-picker-label')) $('extruder-picker-label').textContent=`Line ${ACTIVE_LINE}`;
+  selectedExtruder=ACTIVE_LINE;
   document.querySelectorAll('.extruder-option').forEach(button=>button.classList.toggle('selected',Number(button.dataset.extruder)===selectedExtruder));
   $('product-search').value=mode==='start'?($('bw-product').value||state.product||''):'';
   if($('product-swrap')) $('product-swrap').value=fmt(Number($('bw-current-swrap').value||state.currentSWrap||180),1);
@@ -1010,9 +1057,9 @@ function closeProductDialog(){
 const PRODUCTION_TARGETS_KEY='viejitoProductionTargetsV1';
 function productionCopy(key){
   const copy={
-    en:{current:'Current rate',material:'Current material',projected:'Projected end',target:'Shift target',start:'Start a shift to begin production tracking.',waiting:'Add completed cuts to calculate a realistic rate.',above:'If you continue at this rate, you will finish {diff} lbs ABOVE target.',below:'If you continue at this rate, you will finish {diff} lbs BELOW target.',on:'You are projected to finish on target.',targetButton:'Target lbs',hour:'Target lbs per hour',hours:'Shift hours',total:'Target per shift',save:'Save target',history:'Products run today',none:'No completed product runs yet.',active:'RUNNING',complete:'COMPLETE',avg:'Average',used:'Material used',duration:'Run time',shiftAvg:'Shift average'},
-    es:{current:'Libras por hora',material:'Material actual',projected:'Proyección final',target:'Meta del turno',start:'Empieza el turno para iniciar el seguimiento.',waiting:'Completa cortes para calcular un ritmo realista.',above:'Si sigues a este ritmo, terminarás {diff} lbs ARRIBA de la meta.',below:'Si sigues a este ritmo, terminarás {diff} lbs ABAJO de la meta.',on:'La proyección indica que terminarás en la meta.',targetButton:'Target lbs',hour:'Target lbs por hora',hours:'Horas del turno',total:'Target por turno',save:'Guardar target',history:'Productos corridos hoy',none:'Todavía no hay productos completados.',active:'CORRIENDO',complete:'TERMINADO',avg:'Promedio',used:'Material usado',duration:'Tiempo corrido',shiftAvg:'Promedio del turno'},
-    fr:{current:'Livres par heure',material:'Matériau actuel',projected:'Projection finale',target:'Objectif du quart',start:'Démarrez un quart pour commencer le suivi.',waiting:'Terminez des coupes pour calculer un rythme réaliste.',above:'À ce rythme, vous finirez {diff} lb AU-DESSUS de la cible.',below:'À ce rythme, vous finirez {diff} lb SOUS la cible.',on:'La projection indique que vous finirez sur la cible.',targetButton:'Cible lb',hour:'Cible lb par heure',hours:'Heures du quart',total:'Cible par quart',save:'Enregistrer',history:'Produits exécutés aujourd’hui',none:'Aucune série terminée.',active:'EN COURS',complete:'TERMINÉ',avg:'Moyenne',used:'Matériau utilisé',duration:'Durée',shiftAvg:'Moyenne du quart'}
+    en:{current:'Current rate',material:'Target rate',projected:'Projected end',target:'Shift target',start:'Start a shift to begin production tracking.',waiting:'Add completed cuts to calculate a realistic rate.',above:'If you continue at this rate, you will finish {diff} lbs ABOVE target.',below:'If you continue at this rate, you will finish {diff} lbs BELOW target.',on:'You are projected to finish on target.',targetButton:'Target lbs',hour:'Target lbs per hour',hours:'Shift hours',total:'Target per shift',save:'Save target',history:'Products run today',none:'No completed product runs yet.',active:'RUNNING',complete:'COMPLETE',avg:'Average',used:'Material used',duration:'Run time',shiftAvg:'Shift average'},
+    es:{current:'Libras por hora',material:'Target lbs/hr',projected:'Proyección final',target:'Meta del turno',start:'Empieza el turno para iniciar el seguimiento.',waiting:'Completa cortes para calcular un ritmo realista.',above:'Si sigues a este ritmo, terminarás {diff} lbs ARRIBA de la meta.',below:'Si sigues a este ritmo, terminarás {diff} lbs ABAJO de la meta.',on:'La proyección indica que terminarás en la meta.',targetButton:'Target lbs',hour:'Target lbs por hora',hours:'Horas del turno',total:'Target por turno',save:'Guardar target',history:'Productos corridos hoy',none:'Todavía no hay productos completados.',active:'CORRIENDO',complete:'TERMINADO',avg:'Promedio',used:'Material usado',duration:'Tiempo corrido',shiftAvg:'Promedio del turno'},
+    fr:{current:'Livres par heure',material:'Cible lb/h',projected:'Projection finale',target:'Objectif du quart',start:'Démarrez un quart pour commencer le suivi.',waiting:'Terminez des coupes pour calculer un rythme réaliste.',above:'À ce rythme, vous finirez {diff} lb AU-DESSUS de la cible.',below:'À ce rythme, vous finirez {diff} lb SOUS la cible.',on:'La projection indique que vous finirez sur la cible.',targetButton:'Cible lb',hour:'Cible lb par heure',hours:'Heures du quart',total:'Cible par quart',save:'Enregistrer',history:'Produits exécutés aujourd’hui',none:'Aucune série terminée.',active:'EN COURS',complete:'TERMINÉ',avg:'Moyenne',used:'Matériau utilisé',duration:'Durée',shiftAvg:'Moyenne du quart'}
   };
   return (copy[state.language]||copy.en)[key]||key;
 }
@@ -1021,14 +1068,14 @@ function productionTargetFor(product){
   const saved=state.productionTargets?.[key];
   return {lbsPerHour:Number(saved?.lbsPerHour)||0,shiftHours:Number(saved?.shiftHours)||12};
 }
-function saveProductionTargets(){localStorage.setItem(PRODUCTION_TARGETS_KEY,JSON.stringify(state.productionTargets||{}));}
+function saveProductionTargets(){lineSet(PRODUCTION_TARGETS_KEY,JSON.stringify(state.productionTargets||{}));}
 function runStats(run,now=Date.now()){
   if(!run)return {material:0,hours:0,rate:0,projected:0,targetTotal:0,difference:0};
   const start=new Date(run.startedAt).getTime();
   const end=run.endedAt?new Date(run.endedAt).getTime():now;
   const hours=Math.max(0,(end-start)/3600000);
   const material=Number(run.materialLbs)||0;
-  const rate=hours>0?material/hours:0;
+  const rate=hours>=0.25?material/hours:0; // wait 15 min before projecting to avoid unstable early-shift numbers
   const target=productionTargetFor(run.product);
   const targetTotal=target.lbsPerHour*target.shiftHours;
   const projected=rate*target.shiftHours;
@@ -1054,13 +1101,14 @@ function renderProductionDashboard(){
   $('prod-target-label').textContent=productionCopy('target');
   $('production-target').querySelector('strong').textContent=productionCopy('targetButton');
   $('prod-current-rate').textContent=active&&stats.rate?fmt(stats.rate,0):'—';
-  $('prod-current-material').textContent=active?fmt(stats.material,0):'0';
+  $('prod-current-material').textContent=active&&stats.target?.lbsPerHour?fmt(stats.target.lbsPerHour,0):'—';
+  if($('prod-produced-material'))$('prod-produced-material').textContent=active?fmt(stats.material,0):'0';
   $('prod-projected-end').textContent=active&&stats.rate?fmt(stats.projected,0):'—';
   $('prod-shift-target').textContent=active&&stats.targetTotal?fmt(stats.targetTotal,0):'—';
   const forecast=$('production-forecast');
   forecast.className='production-forecast';
   if(!active){forecast.textContent=productionCopy('start');return;}
-  if(!stats.material||stats.hours<0.03){forecast.textContent=productionCopy('waiting');return;}
+  if(!stats.material||stats.hours<0.25){forecast.textContent=productionCopy('waiting');return;}
   if(!stats.targetTotal){forecast.textContent=state.language==='es'?'Guarda un target lbs/hour para este producto.':'Save a target lbs/hour for this product.';return;}
   const diff=Math.round(Math.abs(stats.difference));
   if(diff<=50){forecast.textContent=productionCopy('on');forecast.classList.add('on');}
@@ -1105,6 +1153,9 @@ function recordProductionMaterial(weight1,weight2){
   run.materialLbs=(Number(run.materialLbs)||0)+added;
   run.cutCount=(Number(run.cutCount)||0)+1;
   run.lastMaterialAt=new Date().toISOString();
+  run.samples=Array.isArray(run.samples)?run.samples:[];
+  run.samples.push({time:run.lastMaterialAt,lbs:added,cumulative:run.materialLbs});
+  run.samples=run.samples.slice(-200);
   state.activeShift.materialLbs=(Number(state.activeShift.materialLbs)||0)+added;
   saveShift();renderProductionDashboard();
 }
@@ -1112,9 +1163,9 @@ function recordProductionMaterial(weight1,weight2){
 const SESSION_KEY='viejitoSessionV50';
 function shiftText(key,vars={}){
   const text={
-    en:{inactive:'No active shift',inactiveMeta:'Start a shift to separate products and predictions.',active:'Shift active',start:'Start shift',change:'Changeover',end:'End of shift',productPrompt:'Product running now:',targetPrompt:'Target BW:',swrapPrompt:'Current S-Wrap:',started:'Shift started on Extruder {extruder} for {product}.',changed:'Product changed to {product}. Same shift, new prediction run.',ended:'Shift ended. Learning was saved.',needProduct:'Enter a product first.',confirmChange:'Product changed from {old} to {next}. Start a new product run in the same shift?',pendingDiscard:'A winder is pending. Changing product will clear that incomplete cut. Continue?'},
-    es:{inactive:'Sin turno activo',inactiveMeta:'Empieza el turno para separar productos y predicciones.',active:'Turno activo',start:'Empezar turno',change:'Cambio de producto',end:'Fin de turno',productPrompt:'Producto que estás corriendo:',targetPrompt:'Target BW:',swrapPrompt:'S-Wrap actual:',started:'Turno iniciado en Extruder {extruder} para {product}.',changed:'Producto cambiado a {product}. Mismo turno, nueva corrida y predicción.',ended:'Turno finalizado. El aprendizaje quedó guardado.',needProduct:'Escribe el producto primero.',confirmChange:'Cambiaste de {old} a {next}. ¿Iniciar una nueva corrida dentro del mismo turno?',pendingDiscard:'Hay un winder pendiente. Cambiar producto borrará ese corte incompleto. ¿Continuar?'},
-    fr:{inactive:'Aucun quart actif',inactiveMeta:'Démarrez un quart pour séparer les produits et les prévisions.',active:'Quart actif',start:'Démarrer le quart',change:'Changement de produit',end:'Fin du quart',productPrompt:'Produit en cours :',targetPrompt:'BW cible :',swrapPrompt:'S-Wrap actuel :',started:'Quart démarré sur Extrudeuse {extruder} pour {product}.',changed:'Produit changé pour {product}. Même quart, nouvelle série de prévisions.',ended:'Quart terminé. L’apprentissage a été enregistré.',needProduct:'Entrez d’abord un produit.',confirmChange:'Produit changé de {old} à {next}. Démarrer une nouvelle série dans le même quart ?',pendingDiscard:'Un winder est en attente. Changer de produit effacera cette coupe incomplète. Continuer ?'}
+    en:{inactive:'No active shift',inactiveMeta:'Start a shift to separate products and predictions.',active:'Shift active',start:'Start shift',change:'Changeover',end:'End of shift',productPrompt:'Product running now:',targetPrompt:'Target BW:',swrapPrompt:'Current S-Wrap:',started:'Shift started on Line {extruder} for {product}.',changed:'Product changed to {product}. Same shift, new prediction run.',ended:'Shift ended. Learning was saved.',needProduct:'Enter a product first.',confirmChange:'Product changed from {old} to {next}. Start a new product run in the same shift?',pendingDiscard:'A winder is pending. Changing product will clear that incomplete cut. Continue?'},
+    es:{inactive:'Sin turno activo',inactiveMeta:'Empieza el turno para separar productos y predicciones.',active:'Turno activo',start:'Empezar turno',change:'Cambio de producto',end:'Fin de turno',productPrompt:'Producto que estás corriendo:',targetPrompt:'Target BW:',swrapPrompt:'S-Wrap actual:',started:'Turno iniciado en Línea {extruder} para {product}.',changed:'Producto cambiado a {product}. Mismo turno, nueva corrida y predicción.',ended:'Turno finalizado. El aprendizaje quedó guardado.',needProduct:'Escribe el producto primero.',confirmChange:'Cambiaste de {old} a {next}. ¿Iniciar una nueva corrida dentro del mismo turno?',pendingDiscard:'Hay un winder pendiente. Cambiar producto borrará ese corte incompleto. ¿Continuar?'},
+    fr:{inactive:'Aucun quart actif',inactiveMeta:'Démarrez un quart pour séparer les produits et les prévisions.',active:'Quart actif',start:'Démarrer le quart',change:'Changement de produit',end:'Fin du quart',productPrompt:'Produit en cours :',targetPrompt:'BW cible :',swrapPrompt:'S-Wrap actuel :',started:'Quart démarré sur Ligne {extruder} pour {product}.',changed:'Produit changé pour {product}. Même quart, nouvelle série de prévisions.',ended:'Quart terminé. L’apprentissage a été enregistré.',needProduct:'Entrez d’abord un produit.',confirmChange:'Produit changé de {old} à {next}. Démarrer une nouvelle série dans le même quart ?',pendingDiscard:'Un winder est en attente. Changer de produit effacera cette coupe incomplète. Continuer ?'}
   };
   let value=(text[state.language]||text.en)[key]||key;
   Object.entries(vars).forEach(([k,v])=>value=value.replaceAll(`{${k}}`,v));
@@ -1122,14 +1173,15 @@ function shiftText(key,vars={}){
 }
 function newId(prefix){return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;}
 function saveShift(){
-  if(state.activeShift)localStorage.setItem(SHIFT_KEY,JSON.stringify(state.activeShift));
-  else localStorage.removeItem(SHIFT_KEY);
-  localStorage.setItem(SHIFT_ARCHIVE_KEY,JSON.stringify((state.shiftArchive||[]).slice(-100)));
+  if(state.activeShift)lineSet(SHIFT_KEY,JSON.stringify(state.activeShift));
+  else lineRemove(SHIFT_KEY);
+  lineSet(SHIFT_ARCHIVE_KEY,JSON.stringify((state.shiftArchive||[]).slice(-100)));
 }
 function renderShiftPanel(){
+  if($('active-line-label'))$('active-line-label').textContent=`LINE ${ACTIVE_LINE}`;
   const panel=$('shift-control-panel'),active=!!state.activeShift;
   panel?.classList.toggle('active',active);
-  $('shift-status-title').textContent=active?`${shiftText('active')} • Extruder ${state.activeShift.extruder||'—'} • ${state.activeShift.name||'—'}`:shiftText('inactive');
+  $('shift-status-title').textContent=active?`${shiftText('active')} • Line ${ACTIVE_LINE} • ${state.activeShift.name||'—'}`:shiftText('inactive');
   $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
   $('start-shift').querySelector('strong').textContent=shiftText('start');
   $('change-product').querySelector('strong').textContent=shiftText('change');
@@ -1150,8 +1202,7 @@ function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null){
   const target=syncTargetFromProduct(product);
   const swrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
   if(!positive(target,swrap))return showToast(t('invalidNumbers'));
-  extruder=Number(extruder);
-  if(![1,2,3,4].includes(extruder)) extruder=1;
+  extruder=ACTIVE_LINE;
   const now=new Date().toISOString();
   state.activeShift={id:newId('shift'),name,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
   state.activeShift.runs[0].id=state.activeShift.runId;
@@ -1198,10 +1249,10 @@ let pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2
 function safeJSON(value,fallback){try{return JSON.parse(value)||fallback;}catch{return fallback;}}
 function saveSession(){
   const fields={}; SESSION_FIELDS.forEach(id=>{const el=$(id);if(el)fields[id]=el.value;});
-  localStorage.setItem(SESSION_KEY,JSON.stringify({fields,pendingCut,mandrel:state.mandrel,updatedAt:Date.now()}));
+  lineSet(SESSION_KEY,JSON.stringify({fields,pendingCut,mandrel:state.mandrel,updatedAt:Date.now()}));
 }
 function restoreSession(){
-  const saved=safeJSON(localStorage.getItem(SESSION_KEY),{});
+  const saved=safeJSON(lineGet(SESSION_KEY),{});
   Object.entries(saved.fields||{}).forEach(([id,value])=>{const el=$(id);if(el&&value!==undefined)el.value=value;});
   if(saved.pendingCut&&typeof saved.pendingCut==='object') pendingCut=saved.pendingCut;
   renderPendingCut();
@@ -1281,7 +1332,9 @@ function completeDualWinderCut(){
   addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
   const processContext=currentProcessContext();
   state.lastCompletedCut={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString()};
-  localStorage.setItem(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
+  lineSet(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
+  state.learningEngine.addObservation({targetBW:target,appliedSWrap:currentSWrap,finalBW:average,...processContext,winder1:pair.winder1,winder2:pair.winder2});
+  renderLearningDashboard();
   recordProductionMaterial(pendingCut.winder1Input?.weight,pendingCut.winder2Input?.weight);
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
 }
@@ -1319,19 +1372,46 @@ function runDangerFlash(result){
     targets.forEach(el=>el.classList.remove('danger-flash','flash-on'));
   },5000);
 }
+function chatMemoryMode(){return $('chat-memory-select')?.value||localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';}
+function saveChatMessage(role,content){
+  if(chatMemoryMode()!=='separate') return;
+  const key=lineKey(CHAT_HISTORY_KEY);
+  let items=[];try{items=JSON.parse(localStorage.getItem(key)||'[]');}catch(_){items=[];}
+  items.push({role,content,time:new Date().toISOString()});
+  localStorage.setItem(key,JSON.stringify(items.slice(-80)));
+}
+function restoreChatMessages(){
+  if(chatMemoryMode()!=='separate') return false;
+  let items=[];try{items=JSON.parse(localStorage.getItem(lineKey(CHAT_HISTORY_KEY))||'[]');}catch(_){return false;}
+  if(!items.length)return false;
+  $('chat-log').innerHTML='';items.forEach(item=>bubble(item.role,item.content));return true;
+}
+function switchLine(line){
+  line=Number(line);if(![1,2,3,4].includes(line))return;
+  localStorage.setItem(ACTIVE_LINE_KEY,String(line));
+  sessionStorage.setItem('viejitoLineChosenSession','1');
+  location.reload();
+}
+function openLinePicker(){const d=$('line-picker-dialog');if(d){d.classList.remove('hidden');d.setAttribute('aria-hidden','false');}}
+function closeLinePicker(){const d=$('line-picker-dialog');if(d){d.classList.add('hidden');d.setAttribute('aria-hidden','true');}}
+
 $('chat-form').addEventListener('submit',event=>{
   event.preventDefault();
   const input=$('chat-input');
   const text=input.value.trim();
   if(!text)return;
   bubble('user',text);
+  saveChatMessage('user',text);
   input.value='';
   setTimeout(()=>{
+    inChatQuery=true;
     const response=interpret(text);
+    inChatQuery=false;
     if(response?.kind==='result' && !response.sarcasm && (state.personality==='light' || state.personality==='heavy')){
       response.sarcasm=getSarcasmLine();
     }
     bubble('bot',response);
+    saveChatMessage('bot',response);
   },120);
 });
 document.querySelectorAll('.example').forEach(button=>button.addEventListener('click',()=>{$('chat-input').value=button.dataset.example;$('chat-form').requestSubmit();}));
@@ -1357,8 +1437,8 @@ $('record-result-toggle').addEventListener('click',()=>{$('learning-form').class
 $('cancel-learning').addEventListener('click',()=>{$('learning-form').classList.add('hidden');});
 $('save-learning').addEventListener('click',saveLearningResult);
 $('clear-learning').addEventListener('click',()=>{state.learningEngine.clear();renderLearningDashboard();showToast(ot('resetDone'));});
-$('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];localStorage.removeItem(TREND_HISTORY_KEY);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
-$('clear-history').addEventListener('click',()=>{state.history=[];localStorage.removeItem('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
+$('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
+$('clear-history').addEventListener('click',()=>{state.history=[];lineRemove('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
 $('production-target')?.addEventListener('click',openProductionDialog);
 $('production-dialog-close')?.addEventListener('click',closeProductionDialog);
 $('production-dialog')?.addEventListener('click',event=>{if(event.target===$('production-dialog'))closeProductionDialog();});
@@ -1400,6 +1480,13 @@ $('bw-target')?.addEventListener('input',renderPendingCut);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveSession();});
 window.addEventListener('pagehide',saveSession);
 
+document.querySelectorAll('[data-line-select]').forEach(button=>button.addEventListener('click',()=>switchLine(button.dataset.lineSelect)));
+$('change-line-button')?.addEventListener('click',openLinePicker);
+$('line-picker-close')?.addEventListener('click',closeLinePicker);
+$('chat-memory-select')?.addEventListener('change',event=>{localStorage.setItem(CHAT_MEMORY_MODE_KEY,event.target.value);if(event.target.value!=='separate'){$('chat-log').innerHTML='';bubble('bot',{title:t('introTitle'),message:t('intro')});}else restoreChatMessages();});
+if($('chat-memory-select'))$('chat-memory-select').value=localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';
+if(!sessionStorage.getItem('viejitoLineChosenSession')) openLinePicker();
+
 if(localStorage.getItem('viejitoTheme')==='light')document.documentElement.classList.add('light');
 selectMandrel('bw',state.mandrel);
 selectMandrel('ft',state.mandrel);
@@ -1413,11 +1500,11 @@ renderShiftPanel();
 renderHistory();
 renderLearningDashboard();
 renderTrendPanel(analyzeTrend());
-bubble('bot',{title:t('introTitle'),message:t('intro')});
+if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro')});
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.8.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.9.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
