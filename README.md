@@ -1,4 +1,4 @@
-# Industrial IA V5.9 — Line Learning Intelligence
+# Industrial IA V5.10 — Line Learning Intelligence
 
 ## What changed
 - Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.
@@ -10,3 +10,10 @@
 
 ## Safety / trust model
 Viejito does not learn from chat questions. It learns from structured, completed production results and confirmed adjustment results. Low-history jobs fall back to the mathematical formula.
+
+
+## V5.10 — Plant BW Alignment
+- BW factor changed from the exact 453.59237 g/lb conversion to the plant/system convention of **450**.
+- Reverse length calculations use the same factor for consistency.
+- Verification example: **535 lb × 7051 ft × 48 in = 5.93 BW**.
+- This is intentionally a plant/system calculation convention, not the exact physical lb-to-gram conversion.
