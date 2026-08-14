@@ -50,9 +50,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.14',
+    introTitle: 'Industrial IA 5.16',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.14 • Plant Assistant'
+    footer: 'Industrial IA 5.16 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -78,9 +78,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.14',
+    introTitle: 'Industrial IA 5.16',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.14 • Asistente de planta'
+    footer: 'Industrial IA 5.16 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -106,9 +106,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.14',
+    introTitle: 'Industrial IA 5.16',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.14 • Assistant industriel'
+    footer: 'Industrial IA 5.16 • Assistant industriel'
   }
 };
 
@@ -180,6 +180,101 @@ function personalityLabel(mode=state.personality){
   };
   return map[mode] || mode;
 }
+
+const CONTEXT_SARCASM_KEY='viejitoContextSarcasmRecentV1';
+const contextualSarcasmBanks={
+  en:{
+    improved:[
+      'Well, look at that… you listened to the old man and it actually got better. 😏',
+      'Much better. Apparently my advice was not just decorative. 😂',
+      'That BW moved the right way. I will try not to look too proud.',
+      'Progress! Somebody has been paying attention.',
+      'Better numbers. I knew we would get there eventually.',
+      'Nice correction. I might let you run the line after all.',
+      'That is closer. See? Math occasionally has its uses.',
+      'Good move. The roll agrees with me.',
+      'Now that looks healthier. Keep doing suspiciously competent things.',
+      'Improvement confirmed. I accept your silent thank-you.',
+      'Closer to target. We are starting to look professional.',
+      'There we go. Less drama, better BW.',
+      'The correction worked. Try to contain your excitement.',
+      'That roll behaved much better. Coincidence? I think not.',
+      'Moving toward target. Viejito approves.',
+      'That is the direction I wanted. Nicely done.',
+      'Better. Not perfect, but I am willing to celebrate small victories.',
+      'The numbers improved. I will take partial credit.',
+      'Good recovery. The line is listening even if you are not.',
+      'That adjustment earned you one imaginary gold star.'
+    ],
+    excellent:[
+      'Would you look at that… almost dead on target. Try not to act surprised. 😎',
+      'That is beautiful. I may frame this BW.',
+      'Near perfect. Somebody call Quality before it changes its mind.',
+      'Right on the money. Even I have nothing sarcastic to add… almost.',
+      'That roll understood the assignment.',
+      'Excellent correction. The math and the machine finally shook hands.',
+      'Target acquired. Please enjoy this rare moment of peace.',
+      'That is the kind of BW that makes dashboards happy.',
+      'Very nice. I am reluctantly impressed.',
+      'Clean result. Do not touch anything unless you have a good reason.',
+      'That is about as pretty as production math gets.',
+      'Excellent. Now pretend this was the plan all along.'
+    ],
+    worse:[
+      'Well… that went the wrong direction. Even Viejito has bad days. 😅',
+      'Not my finest prediction. I am taking notes instead of making excuses.',
+      'That correction did not behave as expected. Good thing I actually learn.',
+      'Hmm. The line disagreed with the math this time.',
+      'That got worse. No victory speech from me on this one.',
+      'Prediction missed. Updating the mental notebook.',
+      'Well, the machine had other plans. Let us use the result and adjust.',
+      'That was not the improvement I ordered.',
+      'The BW moved the wrong way. I will own that one.',
+      'Not ideal. At least the data is useful.',
+      'That recommendation needs a rethink. Consider me humbled.',
+      'The line just reminded me who is actually in charge.'
+    ],
+    ignored:[
+      'You ignored me and it still improved. Fine… you win this round. 😂',
+      'Not the move I suggested, but the BW got better. I saw nothing.',
+      'You went your own way and survived. Annoyingly impressive.',
+      'Apparently you had a plan. I will allow it.',
+      'Different adjustment, better result. I am adding that to the notebook.',
+      'You did not follow my suggestion, but the roll improved. Fair enough.',
+      'Operator intuition: 1. Viejito ego: 0.',
+      'I suggested one thing, you did another, and somehow this worked. Typical.',
+      'I cannot argue with a better BW. Well played.',
+      'You freelanced that one and got away with it.'
+    ],
+    typo:[
+      'Good catch. I was about to calculate that disaster exactly as requested. 😌',
+      'One extra digit almost sent that roll into another zip code.',
+      'That number looked suspicious even by night-shift standards.',
+      'My calculator was ready. Fortunately, common sense arrived first.',
+      'Nice save. Fingers are faster than brains sometimes.',
+      'I caught the typo before the math caught fire.',
+      'That entry had ambitions far beyond a normal roll.',
+      'I appreciate the creativity, but that weight looked a little heroic.'
+    ]
+  },
+  es:{
+    improved:['Vaya… al parecer sí escuchaste al viejito y mejoró. 😏','Mucho mejor. Parece que mi sugerencia no era decoración. 😂','Ese BW se movió en la dirección correcta.','Mejor número. Ya empezamos a parecer profesionales.','Ahí vamos. Menos drama y mejor BW.','La corrección funcionó. Trata de no emocionarte demasiado.','Más cerca del target. Viejito aprueba.','Buen ajuste. El rollo está de acuerdo conmigo.','Mejoró. Me voy a dar un poquito del crédito.','Buena recuperación. Así sí.'],
+    excellent:['Mira nada más… casi clavado en el target. 😎','Eso está bonito. Casi para enmarcar ese BW.','Excelente. Ahora no le muevas nomás por deporte.','Ese rollo entendió la tarea.','Target conseguido. Disfruta este raro momento de paz.','Muy bien. Estoy impresionado… aunque me cueste admitirlo.'],
+    worse:['Bueno… esa no fue mi mejor predicción. 😅','Eso se fue para el lado equivocado. Estoy tomando nota.','La línea no estuvo de acuerdo conmigo esta vez.','Empeoró. No voy a dar discurso de victoria.','Fallé esa predicción. Ajustando lo aprendido.','La máquina tenía otros planes.'],
+    ignored:['Me ignoraste y aun así mejoró. Está bien… ganaste esta ronda. 😂','No hiciste lo que sugerí, pero mejoró. No vi nada.','Te fuiste por tu cuenta y funcionó. Molestamente impresionante.','Intuición del operador: 1. Ego de Viejito: 0.','No puedo discutir con un BW mejor. Bien jugado.'],
+    typo:['Buena atrapada. Ya iba a calcular ese desastre exactamente como lo escribiste. 😌','Un dígito de más casi manda ese rollo a otro código postal.','Ese número se veía sospechoso hasta para turno de noche.','Menos mal llegó el sentido común antes que la calculadora.','Ese peso tenía demasiadas aspiraciones para ser un rollo normal.']
+  }
+};
+function contextualSarcasm(event,data={}){
+  if(state.personality==='professional'||state.personality==='off')return '';
+  const lang=contextualSarcasmBanks[state.language]?state.language:'en',bank=contextualSarcasmBanks[lang][event]||contextualSarcasmBanks.en[event]||[];
+  if(!bank.length)return '';
+  let recent=[];try{recent=JSON.parse(lineGet(CONTEXT_SARCASM_KEY,'[]')||'[]')}catch(_){}
+  let choices=bank.filter(x=>!recent.includes(x)); if(!choices.length)choices=bank;
+  const line=choices[Math.floor(Math.random()*choices.length)];
+  recent.push(line);lineSet(CONTEXT_SARCASM_KEY,JSON.stringify(recent.slice(-20)));return line;
+}
+
 function getSarcasmLine(){
   if(state.personality === 'professional' || state.personality === 'off') return '';
   const languageLines = sarcasmLines[state.language] || sarcasmLines.en;
@@ -593,8 +688,13 @@ function learnFromPendingRecommendation(finalBW,pair,processContext){
     });
     const error=Number(finalBW)-Number(pending.predictedBW);
     state.lastPredictionOutcome={...pending,actualBW:Number(finalBW),predictionError:error,completedAt:new Date().toISOString()};
+    const beforeError=Math.abs(Number(pending.beforeBW)-Number(pending.targetBW));
+    const afterError=Math.abs(Number(finalBW)-Number(pending.targetBW));
+    const followed=Math.abs(Number(pending.appliedSWrap)-Number(pending.suggestedSWrap||pending.appliedSWrap))<0.6;
+    const event=afterError<=0.17?'excellent':afterError<beforeError?(followed?'improved':'ignored'):'worse';
+    const comment=contextualSarcasm(event,{before:pending.beforeBW,after:finalBW,target:pending.targetBW});
     savePendingRecommendation(null);
-    showToast(`Viejito learned: predicted ${fmt(pending.predictedBW,3)}, actual ${fmt(finalBW,3)}, error ${error>=0?'+':''}${fmt(error,3)} BW.`);
+    showToast(comment || `Viejito learned: predicted ${fmt(pending.predictedBW,3)}, actual ${fmt(finalBW,3)}, error ${error>=0?'+':''}${fmt(error,3)} BW.`);
     return true;
   }catch(_){return false;}
 }
@@ -867,15 +967,122 @@ function handleChangeoverChat(text){
 }
 
 
+
+function smartChatBWPair(text){
+  const raw=String(text||'');
+  if(/[a-záéíóú]/i.test(raw.replace(/\b(lb|lbs|ft|feet|pie|pies|peso|weight|length|largo)\b/gi,''))) return null;
+  const vals=numbers(raw);
+  if(vals.length!==2)return null;
+  let weight=null,length=null;
+  const a=vals[0],b=vals[1];
+  // Explicit labels always win.
+  const wm=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:lb|lbs|pounds?)/i)||raw.match(/(?:peso|weight)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
+  const fm=raw.match(/(\d+(?:[.,]\d+)?)\s*(?:ft|feet|pies?)/i)||raw.match(/(?:length|largo|pies?|ft)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
+  if(wm)weight=Number(wm[1].replace(',','.')); if(fm)length=Number(fm[1].replace(',','.'));
+  if(!weight&&!length){
+    const normalWeight=v=>v>=300&&v<=1000;
+    const obviousFeet=v=>v>2000;
+    if(normalWeight(a)&&obviousFeet(b)){weight=a;length=b;}
+    else if(normalWeight(b)&&obviousFeet(a)){weight=b;length=a;}
+    else if(a>=1000&&a<=2000&&b>=1000&&b<=2000){
+      return {kind:'question',title:state.language==='es'?'Necesito confirmar':'Need clarification',message:state.language==='es'?`Veo ${fmt(a,0)} y ${fmt(b,0)}. ¿Cuál es el peso del rollo y cuál es la longitud en pies?`:`I see ${fmt(a,0)} and ${fmt(b,0)}. Which one is roll weight and which one is length in feet?`};
+    }
+  }
+  if(!positive(weight,length))return null;
+  try{
+    const bw=calculateBW(weight,length,state.mandrel||DEFAULT_MANDREL);
+    return {kind:'result',title:'Basis Weight',message:state.language==='es'?`${fmt(weight,0)} lb × ${fmt(length,0)} ft = ${fmt(bw,3)} BW`:`${fmt(weight,0)} lb × ${fmt(length,0)} ft = ${fmt(bw,3)} BW`};
+  }catch(_){return null;}
+}
+
+
+function requestedLineNumber(text){
+  const q=String(text||'').toLowerCase();
+  const m=q.match(/\b(?:line|línea|linea|extruder|extrusor|ext)\s*#?\s*([1-4])\b/i);
+  return m?Number(m[1]):null;
+}
+function getLineJSON(base,line,fallback=null){
+  const raw=localStorage.getItem(`${base}::line${line}`);
+  if(raw==null)return fallback;
+  try{return JSON.parse(raw)}catch(_){return fallback}
+}
+function getLineText(base,line,fallback=''){
+  return localStorage.getItem(`${base}::line${line}`) ?? fallback;
+}
+function lineOperationalSnapshot(line){
+  const shift=getLineJSON(SHIFT_KEY,line,null);
+  const last=getLineJSON(LAST_COMPLETED_CUT_KEY,line,null);
+  const records=getLineJSON('viejitoMachineLearningV3',line,[])||[];
+  const trend=getLineJSON('viejitoBWTrendHistoryV1',line,[])||[];
+  const running=!!(shift && (shift.status==='running'||shift.running===true||shift.active===true||shift.startedAt||shift.startTime) && !shift.endedAt && !shift.endTime);
+  const product=(shift?.product||shift?.runs?.find?.(r=>r.id===shift.runId)?.product||last?.product||getLineText('viejitoProduct',line,'')||'—');
+  const sw=Number(shift?.currentSWrap ?? last?.currentSWrap ?? getLineText('viejitoCurrentSWrap',line,''));
+  const target=Number(last?.targetBW ?? getLineText('viejitoTargetBW',line,''));
+  const recentCuts=[];
+  // Trend entries preserve dual-winder values in current versions; learning is fallback.
+  for(const r of [...trend,...records]){
+    const w1=Number(r?.winder1),w2=Number(r?.winder2),avg=Number(r?.averageBW??r?.finalBW??r?.bw);
+    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||''});
+  }
+  if(last&&Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2))){
+    const sig=`${last.time||''}|${last.winder1}|${last.winder2}`;
+    if(!recentCuts.some(r=>`${r.time||''}|${r.winder1}|${r.winder2}`===sig))recentCuts.push(last);
+  }
+  return {line,shift,last,records,trend,running,product,swrap:sw,target,recentCuts:recentCuts.slice(-20)};
+}
+function sheetBalanceWatch(cuts){
+  const rows=(cuts||[]).map(c=>({...c,balance:analyzeDieBalance(c.winder1,c.winder2)})).filter(c=>c.balance.level!=='balanced');
+  if(!rows.length)return null;
+  const last=rows[rows.length-1],side=last.balance.heavier;
+  let streak=1;
+  for(let i=rows.length-2;i>=0;i--){if(rows[i].balance.heavier===side)streak++;else break;}
+  const prev=rows.length>1?rows[rows.length-2]:null;
+  const flipped=!!(prev&&prev.balance.heavier!==side&&prev.balance.level!=='balanced'&&last.balance.level!=='balanced');
+  const recentSame=rows.slice(-Math.min(streak,20));
+  const improving=recentSame.length>=2 && recentSame[recentSame.length-1].balance.difference < recentSame[0].balance.difference;
+  return {last,side,streak,flipped,improving,previous:prev};
+}
+function lineStatusAnswer(line){
+  const s=lineOperationalSnapshot(line),es=state.language==='es',fr=state.language==='fr';
+  if(!s.running){
+    const msg=es?`La línea ${line} no está corriendo. No hay un turno/sesión activa iniciada por el operador.`:fr?`La ligne ${line} ne fonctionne pas actuellement. Aucun quart/session opérateur actif n’est démarré.`:`Line ${line} is not running. No active operator shift/session has been started.`;
+    return {kind:'info',title:`Line ${line} — ${es?'NO CORRIENDO':fr?'ARRÊTÉE':'NOT RUNNING'}`,message:msg};
+  }
+  const last=s.last,parts=[];
+  parts.push(es?`Producto ${s.product}.`:fr?`Produit ${s.product}.`:`Product ${s.product}.`);
+  if(last){
+    const avg=Number(last.averageBW),target=Number(last.targetBW??s.target),diff=Number.isFinite(avg)&&Number.isFinite(target)?avg-target:null;
+    parts.push(es?`Último BW ${fmt(avg,3)}; target ${fmt(target,2)}; S-Wrap ${fmt(Number(last.currentSWrap??s.swrap),1)}.`:fr?`Dernier BW ${fmt(avg,3)} ; cible ${fmt(target,2)} ; S-Wrap ${fmt(Number(last.currentSWrap??s.swrap),1)}.`:`Last BW ${fmt(avg,3)}; target ${fmt(target,2)}; S-Wrap ${fmt(Number(last.currentSWrap??s.swrap),1)}.`);
+    if(Number.isFinite(diff)){
+      const ad=Math.abs(diff),level=ad<=0.17?'green':ad<0.30?'warning':'out';
+      parts.push(es?(level==='green'?'BW dentro de rango.':level==='warning'?`BW en WARNING (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW FUERA DE RANGO (${diff>=0?'+':''}${fmt(diff,3)}).`):fr?(level==='green'?'BW dans la plage.':level==='warning'?`BW en ALERTE (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW HORS PLAGE (${diff>=0?'+':''}${fmt(diff,3)}).`):(level==='green'?'BW is in range.':level==='warning'?`BW WARNING (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW OUT OF RANGE (${diff>=0?'+':''}${fmt(diff,3)}).`));
+    }
+    if(Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2))){
+      const bal=analyzeDieBalance(last.winder1,last.winder2),copy=dieMoveCopy(bal);
+      if(copy)parts.push(`${copy.title}: ${copy.message}`);
+      else parts.push(es?'Sheet balance dentro del límite de 0.25 BW.':fr?'Équilibre des sheets dans la limite de 0,25 BW.':'Sheet balance is within the 0.25 BW limit.');
+    }
+  }
+  const watch=sheetBalanceWatch(s.recentCuts);
+  if(watch){
+    const sideName=watch.side==='top'?'Top Sheet / Winder 2':'Bottom Sheet / Winder 1';
+    if(watch.flipped){
+      const bolt=watch.side==='top'?'top':'bottom';
+      parts.push(es?`👀 Posible sobrecorrección: el desbalance cambió de lado. Creo que te pasaste de fuerte 😅. Ahora ${sideName} está más pesado por ${fmt(watch.last.balance.difference,2)} BW; toca cerrar el ${bolt} die bolt.`:`👀 Possible overcorrection: the imbalance flipped sides. Easy there, Hercules 😅. ${sideName} is now heavier by ${fmt(watch.last.balance.difference,2)} BW; close the ${bolt} die bolt.`);
+    }else if(watch.streak>=3){
+      parts.push(es?`👀 Sheet Balance Watch: ${sideName} ha estado más pesado por ${watch.streak} cortes consecutivos. Puede que todavía no se haya hecho el Die Move, o que la máquina no esté respondiendo al ajuste. Verifica el balance.`:`👀 Sheet Balance Watch: ${sideName} has been heavier for ${watch.streak} consecutive cuts. A Die Move may not have been made yet, or the machine may not be responding to the adjustment. Verify sheet balance.`);
+    }else if(watch.improving){
+      parts.push(es?'El desbalance está disminuyendo; el Die Move parece estar respondiendo. Sigue monitoreando.':'The imbalance is decreasing; the Die Move appears to be working. Keep monitoring.');
+    }
+  }
+  return {kind:'result',title:`Line ${line} — ${es?'ESTADO ACTUAL':fr?'ÉTAT ACTUEL':'CURRENT STATUS'}`,message:parts.join(' ')};
+}
+
 function localIntelligenceQuery(text){
   const q=String(text||'').toLowerCase();
-  if(/\b(how are we|how is line|status|como vamos|cómo vamos|estado|comment va)\b/.test(q)){
-    const ctx=currentProcessContext(),rows=(state.learningEngine.records||[]).filter(r=>Number(r.extruder)===ACTIVE_LINE&&(!ctx.product||normalizeProduct(r.product)===normalizeProduct(ctx.product))).slice(-5);
-    const last=state.lastCompletedCut;
-    if(!last&&!rows.length)return {kind:'info',title:`Line ${ACTIVE_LINE}`,message:state.language==='es'?'Todavía no tengo suficientes datos reales para evaluar esta línea.':'I do not have enough real data yet to evaluate this line.'};
-    const vals=rows.map(r=>Number(r.finalBW)).filter(Number.isFinite),trend=vals.length>=2?vals[vals.length-1]-vals[0]:0;
-    const msg=state.language==='es'?`Producto ${ctx.product||'—'}. Último BW ${last?fmt(last.averageBW,3):'—'} a S-Wrap ${last?fmt(last.currentSWrap,1):fmt(state.currentSWrap,1)}. ${vals.length?`Analicé ${vals.length} cortes recientes; cambio neto ${trend>=0?'+':''}${fmt(trend,3)} BW.`:'Aún no hay suficientes cortes comparables.'}`:`Product ${ctx.product||'—'}. Last BW ${last?fmt(last.averageBW,3):'—'} at S-Wrap ${last?fmt(last.currentSWrap,1):fmt(state.currentSWrap,1)}. ${vals.length?`I analyzed ${vals.length} recent comparable cuts; net change ${trend>=0?'+':''}${fmt(trend,3)} BW.`:'Not enough comparable cuts yet.'}`;
-    return {kind:'result',title:`Line ${ACTIVE_LINE} Process Analysis`,message:msg};
+  if(/\b(how are we|how is line|status|como vamos|cómo vamos|estado|comment va|cómo está|como esta|running|corriendo)\b/.test(q)){
+    const requested=requestedLineNumber(text);
+    return lineStatusAnswer(requested||ACTIVE_LINE);
   }
   if(/\b(last|recent|history|historial|últimos|ultimos)\b/.test(q)&&/\b(roll|rolls|bw|cortes?|history|historial)\b/.test(q)){
     const rows=(state.learningEngine.records||[]).slice(-5).reverse();
@@ -885,6 +1092,7 @@ function localIntelligenceQuery(text){
 }
 
 function interpret(text){
+  const smartPair=smartChatBWPair(text); if(smartPair)return smartPair;
   const intelligence=localIntelligenceQuery(text); if(intelligence)return intelligence;
   const workflowResponse=handleChangeoverChat(text);
   if(workflowResponse) return workflowResponse;
@@ -1562,9 +1770,35 @@ function renderPendingCut(){
   $('bw1-result').textContent=Number.isFinite(pendingCut.winder1)?fmt(pendingCut.winder1):'—';
   $('bw2-result').textContent=Number.isFinite(pendingCut.winder2)?fmt(pendingCut.winder2):'—';
 }
+
+function confirmWinderEntry(index,weight,length){
+  const lang=state.language;
+  if(weight<300||weight>1000){
+    let suggestion=null;
+    if(weight>=2000&&weight<3000){
+      const candidate=weight-2000;if(candidate>=300&&candidate<=1000)suggestion=candidate;
+    }
+    const msg=suggestion
+      ? (lang==='es'?`El peso ${fmt(weight,0)} lb está fuera del rango normal de 300–1000 lb. ¿Quisiste decir ${fmt(suggestion,0)} lb?\n\nOK = usar ${fmt(suggestion,0)} lb\nCancelar = regresar y corregir.`:`Weight ${fmt(weight,0)} lb is outside the normal 300–1000 lb range. Did you mean ${fmt(suggestion,0)} lb?\n\nOK = use ${fmt(suggestion,0)} lb\nCancel = go back and correct it.`)
+      : (lang==='es'?`El peso ${fmt(weight,0)} lb está fuera del rango normal de 300–1000 lb. ¿Es correcto?\n\nOK = usarlo\nCancelar = corregirlo.`:`Weight ${fmt(weight,0)} lb is outside the normal 300–1000 lb range. Is it correct?\n\nOK = use it\nCancel = correct it.`);
+    if(!confirm(msg))return null;
+    if(suggestion){weight=suggestion;const joke=contextualSarcasm('typo');if(joke)setTimeout(()=>showToast(joke),150);}
+  }
+  if(length<1000||length>12000){
+    const msg=lang==='es'?`La longitud ${fmt(length,0)} ft está fuera del rango normal de 1,000–12,000 ft. ¿Es correcta?\n\nOK = usarla y calcular\nCancelar = corregirla.`:`Length ${fmt(length,0)} ft is outside the normal 1,000–12,000 ft range. Is this correct?\n\nOK = use it and calculate\nCancel = correct it.`;
+    if(!confirm(msg))return null;
+  }
+  return {weight,length};
+}
+
 function calculateSingleWinder(index){
-  const weight=Number($(index===1?'bw-weight':'bw2-weight').value);
-  const length=Number($(index===1?'bw-length':'bw2-length').value);
+  let weight=Number($(index===1?'bw-weight':'bw2-weight').value);
+  let length=Number($(index===1?'bw-length':'bw2-length').value);
+  if(!positive(weight,length))return showToast(t('invalidNumbers'));
+  const checked=confirmWinderEntry(index,weight,length); if(!checked)return;
+  weight=checked.weight;length=checked.length;
+  $(index===1?'bw-weight':'bw2-weight').value=String(weight);
+  $(index===1?'bw-length':'bw2-length').value=String(length);
   const mandrel=currentMandrel('bw');
   const result=calculateBW(weight,length,mandrel);
   pendingCut[`winder${index}`]=result; pendingCut[`winder${index}Input`]={weight,length}; pendingCut.mandrel=mandrel;
@@ -1975,7 +2209,7 @@ if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro'
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.14.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.16.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

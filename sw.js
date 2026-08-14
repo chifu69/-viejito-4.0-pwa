@@ -1,10 +1,10 @@
-const CACHE='industrial-ia-5.14-production-intelligence';
+const CACHE='industrial-ia-5.16-cross-line-balance-watch';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.14.0',
-  './optimizer.js?v=5.14.0',
-  './app.js?v=5.14.0',
+  './styles.css?v=5.16.0',
+  './optimizer.js?v=5.16.0',
+  './app.js?v=5.16.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',
