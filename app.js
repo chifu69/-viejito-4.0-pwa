@@ -50,9 +50,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.13',
+    introTitle: 'Industrial IA 5.14',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.13 • Plant Assistant'
+    footer: 'Industrial IA 5.14 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -78,9 +78,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.13',
+    introTitle: 'Industrial IA 5.14',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.13 • Asistente de planta'
+    footer: 'Industrial IA 5.14 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -106,9 +106,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.13',
+    introTitle: 'Industrial IA 5.14',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.13 • Assistant industriel'
+    footer: 'Industrial IA 5.14 • Assistant industriel'
   }
 };
 
@@ -190,6 +190,58 @@ function getSarcasmLine(){
   lastSarcasmIndex = index;
   return lines[index];
 }
+
+
+const DEMO_MODE_KEY='viejitoDemoModeV1';
+const ADMIN_PASSWORD_HASH_KEY='viejitoAdminPasswordHashV1';
+const MIGRATION_514_KEY='viejitoMigration514Done';
+function demoMode(){return localStorage.getItem(DEMO_MODE_KEY)==='on';}
+function hashAdminPassword(value){
+  let h=2166136261; for(const ch of String(value||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);} return (h>>>0).toString(16);
+}
+function migrateLegacyDataV514(){
+  if(localStorage.getItem(MIGRATION_514_KEY)==='1')return;
+  const mergeById=(a,b)=>{
+    const out=[],seen=new Set();
+    [...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])].forEach((r,i)=>{
+      const key=String(r?.id ?? `${r?.timestamp||r?.time||''}|${r?.product||''}|${r?.finalBW||r?.averageBW||''}|${r?.extruder||r?.line||''}|${i}`);
+      if(!seen.has(key)){seen.add(key);out.push(r);}
+    }); return out;
+  };
+  const parse=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(_){return []}};
+  // Learning records from pre-line versions: classify by explicit extruder/line.
+  const legacyLearning=parse('viejitoMachineLearningV3');
+  if(Array.isArray(legacyLearning)&&legacyLearning.length){
+    for(let line=1;line<=4;line++){
+      const rows=legacyLearning.filter(r=>Number(r?.extruder||r?.line)===line);
+      if(!rows.length)continue;
+      const key=`viejitoMachineLearningV3::line${line}`;
+      localStorage.setItem(key,JSON.stringify(mergeById(parse(key),rows)));
+    }
+  }
+  // Legacy operational history: only migrate records carrying a reliable line/extruder.
+  const legacyHistory=parse('viejitoHistory');
+  if(Array.isArray(legacyHistory)&&legacyHistory.length){
+    for(let line=1;line<=4;line++){
+      const rows=legacyHistory.filter(r=>Number(r?.extruder||r?.line)===line);
+      if(!rows.length)continue;
+      const key=`viejitoHistory::line${line}`;
+      localStorage.setItem(key,JSON.stringify(mergeById(parse(key),rows).slice(-250)));
+    }
+  }
+  // Trend history may also contain extruder metadata.
+  const legacyTrend=parse('viejitoBWTrendHistoryV1');
+  if(Array.isArray(legacyTrend)&&legacyTrend.length){
+    for(let line=1;line<=4;line++){
+      const rows=legacyTrend.filter(r=>Number(r?.extruder||r?.line)===line);
+      if(!rows.length)continue;
+      const key=`viejitoBWTrendHistoryV1::line${line}`;
+      localStorage.setItem(key,JSON.stringify(mergeById(parse(key),rows).slice(-250)));
+    }
+  }
+  localStorage.setItem(MIGRATION_514_KEY,'1');
+}
+migrateLegacyDataV514();
 
 const state = {
   language: VALID_LANGUAGES.includes(localStorage.getItem('viejitoLanguage')) ? localStorage.getItem('viejitoLanguage') : DEFAULT_LANGUAGE,
@@ -527,6 +579,7 @@ function rejectSWrapRecommendation(){
   showToast('Recommendation not applied. Current S-Wrap kept.');
 }
 function learnFromPendingRecommendation(finalBW,pair,processContext){
+  if(demoMode()){savePendingRecommendation(null);return false;}
   const pending=pendingRecommendation();
   if(!pending)return false;
   if(Number(pending.extruder)!==Number(processContext.extruder)||String(pending.runId||'')!==String(processContext.runId||''))return false;
@@ -547,6 +600,7 @@ function learnFromPendingRecommendation(finalBW,pair,processContext){
 }
 
 function saveLearningResult(){
+  if(demoMode())return showToast(state.language==='es'?'Modo Demo: aprendizaje desactivado.':'Demo Mode: learning disabled.');
   const optimization=state.latestOptimization;
   if(!optimization) return showToast(t('invalidNumbers'));
   const appliedSWrap=Number($('applied-swrap').value);
@@ -812,7 +866,26 @@ function handleChangeoverChat(text){
   return null;
 }
 
+
+function localIntelligenceQuery(text){
+  const q=String(text||'').toLowerCase();
+  if(/\b(how are we|how is line|status|como vamos|cómo vamos|estado|comment va)\b/.test(q)){
+    const ctx=currentProcessContext(),rows=(state.learningEngine.records||[]).filter(r=>Number(r.extruder)===ACTIVE_LINE&&(!ctx.product||normalizeProduct(r.product)===normalizeProduct(ctx.product))).slice(-5);
+    const last=state.lastCompletedCut;
+    if(!last&&!rows.length)return {kind:'info',title:`Line ${ACTIVE_LINE}`,message:state.language==='es'?'Todavía no tengo suficientes datos reales para evaluar esta línea.':'I do not have enough real data yet to evaluate this line.'};
+    const vals=rows.map(r=>Number(r.finalBW)).filter(Number.isFinite),trend=vals.length>=2?vals[vals.length-1]-vals[0]:0;
+    const msg=state.language==='es'?`Producto ${ctx.product||'—'}. Último BW ${last?fmt(last.averageBW,3):'—'} a S-Wrap ${last?fmt(last.currentSWrap,1):fmt(state.currentSWrap,1)}. ${vals.length?`Analicé ${vals.length} cortes recientes; cambio neto ${trend>=0?'+':''}${fmt(trend,3)} BW.`:'Aún no hay suficientes cortes comparables.'}`:`Product ${ctx.product||'—'}. Last BW ${last?fmt(last.averageBW,3):'—'} at S-Wrap ${last?fmt(last.currentSWrap,1):fmt(state.currentSWrap,1)}. ${vals.length?`I analyzed ${vals.length} recent comparable cuts; net change ${trend>=0?'+':''}${fmt(trend,3)} BW.`:'Not enough comparable cuts yet.'}`;
+    return {kind:'result',title:`Line ${ACTIVE_LINE} Process Analysis`,message:msg};
+  }
+  if(/\b(last|recent|history|historial|últimos|ultimos)\b/.test(q)&&/\b(roll|rolls|bw|cortes?|history|historial)\b/.test(q)){
+    const rows=(state.learningEngine.records||[]).slice(-5).reverse();
+    return {kind:'info',title:state.language==='es'?'Últimos datos aprendidos':'Recent learned data',message:rows.length?rows.map(r=>`${r.product}: BW ${fmt(r.finalBW,3)} @ ${fmt(r.appliedSWrap,1)}`).join(' | '):(state.language==='es'?'No hay datos aprendidos para esta línea.':'No learned data for this line.')};
+  }
+  return null;
+}
+
 function interpret(text){
+  const intelligence=localIntelligenceQuery(text); if(intelligence)return intelligence;
   const workflowResponse=handleChangeoverChat(text);
   if(workflowResponse) return workflowResponse;
   const mandrel=requestedMandrel(text) || state.context.mandrel || state.mandrel || DEFAULT_MANDREL;
@@ -903,7 +976,7 @@ function recalculateWithMandrel(mandrel){
 
 function saveContext(){lineSet('viejitoContext',JSON.stringify(state.context));}
 function addHistory(type,detail){
-  if(inChatQuery) return; // Chat questions never enter operational history/learning.
+  if(inChatQuery || demoMode()) return; // Chat questions never enter operational history/learning.
   state.history.unshift({type,detail,time:new Date().toISOString(),line:ACTIVE_LINE});
   state.history=state.history.slice(0,20);
   lineSet('viejitoHistory',JSON.stringify(state.history));
@@ -998,7 +1071,7 @@ function applyLanguage(language, announce=false){
   $('sw-calc').textContent=t('calculateSWrap');
   $('sw-formula').textContent=t('swFormula');
   $('clear-history').textContent=t('clear');
-  $('footer-text').textContent='Industrial IA 5.1 • Extruder Learning Engine';
+  $('footer-text').textContent=t('footer');
   $('target-bw-label').textContent=ot('targetBW');
   $('current-swrap-label').textContent=ot('currentSWrap');
   $('optimizer-target-label').textContent=ot('targetBW');
@@ -1025,6 +1098,8 @@ function applyLanguage(language, announce=false){
   $('too-light-label').textContent=ot('tooLight');
   $('too-heavy-label').textContent=ot('tooHeavy');
   renderPendingCut();
+  renderDemoModeBanner();
+  if(state.latestOptimization)renderRecommendationDecision(state.latestOptimization);
   if(typeof renderShiftPanel==='function') renderShiftPanel();
   updateMetaText();
   updateConnection();
@@ -1294,7 +1369,16 @@ function renderProductionHistory(){
   $('target-shift-hours').value=target.shiftHours||12;
   updateProductionTargetPreview();
   $('target-hour-label').textContent=productionCopy('hour');$('shift-hours-label').textContent=productionCopy('hours');$('target-total-label').textContent=productionCopy('total');$('save-production-target').textContent=productionCopy('save');$('product-history-title').textContent=productionCopy('history');
-  const runs=allTodayRuns();
+  const rawRuns=allTodayRuns();
+  const grouped=new Map();
+  rawRuns.forEach(run=>{
+    const key=normalizeProduct(run.product||'UNSPECIFIED');
+    if(!grouped.has(key))grouped.set(key,{...run,product:key,segments:[],materialLbs:0,samples:[],startedAt:run.startedAt,endedAt:run.endedAt});
+    const g=grouped.get(key);g.segments.push(run);g.materialLbs+=Number(run.materialLbs)||0;g.samples.push(...(run.samples||[]));
+    if(new Date(run.startedAt)<new Date(g.startedAt))g.startedAt=run.startedAt;
+    if(!run.endedAt)g.endedAt=null; else if(g.endedAt&&new Date(run.endedAt)>new Date(g.endedAt))g.endedAt=run.endedAt;
+  });
+  const runs=[...grouped.values()];
   const box=$('product-run-history');
   if(!runs.length){box.innerHTML=`<p class="empty">${productionCopy('none')}</p>`;$('product-history-summary').textContent='';return;}
   let totalMaterial=0,totalHours=0;
@@ -1489,6 +1573,35 @@ function calculateSingleWinder(index){
   $('optimizer-panel').classList.add('hidden');
   renderPendingCut(); saveSession(); showToast(waitingSecondMessage());
 }
+
+function analyzeDieBalance(w1,w2){
+  const difference=Math.abs(Number(w2)-Number(w1));
+  const heavier=Number(w2)>Number(w1)?'top':Number(w1)>Number(w2)?'bottom':'balanced';
+  const level=difference>=1?'required':difference>=0.25?'suggested':'balanced';
+  return {difference,heavier,level};
+}
+function dieMoveCopy(result){
+  if(result.level==='balanced')return null;
+  const required=result.level==='required';
+  if(state.language==='es'){
+    if(result.heavier==='top')return {title:required?'DIE MOVE OBLIGATORIO':'DIE MOVE SUGERIDO',message:`Winder 2 / Top Sheet está más pesado que Winder 1 / Bottom Sheet por ${fmt(result.difference,2)} BW. ${required?'El operador debe hacer un die move.':'Se recomienda hacer un die move.'} Cierra el top die bolt.`};
+    return {title:required?'DIE MOVE OBLIGATORIO':'DIE MOVE SUGERIDO',message:`Winder 1 / Bottom Sheet está más pesado que Winder 2 / Top Sheet por ${fmt(result.difference,2)} BW. ${required?'El operador debe hacer un die move.':'Se recomienda hacer un die move.'} Sigue el ajuste estándar del lado bottom.`};
+  }
+  if(state.language==='fr'){
+    if(result.heavier==='top')return {title:required?'DIE MOVE OBLIGATOIRE':'DIE MOVE SUGGÉRÉ',message:`Winder 2 / Top Sheet est plus lourd que Winder 1 / Bottom Sheet de ${fmt(result.difference,2)} BW. ${required?'L’opérateur doit effectuer un die move.':'Un die move est recommandé.'} Fermez le top die bolt.`};
+    return {title:required?'DIE MOVE OBLIGATOIRE':'DIE MOVE SUGGÉRÉ',message:`Winder 1 / Bottom Sheet est plus lourd que Winder 2 / Top Sheet de ${fmt(result.difference,2)} BW. ${required?'L’opérateur doit effectuer un die move.':'Un die move est recommandé.'} Suivez le réglage standard côté bottom.`};
+  }
+  if(result.heavier==='top')return {title:required?'DIE MOVE REQUIRED':'DIE MOVE SUGGESTED',message:`Winder 2 / Top Sheet is heavier than Winder 1 / Bottom Sheet by ${fmt(result.difference,2)} BW. ${required?'Operator must make a die move.':'A die move is suggested.'} Close the top die bolt.`};
+  return {title:required?'DIE MOVE REQUIRED':'DIE MOVE SUGGESTED',message:`Winder 1 / Bottom Sheet is heavier than Winder 2 / Top Sheet by ${fmt(result.difference,2)} BW. ${required?'Operator must make a die move.':'A die move is suggested.'} Follow the standard bottom-side die adjustment.`};
+}
+function renderDieMoveAlert(w1,w2){
+  const box=$('die-move-alert'); if(!box)return;
+  const result=analyzeDieBalance(w1,w2),copy=dieMoveCopy(result);
+  box.classList.toggle('hidden',!copy); box.classList.toggle('required',result.level==='required'); box.classList.toggle('suggested',result.level==='suggested');
+  if(copy){$('die-move-title').textContent=copy.title;$('die-move-message').textContent=copy.message;$('die-move-kicker').textContent=state.language==='es'?'BALANCE DE SHEET':state.language==='fr'?'ÉQUILIBRE DES SHEETS':'SHEET BALANCE';}
+  return result;
+}
+
 function completeDualWinderCut(){
   if(!Number.isFinite(pendingCut.winder1)||!Number.isFinite(pendingCut.winder2)){
     throw new Error(state.language==='es'?'Calcula y guarda los dos winders antes de sacar el promedio.':state.language==='fr'?'Calculez et enregistrez les deux winders avant la moyenne.':'Calculate and save both winders before averaging.');
@@ -1503,16 +1616,19 @@ function completeDualWinderCut(){
   $('bw-result').textContent=fmt(average);
   $('bw-meta').textContent=`${pendingCut.mandrel||currentMandrel('bw')}” • ${t('averageBW')}`;
   $('winder-imbalance').textContent=`${t('imbalance')}: ${fmt(difference,2)}`;
-  $('winder-imbalance').classList.toggle('warning',difference>0.30);
+  $('winder-imbalance').classList.toggle('warning',difference>=0.25);
+  const dieBalance=renderDieMoveAlert(pair.winder1,pair.winder2);
   renderOptimizerPanel(optimizer); renderTrendPanel(trend);
   addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
   const processContext=currentProcessContext();
   state.lastCompletedCut={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString()};
-  lineSet(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
-  const learnedPrediction=learnFromPendingRecommendation(average,pair,processContext);
-  if(!learnedPrediction)state.learningEngine.addObservation({targetBW:target,appliedSWrap:currentSWrap,finalBW:average,...processContext,winder1:pair.winder1,winder2:pair.winder2});
+  if(!demoMode()){
+    lineSet(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
+    const learnedPrediction=learnFromPendingRecommendation(average,pair,processContext);
+    if(!learnedPrediction)state.learningEngine.addObservation({targetBW:target,appliedSWrap:currentSWrap,finalBW:average,...processContext,winder1:pair.winder1,winder2:pair.winder2});
+    recordProductionMaterial(pendingCut.winder1Input?.weight,pendingCut.winder2Input?.weight);
+  }
   renderLearningDashboard();
-  recordProductionMaterial(pendingCut.winder1Input?.weight,pendingCut.winder2Input?.weight);
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
 }
 
@@ -1555,9 +1671,9 @@ const SETTINGS_DRAFT_KEY='viejitoSettingsDraftV1';
 let settingsDraft=null;
 
 const settingsCopy={
-  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line'},
-  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea'},
-  fr:{settings:'Réglages',languageK:'LANGUE',language:"Langue de l’application",appearanceK:'APPARENCE',appearance:"Mode d’affichage",personalityK:'PERSONNALITÉ DU CHAT',personality:'Sarcasme',bwK:'BASIS WEIGHT',bw:'Facteur de calcul BW',bwHelp:'450 correspond au système actuel de l’usine. 453.59237 utilise la conversion exacte livre-gramme. BW et Feet utilisent automatiquement le facteur sélectionné.',save:'Enregistrer',saveNote:'Les modifications sont appliquées uniquement après Enregistrer.',saved:'Réglages enregistrés.',changeLine:'Changer de ligne'}
+  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line',demoK:'DEMO / TRAINING',demo:'Demo Mode — Do Not Learn',demoHelp:'Use fake values without adding them to production history, trends, learning, or production totals.',learningK:'LEARNING DATA',learning:'Learning Data Manager',learningHelp:'Review recent learning records for this line and remove incorrect test data.'},
+  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea',demoK:'DEMO / ENTRENAMIENTO',demo:'Modo Demo — No aprender',demoHelp:'Usa valores falsos sin agregarlos al historial, tendencias, aprendizaje ni totales reales de producción.',learningK:'DATOS DE APRENDIZAJE',learning:'Administrador de aprendizaje',learningHelp:'Revisa los registros recientes de esta línea y elimina datos de prueba incorrectos.'},
+  fr:{settings:'Réglages',languageK:'LANGUE',language:"Langue de l’application",appearanceK:'APPARENCE',appearance:"Mode d’affichage",personalityK:'PERSONNALITÉ DU CHAT',personality:'Sarcasme',bwK:'BASIS WEIGHT',bw:'Facteur de calcul BW',bwHelp:'450 correspond au système actuel de l’usine. 453.59237 utilise la conversion exacte livre-gramme. BW et Feet utilisent automatiquement le facteur sélectionné.',save:'Enregistrer',saveNote:'Les modifications sont appliquées uniquement après Enregistrer.',saved:'Réglages enregistrés.',changeLine:'Changer de ligne',demoK:'DÉMO / FORMATION',demo:'Mode Démo — Ne pas apprendre',demoHelp:'Utilisez des valeurs fictives sans les ajouter à l’historique, aux tendances, à l’apprentissage ou aux totaux de production.',learningK:'DONNÉES D’APPRENTISSAGE',learning:'Gestion des données d’apprentissage',learningHelp:'Consultez les données récentes de cette ligne et supprimez les données de test incorrectes.'}
 };
 function scopy(key,lang=state.language){return (settingsCopy[lang]||settingsCopy.en)[key]||key;}
 
@@ -1566,7 +1682,8 @@ function readCurrentSettings(){
     language:state.language,
     theme:localStorage.getItem('viejitoTheme')==='light'?'light':'dark',
     personality:state.personality,
-    bwFactor:Number(FACTOR_GRAMS_PER_LB)||450
+    bwFactor:Number(FACTOR_GRAMS_PER_LB)||450,
+    demo:demoMode()?'on':'off'
   };
 }
 function renderSettingsDraft(){
@@ -1584,16 +1701,39 @@ function renderSettingsDraft(){
   if($('settings-bw-help'))$('settings-bw-help').textContent=scopy('bwHelp',lang);
   if($('settings-save'))$('settings-save').textContent=scopy('save',lang);
   if($('settings-save-note'))$('settings-save-note').textContent=scopy('saveNote',lang);
+  if($('settings-demo-kicker'))$('settings-demo-kicker').textContent=scopy('demoK',lang);
+  if($('settings-demo-title'))$('settings-demo-title').textContent=scopy('demo',lang);
+  if($('settings-demo-help'))$('settings-demo-help').textContent=scopy('demoHelp',lang);
+  if($('settings-learning-kicker'))$('settings-learning-kicker').textContent=scopy('learningK',lang);
+  if($('settings-learning-title'))$('settings-learning-title').textContent=scopy('learning',lang);
+  if($('settings-learning-help'))$('settings-learning-help').textContent=scopy('learningHelp',lang);
+  document.querySelectorAll('[data-draft-demo]').forEach(b=>b.classList.toggle('selected',b.dataset.draftDemo===settingsDraft.demo));
   if($('settings-language-select'))$('settings-language-select').value=settingsDraft.language;
   document.querySelectorAll('[data-draft-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.draftTheme===settingsDraft.theme));
   document.querySelectorAll('[data-draft-personality]').forEach(b=>b.classList.toggle('selected',b.dataset.draftPersonality===settingsDraft.personality));
   document.querySelectorAll('[data-draft-bw-factor]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.draftBwFactor)===Number(settingsDraft.bwFactor)));
 }
+function actuallyOpenSettings(){
+  settingsDraft=readCurrentSettings(); renderSettingsDraft();
+  $('settings-dialog')?.classList.remove('hidden'); $('settings-dialog')?.setAttribute('aria-hidden','false');
+}
 function openSettings(){
-  settingsDraft=readCurrentSettings();
-  renderSettingsDraft();
-  $('settings-dialog')?.classList.remove('hidden');
-  $('settings-dialog')?.setAttribute('aria-hidden','false');
+  const hasPassword=!!localStorage.getItem(ADMIN_PASSWORD_HASH_KEY);
+  $('settings-password-title').textContent=hasPassword?(state.language==='es'?'Ajustes protegidos':'Settings protected'):(state.language==='es'?'Crear contraseña de Ajustes':'Create Settings password');
+  $('settings-password-help').textContent=hasPassword?(state.language==='es'?'Ingresa la contraseña para cambiar Ajustes.':'Enter the password to change Settings.'):(state.language==='es'?'Primera vez: crea una contraseña para proteger los cambios.':'First use: create a password to protect changes.');
+  $('settings-password-confirm').textContent=hasPassword?(state.language==='es'?'Desbloquear Ajustes':'Unlock Settings'):(state.language==='es'?'Crear contraseña':'Create Password');
+  $('settings-password-input').value='';
+  $('settings-password-dialog').classList.remove('hidden'); $('settings-password-dialog').setAttribute('aria-hidden','false');
+  setTimeout(()=>$('settings-password-input')?.focus(),80);
+}
+function confirmSettingsPassword(){
+  const value=$('settings-password-input').value;
+  if(String(value).length<4){showToast(state.language==='es'?'Usa por lo menos 4 caracteres.':'Use at least 4 characters.');return;}
+  const saved=localStorage.getItem(ADMIN_PASSWORD_HASH_KEY),hash=hashAdminPassword(value);
+  if(saved&&saved!==hash){showToast(state.language==='es'?'Contraseña incorrecta.':'Incorrect password.');return;}
+  if(!saved)localStorage.setItem(ADMIN_PASSWORD_HASH_KEY,hash);
+  $('settings-password-dialog').classList.add('hidden'); $('settings-password-dialog').setAttribute('aria-hidden','true');
+  actuallyOpenSettings();
 }
 function closeSettings(){
   settingsDraft=null;
@@ -1610,8 +1750,28 @@ function saveSettingsDraft(){
   localStorage.setItem('viejitoPersonality',personality);
   localStorage.setItem('viejitoTheme',theme);
   localStorage.setItem(BW_FACTOR_KEY,String(factor));
+  localStorage.setItem(DEMO_MODE_KEY,settingsDraft.demo==='on'?'on':'off');
   persistLineOperationalState();
   location.reload();
+}
+
+
+function openLearningManager(){
+  const box=$('learning-manager-list'); const rows=[...(state.learningEngine.records||[])].slice(-80).reverse();
+  if(!rows.length){box.innerHTML=`<p class="empty">${state.language==='es'?'No hay registros de aprendizaje para esta línea.':'No learning records for this line.'}</p>`;}
+  else box.innerHTML=rows.map(r=>`<article class="learning-record"><div><strong>${escapeHTML(r.product||'—')} • BW ${fmt(r.finalBW,3)}</strong><small>${new Date(r.timestamp||Date.now()).toLocaleString()} • S-Wrap ${fmt(r.appliedSWrap,1)} • W1 ${r.winder1?fmt(r.winder1):'—'} / W2 ${r.winder2?fmt(r.winder2):'—'}</small></div><button type="button" data-delete-learning="${escapeHTML(r.id)}">${state.language==='es'?'Eliminar del aprendizaje':'Delete from learning'}</button></article>`).join('');
+  box.querySelectorAll('[data-delete-learning]').forEach(btn=>btn.addEventListener('click',()=>deleteLearningRecord(btn.dataset.deleteLearning)));
+  $('learning-manager-dialog').classList.remove('hidden'); $('learning-manager-dialog').setAttribute('aria-hidden','false');
+}
+function deleteLearningRecord(id){
+  const row=(state.learningEngine.records||[]).find(r=>String(r.id)===String(id)); if(!row)return;
+  const ok=confirm(state.language==='es'?`¿Eliminar ${row.product||''} BW ${fmt(row.finalBW,3)} del aprendizaje de Line ${ACTIVE_LINE}?`:`Delete ${row.product||''} BW ${fmt(row.finalBW,3)} from Line ${ACTIVE_LINE} learning?`);
+  if(!ok)return;
+  state.learningEngine.records=state.learningEngine.records.filter(r=>String(r.id)!==String(id)); state.learningEngine.save(); renderLearningDashboard(); openLearningManager();
+}
+function renderDemoModeBanner(){
+  const b=$('demo-mode-banner'); if(!b)return; b.classList.toggle('hidden',!demoMode());
+  b.textContent=state.language==='es'?'MODO DEMO — APRENDIZAJE Y DATOS DE PRODUCCIÓN DESACTIVADOS':state.language==='fr'?'MODE DÉMO — APPRENTISSAGE ET DONNÉES DE PRODUCTION DÉSACTIVÉS':'DEMO MODE — LEARNING & PRODUCTION DATA DISABLED';
 }
 
 function chatMemoryMode(){return $('chat-memory-select')?.value||localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';}
@@ -1630,6 +1790,7 @@ function restoreChatMessages(){
 }
 
 function persistLineOperationalState(){
+  if(demoMode()) return true;
   try{
     if(state.activeShift){
       state.activeShift.product=state.product||state.activeShift.product;
@@ -1692,6 +1853,13 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')setChatOpen(
 document.querySelectorAll('.mandrel').forEach(button=>button.addEventListener('click',()=>selectMandrel(button.dataset.target,Number(button.dataset.value))));
 $('language-select').addEventListener('change',event=>applyLanguage(event.target.value,true));
 $('settings-open')?.addEventListener('click',openSettings);
+$('settings-password-confirm')?.addEventListener('click',confirmSettingsPassword);
+$('settings-password-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')confirmSettingsPassword();});
+$('settings-password-close')?.addEventListener('click',()=>{$('settings-password-dialog')?.classList.add('hidden');});
+document.querySelectorAll('[data-draft-demo]').forEach(b=>b.addEventListener('click',()=>{if(settingsDraft){settingsDraft.demo=b.dataset.draftDemo;renderSettingsDraft();}}));
+$('learning-manager-open')?.addEventListener('click',openLearningManager);
+$('learning-manager-close')?.addEventListener('click',()=>{$('learning-manager-dialog')?.classList.add('hidden');});
+
 $('settings-close')?.addEventListener('click',closeSettings);
 $('settings-dialog')?.addEventListener('click',e=>{if(e.target===$('settings-dialog'))closeSettings();});
 $('settings-language-select')?.addEventListener('change',e=>{if(settingsDraft){settingsDraft.language=e.target.value;renderSettingsDraft();}});
@@ -1798,6 +1966,7 @@ if(state.activeShift?.product){
   lineSet('viejitoCurrentSWrap',String(state.currentSWrap));
 }
 applyLanguage(state.language);
+renderDemoModeBanner();
 renderShiftPanel();
 renderHistory();
 renderLearningDashboard();
@@ -1806,7 +1975,7 @@ if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro'
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.13.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.14.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

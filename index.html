@@ -10,10 +10,10 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.13.0" rel="stylesheet"/>
+<link href="styles.css?v=5.14.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
-<body>
+<body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — LEARNING & PRODUCTION DATA DISABLED</div>
 <div class="app-shell">
 <header class="topbar">
 <div class="brand industrial-brand">
@@ -112,7 +112,10 @@
 </datalist>
 <div class="result-box industrial-result" id="bw-result-box">
   <div class="result-copy"><span id="average-bw-label">Average Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small>
-<div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div>
+<div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div><div class="die-move-alert hidden" id="die-move-alert" aria-live="assertive">
+  <div><small id="die-move-kicker">SHEET BALANCE</small><strong id="die-move-title">—</strong></div>
+  <p id="die-move-message">—</p>
+</div>
 </div>
   <div class="result-status idle" id="result-status" aria-live="polite" aria-label="Waiting for calculation">
     <span class="result-status-dot"></span>
@@ -234,7 +237,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.13.0 • Line Learning Intelligence</footer>
+<footer id="footer-text">Industrial IA 5.14.0 • Line Learning Intelligence</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -278,6 +281,21 @@
 </div>
 
 
+<div class="product-dialog hidden" id="settings-password-dialog" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="product-dialog-card compact-dialog">
+    <div class="product-dialog-heading"><div><p class="eyebrow">ADMIN</p><h3 id="settings-password-title">Settings protected</h3></div><button class="dialog-close" id="settings-password-close" type="button">×</button></div>
+    <p id="settings-password-help">Enter the Settings password.</p>
+    <input id="settings-password-input" type="password" autocomplete="current-password" inputmode="text" placeholder="Password"/>
+    <button class="primary" id="settings-password-confirm" type="button">Unlock Settings</button>
+  </div>
+</div>
+<div class="product-dialog hidden" id="learning-manager-dialog" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="product-dialog-card">
+    <div class="product-dialog-heading"><div><p class="eyebrow">LEARNING DATA</p><h3 id="learning-manager-title">Line learning records</h3></div><button class="dialog-close" id="learning-manager-close" type="button">×</button></div>
+    <p class="settings-help" id="learning-manager-help">Delete only records you know are test or incorrect data.</p>
+    <div id="learning-manager-list" class="learning-manager-list"></div>
+  </div>
+</div>
 <div class="product-dialog hidden" id="settings-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
   <div class="product-dialog-card settings-dialog-card">
     <div class="product-dialog-heading">
@@ -327,6 +345,21 @@
       </div>
     </section>
 
+    <section class="settings-section">
+      <small id="settings-demo-kicker">DEMO / TRAINING</small>
+      <strong id="settings-demo-title">Demo Mode — Do Not Learn</strong>
+      <p class="settings-help" id="settings-demo-help">Use fake values to demonstrate Viejito without adding them to production history, trends, learning, or production totals.</p>
+      <div class="settings-choice-grid two">
+        <button type="button" class="settings-choice" data-draft-demo="off">Production</button>
+        <button type="button" class="settings-choice" data-draft-demo="on">Demo Mode</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <small id="settings-learning-kicker">LEARNING DATA</small>
+      <strong id="settings-learning-title">Learning Data Manager</strong>
+      <p class="settings-help" id="settings-learning-help">Review recent learning records for the selected line and remove an incorrect record if necessary.</p>
+      <button type="button" class="settings-choice learning-manager-open" id="learning-manager-open">Manage Learning Data</button>
+    </section>
     <div class="settings-save-row">
       <button class="primary settings-save-button" id="settings-save" type="button">Save Changes</button>
       <small id="settings-save-note">Changes are applied only after Save Changes.</small>
@@ -400,7 +433,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.13.0"></script>
-<script src="app.js?v=5.13.0"></script>
+<script src="optimizer.js?v=5.14.0"></script>
+<script src="app.js?v=5.14.0"></script>
 </body>
 </html>
