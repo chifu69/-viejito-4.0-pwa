@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.12.0" rel="stylesheet"/>
+<link href="styles.css?v=5.13.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body>
@@ -48,6 +48,7 @@
 <section class="hero compact-hero">
 <div class="shift-control-panel" id="shift-control-panel">
   <div class="shift-status-copy">
+    <span class="running-swrap" id="running-swrap" aria-hidden="true"><i></i><b></b></span>
     <span class="shift-dot" id="shift-dot"></span>
     <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
   </div>
@@ -233,7 +234,7 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.12.0 • Line Learning Intelligence</footer>
+<footer id="footer-text">Industrial IA 5.13.0 • Line Learning Intelligence</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -279,40 +280,57 @@
 
 <div class="product-dialog hidden" id="settings-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
   <div class="product-dialog-card settings-dialog-card">
-    <div class="product-dialog-heading"><div><p class="eyebrow">INDUSTRIAL IA</p><h3 id="settings-dialog-title">Settings</h3></div><button class="dialog-close" id="settings-close" type="button" aria-label="Close">×</button></div>
+    <div class="product-dialog-heading">
+      <div><p class="eyebrow">INDUSTRIAL IA</p><h3 id="settings-dialog-title">Settings</h3></div>
+      <button class="dialog-close" id="settings-close" type="button" aria-label="Close">×</button>
+    </div>
+
     <section class="settings-section">
-      <small>LANGUAGE</small><strong>Application language</strong>
-      <div class="settings-choice-grid">
-        <button type="button" class="settings-choice" data-setting-language="en">English</button>
-        <button type="button" class="settings-choice" data-setting-language="es">Español</button>
-        <button type="button" class="settings-choice" data-setting-language="fr">Français</button>
-      </div>
+      <label class="settings-select-label" for="settings-language-select">
+        <small id="settings-language-kicker">LANGUAGE</small>
+        <strong id="settings-language-title">Application language</strong>
+        <select id="settings-language-select">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+        </select>
+      </label>
     </section>
+
     <section class="settings-section">
-      <small>APPEARANCE</small><strong>Display mode</strong>
+      <small id="settings-appearance-kicker">APPEARANCE</small>
+      <strong id="settings-appearance-title">Display mode</strong>
       <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice" data-setting-theme="dark">Dark</button>
-        <button type="button" class="settings-choice" data-setting-theme="light">Light</button>
+        <button type="button" class="settings-choice" data-draft-theme="dark">Dark</button>
+        <button type="button" class="settings-choice" data-draft-theme="light">Light</button>
       </div>
     </section>
+
     <section class="settings-section">
-      <small>CHAT PERSONALITY</small><strong>Sarcasm</strong>
+      <small id="settings-personality-kicker">CHAT PERSONALITY</small>
+      <strong id="settings-personality-title">Sarcasm</strong>
       <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice" data-setting-personality="professional">Professional</button>
-        <button type="button" class="settings-choice" data-setting-personality="light">Light sarcasm</button>
-        <button type="button" class="settings-choice" data-setting-personality="heavy">Heavy sarcasm</button>
-        <button type="button" class="settings-choice" data-setting-personality="off">Off</button>
+        <button type="button" class="settings-choice" data-draft-personality="professional">Professional</button>
+        <button type="button" class="settings-choice" data-draft-personality="light">Light sarcasm</button>
+        <button type="button" class="settings-choice" data-draft-personality="heavy">Heavy sarcasm</button>
+        <button type="button" class="settings-choice" data-draft-personality="off">Off</button>
       </div>
     </section>
+
     <section class="settings-section">
-      <small>BASIS WEIGHT</small><strong>BW calculation factor</strong>
-      <p class="settings-help">450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.</p>
+      <small id="settings-bw-kicker">BASIS WEIGHT</small>
+      <strong id="settings-bw-title">BW calculation factor</strong>
+      <p class="settings-help" id="settings-bw-help">450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.</p>
       <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice bw-factor-choice" data-setting-bw-factor="450">450<br><small>Plant system</small></button>
-        <button type="button" class="settings-choice bw-factor-choice" data-setting-bw-factor="453.59237">453.59237<br><small>Exact conversion</small></button>
+        <button type="button" class="settings-choice bw-factor-choice" data-draft-bw-factor="450">450<br><small>Plant system</small></button>
+        <button type="button" class="settings-choice bw-factor-choice" data-draft-bw-factor="453.59237">453.59237<br><small>Exact conversion</small></button>
       </div>
-      <p class="settings-current">Current factor: <b id="settings-current-factor">450</b></p>
     </section>
+
+    <div class="settings-save-row">
+      <button class="primary settings-save-button" id="settings-save" type="button">Save Changes</button>
+      <small id="settings-save-note">Changes are applied only after Save Changes.</small>
+    </div>
   </div>
 </div>
 <div class="product-dialog hidden" id="product-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="product-dialog-title">
@@ -382,7 +400,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.12.0"></script>
-<script src="app.js?v=5.12.0"></script>
+<script src="optimizer.js?v=5.13.0"></script>
+<script src="app.js?v=5.13.0"></script>
 </body>
 </html>

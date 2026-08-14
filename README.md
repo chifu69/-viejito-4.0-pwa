@@ -1,4 +1,4 @@
-# Industrial IA V5.12 — Line Learning Intelligence
+# Industrial IA V5.13 — Line Learning Intelligence
 
 ## What changed
 - Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.
@@ -12,14 +12,14 @@
 Viejito does not learn from chat questions. It learns from structured, completed production results and confirmed adjustment results. Low-history jobs fall back to the mathematical formula.
 
 
-## V5.12 — Plant BW Alignment
+## V5.13 — Plant BW Alignment
 - BW factor changed from the exact 453.59237 g/lb conversion to the plant/system convention of **450**.
 - Reverse length calculations use the same factor for consistency.
 - Verification example: **535 lb × 7051 ft × 48 in = 5.93 BW**.
 - This is intentionally a plant/system calculation convention, not the exact physical lb-to-gram conversion.
 
 
-## V5.12 — Lbs/hr display fix
+## V5.13 — Lbs/hr display fix
 The live target calculation was mathematically correct, but the shared number-formatting function removed trailing zeroes from whole numbers when `d=0`.
 
 Example of the bug:
@@ -35,7 +35,7 @@ The existing live input listeners are preserved, so `Target per shift` updates w
 The plant BW factor of **450** is unchanged.
 
 
-## V5.12 — Operator Priority UI
+## V5.13 — Operator Priority UI
 - Production summary is compact and tappable; full production details open on tap.
 - Full production detail includes rate, target, produced, projection, shift target, forecast, and Actual-vs-Target trend chart from completed cuts.
 - Average BW, Target, BW difference, status, and S-Wrap action are surfaced at the top after a completed two-winder cut.
@@ -43,7 +43,7 @@ The plant BW factor of **450** is unchanged.
 - BW factor 450 and V5.10.1 integer display fix are preserved.
 
 
-## V5.12 — Adaptive Recommendation Learning
+## V5.13 — Adaptive Recommendation Learning
 - Settings now contains Language, Light/Dark appearance, Sarcasm level, and selectable BW factor.
 - BW factor can switch between 450 (plant/system convention) and 453.59237 (exact lb-to-gram conversion) without changing other process logic.
 - Plant Mode label removed.
@@ -64,3 +64,16 @@ The plant BW factor of **450** is unchanged.
   - Line, product, mandrel, run, and confidence
 - The next completed dual-winder cut closes the prediction loop automatically and feeds the real outcome back into the line/product learning engine.
 - Chat remains isolated from operational learning.
+
+
+## V5.13 — Persistent Lines & Saved Settings
+- Each extrusion line now explicitly persists its active shift, product, target BW, current S-Wrap, active run, production samples, pending cut, and session inputs before switching lines, closing the PWA, backgrounding iOS, or reloading.
+- Reopening the app restores the selected line automatically instead of forcing a new line selection.
+- Returning to a line restores its RUNNING state and active product/S-Wrap without requiring Start Shift again.
+- Added a spinning S-Wrap/roll indicator that animates only while the selected line has an active shift.
+- Settings no longer apply immediately.
+- Language is now a dropdown list.
+- Language, Light/Dark, Sarcasm, and BW Factor are staged inside Settings and applied only after Save Changes.
+- Save Changes persists all settings and reloads the UI to guarantee a complete language/theme rerender.
+- Fixed the language-change render interruption caused by the removed Plant Mode element.
+- BW factor remains selectable between 450 and 453.59237.

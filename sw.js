@@ -1,10 +1,10 @@
-const CACHE='industrial-ia-5.12-adaptive-recommendation-learning';
+const CACHE='industrial-ia-5.13-persistent-lines-saved-settings';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.12.0',
-  './optimizer.js?v=5.12.0',
-  './app.js?v=5.12.0',
+  './styles.css?v=5.13.0',
+  './optimizer.js?v=5.13.0',
+  './app.js?v=5.13.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

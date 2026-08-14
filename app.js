@@ -50,9 +50,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.12',
+    introTitle: 'Industrial IA 5.13',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.12 • Plant Assistant'
+    footer: 'Industrial IA 5.13 • Plant Assistant'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -78,9 +78,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.12',
+    introTitle: 'Industrial IA 5.13',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.12 • Asistente de planta'
+    footer: 'Industrial IA 5.13 • Asistente de planta'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -106,9 +106,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.12',
+    introTitle: 'Industrial IA 5.13',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.12 • Assistant industriel'
+    footer: 'Industrial IA 5.13 • Assistant industriel'
   }
 };
 
@@ -972,7 +972,7 @@ function applyLanguage(language, announce=false){
   $('language-select').setAttribute('aria-label',t('preferredLanguage'));
   $('connection-pill').textContent=navigator.onLine?t('online'):t('offline');
   $('theme-toggle').setAttribute('aria-label',t('changeTheme'));
-  $('hero-eyebrow').textContent=t('plantMode');
+  if($('hero-eyebrow')) $('hero-eyebrow').textContent=t('plantMode');
   if($('hero-title')) $('hero-title').textContent=t('heroTitle');
   if($('hero-description')) $('hero-description').textContent=t('heroDescription');
   $('quick-grid').setAttribute('aria-label',t('quickTools'));
@@ -1353,6 +1353,8 @@ function renderShiftPanel(){
   if($('active-line-label'))$('active-line-label').textContent=`LINE ${ACTIVE_LINE}`;
   const panel=$('shift-control-panel'),active=!!state.activeShift;
   panel?.classList.toggle('active',active);
+  $('running-swrap')?.classList.toggle('running',active);
+  $('running-swrap')?.classList.toggle('stopped',!active);
   $('shift-status-title').innerHTML=active?`<span class="shift-title-prefix">${shiftText('active')}</span><span class="shift-title-line">LINE ${ACTIVE_LINE}</span><span class="shift-title-date">${state.activeShift.name||'—'}</span>`:shiftText('inactive');
   $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
   $('start-shift').querySelector('strong').textContent=shiftText('start');
@@ -1361,6 +1363,8 @@ function renderShiftPanel(){
   $('change-product').disabled=!active;
   $('end-shift').disabled=!active;
   $('start-shift').disabled=active;
+  if($('change-line-button'))$('change-line-button').textContent=scopy('changeLine');
+  if($('settings-open')?.querySelector('strong'))$('settings-open').querySelector('strong').textContent=scopy('settings');
   renderProductionDashboard();
 }
 function clearPendingCutForRun(){
@@ -1546,22 +1550,68 @@ function runDangerFlash(result){
   },5000);
 }
 
-function renderSettings(){
-  const factor=Number(FACTOR_GRAMS_PER_LB)||450;
-  if($('settings-current-factor'))$('settings-current-factor').textContent=String(factor);
-  document.querySelectorAll('[data-setting-language]').forEach(b=>b.classList.toggle('selected',b.dataset.settingLanguage===state.language));
-  const theme=document.documentElement.classList.contains('light')?'light':'dark';
-  document.querySelectorAll('[data-setting-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.settingTheme===theme));
-  document.querySelectorAll('[data-setting-personality]').forEach(b=>b.classList.toggle('selected',b.dataset.settingPersonality===state.personality));
-  document.querySelectorAll('[data-setting-bw-factor]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.settingBwFactor)===factor));
+
+const SETTINGS_DRAFT_KEY='viejitoSettingsDraftV1';
+let settingsDraft=null;
+
+const settingsCopy={
+  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line'},
+  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea'},
+  fr:{settings:'Réglages',languageK:'LANGUE',language:"Langue de l’application",appearanceK:'APPARENCE',appearance:"Mode d’affichage",personalityK:'PERSONNALITÉ DU CHAT',personality:'Sarcasme',bwK:'BASIS WEIGHT',bw:'Facteur de calcul BW',bwHelp:'450 correspond au système actuel de l’usine. 453.59237 utilise la conversion exacte livre-gramme. BW et Feet utilisent automatiquement le facteur sélectionné.',save:'Enregistrer',saveNote:'Les modifications sont appliquées uniquement après Enregistrer.',saved:'Réglages enregistrés.',changeLine:'Changer de ligne'}
+};
+function scopy(key,lang=state.language){return (settingsCopy[lang]||settingsCopy.en)[key]||key;}
+
+function readCurrentSettings(){
+  return {
+    language:state.language,
+    theme:localStorage.getItem('viejitoTheme')==='light'?'light':'dark',
+    personality:state.personality,
+    bwFactor:Number(FACTOR_GRAMS_PER_LB)||450
+  };
 }
-function openSettings(){renderSettings();$('settings-dialog')?.classList.remove('hidden');$('settings-dialog')?.setAttribute('aria-hidden','false');}
-function closeSettings(){$('settings-dialog')?.classList.add('hidden');$('settings-dialog')?.setAttribute('aria-hidden','true');}
-function setBWFactor(value){
-  const factor=Number(value);
-  if(![450,453.59237].includes(factor))return;
-  FACTOR_GRAMS_PER_LB=factor;localStorage.setItem(BW_FACTOR_KEY,String(factor));renderSettings();
-  showToast(`BW factor ${factor} active.`);
+function renderSettingsDraft(){
+  if(!settingsDraft)settingsDraft=readCurrentSettings();
+  const lang=settingsDraft.language||state.language;
+  if($('settings-dialog-title'))$('settings-dialog-title').textContent=scopy('settings',lang);
+  if($('settings-language-kicker'))$('settings-language-kicker').textContent=scopy('languageK',lang);
+  if($('settings-language-title'))$('settings-language-title').textContent=scopy('language',lang);
+  if($('settings-appearance-kicker'))$('settings-appearance-kicker').textContent=scopy('appearanceK',lang);
+  if($('settings-appearance-title'))$('settings-appearance-title').textContent=scopy('appearance',lang);
+  if($('settings-personality-kicker'))$('settings-personality-kicker').textContent=scopy('personalityK',lang);
+  if($('settings-personality-title'))$('settings-personality-title').textContent=scopy('personality',lang);
+  if($('settings-bw-kicker'))$('settings-bw-kicker').textContent=scopy('bwK',lang);
+  if($('settings-bw-title'))$('settings-bw-title').textContent=scopy('bw',lang);
+  if($('settings-bw-help'))$('settings-bw-help').textContent=scopy('bwHelp',lang);
+  if($('settings-save'))$('settings-save').textContent=scopy('save',lang);
+  if($('settings-save-note'))$('settings-save-note').textContent=scopy('saveNote',lang);
+  if($('settings-language-select'))$('settings-language-select').value=settingsDraft.language;
+  document.querySelectorAll('[data-draft-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.draftTheme===settingsDraft.theme));
+  document.querySelectorAll('[data-draft-personality]').forEach(b=>b.classList.toggle('selected',b.dataset.draftPersonality===settingsDraft.personality));
+  document.querySelectorAll('[data-draft-bw-factor]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.draftBwFactor)===Number(settingsDraft.bwFactor)));
+}
+function openSettings(){
+  settingsDraft=readCurrentSettings();
+  renderSettingsDraft();
+  $('settings-dialog')?.classList.remove('hidden');
+  $('settings-dialog')?.setAttribute('aria-hidden','false');
+}
+function closeSettings(){
+  settingsDraft=null;
+  $('settings-dialog')?.classList.add('hidden');
+  $('settings-dialog')?.setAttribute('aria-hidden','true');
+}
+function saveSettingsDraft(){
+  if(!settingsDraft)return;
+  const language=VALID_LANGUAGES.includes(settingsDraft.language)?settingsDraft.language:DEFAULT_LANGUAGE;
+  const personality=VALID_PERSONALITIES.includes(settingsDraft.personality)?settingsDraft.personality:DEFAULT_PERSONALITY;
+  const theme=settingsDraft.theme==='light'?'light':'dark';
+  const factor=[450,453.59237].includes(Number(settingsDraft.bwFactor))?Number(settingsDraft.bwFactor):450;
+  localStorage.setItem('viejitoLanguage',language);
+  localStorage.setItem('viejitoPersonality',personality);
+  localStorage.setItem('viejitoTheme',theme);
+  localStorage.setItem(BW_FACTOR_KEY,String(factor));
+  persistLineOperationalState();
+  location.reload();
 }
 
 function chatMemoryMode(){return $('chat-memory-select')?.value||localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';}
@@ -1578,9 +1628,36 @@ function restoreChatMessages(){
   if(!items.length)return false;
   $('chat-log').innerHTML='';items.forEach(item=>bubble(item.role,item.content));return true;
 }
+
+function persistLineOperationalState(){
+  try{
+    if(state.activeShift){
+      state.activeShift.product=state.product||state.activeShift.product;
+      state.activeShift.currentSWrap=Number(state.currentSWrap)||state.activeShift.currentSWrap;
+      const run=state.activeShift.runs?.find(r=>r.id===state.activeShift.runId);
+      if(run){
+        run.product=state.activeShift.product;
+        run.targetBW=Number(state.targetBW)||run.targetBW;
+        run.swrap=Number(state.currentSWrap)||run.swrap;
+      }
+    }
+    lineSet('viejitoTargetBW',String(Number(state.targetBW)||DEFAULT_TARGET_BW));
+    lineSet('viejitoCurrentSWrap',String(Number(state.currentSWrap)||DEFAULT_CURRENT_SWRAP));
+    lineSet('viejitoProduct',String(state.product||state.activeShift?.product||''));
+    saveShift();
+    saveSession();
+    return true;
+  }catch(error){
+    console.error('Unable to persist line state',error);
+    return false;
+  }
+}
+
 function switchLine(line){
   line=Number(line);if(![1,2,3,4].includes(line))return;
+  persistLineOperationalState();
   localStorage.setItem(ACTIVE_LINE_KEY,String(line));
+  localStorage.setItem('viejitoLastViewedLineV1',String(line));
   sessionStorage.setItem('viejitoLineChosenSession','1');
   location.reload();
 }
@@ -1617,16 +1694,11 @@ $('language-select').addEventListener('change',event=>applyLanguage(event.target
 $('settings-open')?.addEventListener('click',openSettings);
 $('settings-close')?.addEventListener('click',closeSettings);
 $('settings-dialog')?.addEventListener('click',e=>{if(e.target===$('settings-dialog'))closeSettings();});
-document.querySelectorAll('[data-setting-language]').forEach(b=>b.addEventListener('click',()=>{$('language-select').value=b.dataset.settingLanguage;applyLanguage(b.dataset.settingLanguage,true);renderSettings();}));
-document.querySelectorAll('[data-setting-theme]').forEach(b=>b.addEventListener('click',()=>{
-  const light=b.dataset.settingTheme==='light';document.documentElement.classList.toggle('light',light);
-  localStorage.setItem('viejitoTheme',light?'light':'dark');renderSettings();
-}));
-document.querySelectorAll('[data-setting-personality]').forEach(b=>b.addEventListener('click',()=>{
-  state.personality=VALID_PERSONALITIES.includes(b.dataset.settingPersonality)?b.dataset.settingPersonality:DEFAULT_PERSONALITY;
-  $('personality-select').value=state.personality;localStorage.setItem('viejitoPersonality',state.personality);renderSettings();
-}));
-document.querySelectorAll('[data-setting-bw-factor]').forEach(b=>b.addEventListener('click',()=>setBWFactor(b.dataset.settingBwFactor)));
+$('settings-language-select')?.addEventListener('change',e=>{if(settingsDraft){settingsDraft.language=e.target.value;renderSettingsDraft();}});
+document.querySelectorAll('[data-draft-theme]').forEach(b=>b.addEventListener('click',()=>{if(settingsDraft){settingsDraft.theme=b.dataset.draftTheme;renderSettingsDraft();}}));
+document.querySelectorAll('[data-draft-personality]').forEach(b=>b.addEventListener('click',()=>{if(settingsDraft){settingsDraft.personality=b.dataset.draftPersonality;renderSettingsDraft();}}));
+document.querySelectorAll('[data-draft-bw-factor]').forEach(b=>b.addEventListener('click',()=>{if(settingsDraft){settingsDraft.bwFactor=Number(b.dataset.draftBwFactor);renderSettingsDraft();}}));
+$('settings-save')?.addEventListener('click',saveSettingsDraft);
 $('accept-swrap-recommendation')?.addEventListener('click',acceptSWrapRecommendation);
 $('reject-swrap-recommendation')?.addEventListener('click',rejectSWrapRecommendation);
 
@@ -1694,7 +1766,15 @@ $('change-line-button')?.addEventListener('click',openLinePicker);
 $('line-picker-close')?.addEventListener('click',closeLinePicker);
 $('chat-memory-select')?.addEventListener('change',event=>{localStorage.setItem(CHAT_MEMORY_MODE_KEY,event.target.value);if(event.target.value!=='separate'){$('chat-log').innerHTML='';bubble('bot',{title:t('introTitle'),message:t('intro')});}else restoreChatMessages();});
 if($('chat-memory-select'))$('chat-memory-select').value=localStorage.getItem(CHAT_MEMORY_MODE_KEY)||'off';
-if(!sessionStorage.getItem('viejitoLineChosenSession')) openLinePicker();
+if(!localStorage.getItem(ACTIVE_LINE_KEY)){
+  openLinePicker();
+}else{
+  sessionStorage.setItem('viejitoLineChosenSession','1');
+}
+
+window.addEventListener('pagehide',persistLineOperationalState);
+window.addEventListener('beforeunload',persistLineOperationalState);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistLineOperationalState();});
 
 if(localStorage.getItem('viejitoTheme')==='light')document.documentElement.classList.add('light');
 selectMandrel('bw',state.mandrel);
@@ -1703,7 +1783,20 @@ $('bw-target').value=fmt(state.targetBW);
 $('bw-current-swrap').value=fmt(state.currentSWrap,1);
 $('bw-product').value=state.product;
 restoreSession();
-if(state.activeShift?.product){$('bw-product').value=state.activeShift.product;state.product=state.activeShift.product;syncTargetFromProduct(state.activeShift.product);}
+if(state.activeShift?.product){
+  state.product=state.activeShift.product;
+  const activeRun=state.activeShift.runs?.find(r=>r.id===state.activeShift.runId);
+  const restoredSWrap=Number(state.activeShift.currentSWrap||activeRun?.swrap||state.currentSWrap);
+  const restoredTarget=Number(activeRun?.targetBW||targetFromProduct(state.activeShift.product)||state.targetBW);
+  if(positive(restoredSWrap))state.currentSWrap=restoredSWrap;
+  if(positive(restoredTarget))state.targetBW=restoredTarget;
+  $('bw-product').value=state.product;
+  $('bw-target').value=fmt(state.targetBW);
+  $('bw-current-swrap').value=fmt(state.currentSWrap,1);
+  lineSet('viejitoProduct',state.product);
+  lineSet('viejitoTargetBW',String(state.targetBW));
+  lineSet('viejitoCurrentSWrap',String(state.currentSWrap));
+}
 applyLanguage(state.language);
 renderShiftPanel();
 renderHistory();
@@ -1713,7 +1806,7 @@ if(!restoreChatMessages()) bubble('bot',{title:t('introTitle'),message:t('intro'
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.12.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.13.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
