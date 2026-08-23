@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.16.0" rel="stylesheet"/>
+<link href="styles.css?v=5.19.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — LEARNING & PRODUCTION DATA DISABLED</div>
@@ -44,15 +44,21 @@
 </div>
 </div>
 </header>
+<nav class="line-quick-bar" id="line-quick-bar" aria-label="Extrusion line selector">
+    <button type="button" data-line-quick="1" aria-pressed="false">Line 1</button>
+    <button type="button" data-line-quick="2" aria-pressed="false">Line 2</button>
+    <button type="button" data-line-quick="3" aria-pressed="false">Line 3</button>
+    <button type="button" data-line-quick="4" aria-pressed="false">Line 4</button>
+  </nav>
 <main>
 <section class="hero compact-hero">
 <div class="shift-control-panel" id="shift-control-panel">
   <div class="shift-status-copy">
     <span class="running-swrap" id="running-swrap" aria-hidden="true"><i></i><b></b></span>
     <span class="shift-dot" id="shift-dot"></span>
-    <div><strong id="shift-status-title">No active shift</strong><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
+    <div><strong id="shift-status-title">No active shift</strong><small id="operator-greeting" class="operator-greeting hidden"></small><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
   </div>
-  <button class="change-line-inline" id="change-line-button" type="button">Change line</button>
+  
   <button class="production-summary-bar" id="production-summary-toggle" type="button" aria-label="Open production details">
     <span class="production-summary-icon">📊</span>
     <span class="production-summary-item"><small id="prod-current-label">Actual</small><strong id="prod-current-rate">—</strong><em>lbs/hr</em></span>
@@ -86,7 +92,7 @@
 <div class="panel calculator-card">
 <div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
 <div class="winder-block">
-<div class="winder-heading"><strong id="winder1-title">Winder 1</strong><div class="winder-save-display" id="winder1-save-display"><span id="winder1-required">Required</span><strong id="winder1-saved-bw">—</strong><small id="winder1-state"></small></div></div>
+<div class="winder-heading"><div class="winder-title-row"><strong id="winder1-title">Winder 1</strong><span class="last-bw-inline" id="winder1-last-bw">Last BW: —</span></div><div class="winder-save-display" id="winder1-save-display"><span id="winder1-required">Required</span><strong id="winder1-saved-bw">—</strong><small id="winder1-state"></small></div></div>
 <div class="field-grid">
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw-weight" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
 <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
@@ -94,7 +100,7 @@
 <button class="secondary winder-calc" id="winder1-calc" type="button">Calculate Winder 1</button>
 </div>
 <div class="winder-block">
-<div class="winder-heading"><strong id="winder2-title">Winder 2</strong><div class="winder-save-display" id="winder2-save-display"><span id="winder2-optional">Required</span><strong id="winder2-saved-bw">—</strong><small id="winder2-state"></small></div></div>
+<div class="winder-heading"><div class="winder-title-row"><strong id="winder2-title">Winder 2</strong><span class="last-bw-inline" id="winder2-last-bw">Last BW: —</span></div><div class="winder-save-display" id="winder2-save-display"><span id="winder2-optional">Required</span><strong id="winder2-saved-bw">—</strong><small id="winder2-state"></small></div></div>
 <div class="field-grid">
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="bw2-weight" inputmode="decimal" min="0" placeholder="515" step="any" type="number"/></label>
 <label><span data-i18n="lengthFt">Length (ft)</span><input id="bw2-length" inputmode="decimal" min="0" placeholder="6578" step="any" type="number"/></label>
@@ -158,7 +164,8 @@
   </div>
   <p class="recommendation-note" id="recommendation-note">If applied, Viejito will compare its predicted BW with the next actual cut and learn from the error.</p>
 </div>
-<button class="secondary hidden" id="record-result-toggle" type="button">Record actual result</button>
+
+<button class="secondary hidden" id="record-result-toggle" type="button" aria-hidden="true" tabindex="-1">Record actual result</button>
 <div class="learning-form hidden" id="learning-form">
 <p id="learning-question">After making the change, enter the S-Wrap you used and the final BW.</p>
 <div class="field-grid">
@@ -237,14 +244,14 @@
 <div class="history-list" id="history-list"></div>
 </section>
 </main>
-<footer id="footer-text">Industrial IA 5.16.0 • Line Learning Intelligence</footer>
+<footer id="footer-text">Industrial IA 5.19 • Line Learning Intelligence</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
 <div class="floating-chat-header">
 <div>
 <strong>💬 Industrial IA</strong>
-<small id="floating-chat-status">Online assistant</small><label class="chat-memory-control"><span>Memory</span><select id="chat-memory-select" aria-label="Chat memory"><option value="off">Do not save</option><option value="session">This session only</option><option value="separate">Save separately</option></select></label>
+<small id="floating-chat-status">Online assistant</small><label class="chat-memory-control" hidden><span>Memory</span><select id="chat-memory-select" aria-label="Chat memory"><option value="separate" selected>Per line</option></select></label>
 </div>
 <button aria-label="Close chat" class="chat-close" id="chat-close" type="button">×</button>
 </div>
@@ -379,6 +386,7 @@
         <button type="button" class="extruder-option" data-extruder="4">Extruder 4</button>
       </div>
     </div>
+    <label class="product-search-label operator-picker" id="operator-picker"><span id="operator-picker-label">Operator</span><select id="product-operator"><option value="">Select operator</option><option value="Terry Davis">Terry Davis</option><option value="José Esquivel">José Esquivel</option><option value="Luis Rosario">Luis Rosario</option><option value="Mateo Pascual">Mateo Pascual</option></select></label>
     <label class="product-search-label"><span>Sheet type</span><input id="product-search" list="sheet-type-list" autocomplete="off" placeholder="Example: 8.6" type="text"/></label>
     <div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
     <label class="product-swrap-label"><span id="product-swrap-copy">Current S-Wrap</span><input id="product-swrap" inputmode="decimal" min="1" placeholder="180" step="1" type="number"/></label>
@@ -433,7 +441,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.16.0"></script>
-<script src="app.js?v=5.16.0"></script>
+<script src="optimizer.js?v=5.17.0"></script>
+<script src="app.js?v=5.19.0"></script>
 </body>
 </html>
