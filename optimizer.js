@@ -2,8 +2,8 @@
   Viejito Adaptive Process Intelligence — Sprint 2.2
   Global tolerances for every product:
   GREEN  : |actual - target| <= 0.17 (no change)
-  YELLOW : 0.17 < |actual - target| < 0.30 (warning)
-  RED    : |actual - target| >= 0.30 (change S-Wrap now)
+  YELLOW : 0.17 < |actual - target| < 0.25 (warning)
+  RED    : |actual - target| >= 0.25 (change S-Wrap now)
 
   Learning stays on this device. Every confirmed result contributes a
   correction to the standard S-Wrap formula. The engine uses a recent,
@@ -13,7 +13,7 @@
   'use strict';
 
   const GREEN_TOLERANCE = 0.17;
-  const WARNING_TOLERANCE = 0.30;
+  const WARNING_TOLERANCE = 0.25;
   const LEARNING_KEY = 'viejitoMachineLearningV2';
   const LEGACY_LEARNING_KEY = 'viejitoMachineLearningV1';
   const MAX_RECORDS = 1000;
@@ -299,8 +299,9 @@
     evaluate(actualBW) {
       const actual = Number(actualBW);
       if (!finitePositive(actual)) throw new Error('Actual BW must be greater than zero.');
-      const difference = Number((actual - this.targetBW).toFixed(2));
-      const absoluteDifference = Math.abs(difference);
+      const rawDifference = actual - this.targetBW;
+      const difference = Number(rawDifference.toFixed(2));
+      const absoluteDifference = Math.abs(rawDifference);
       let level = 'red', suggestAdjustment = true;
       if (absoluteDifference <= GREEN_TOLERANCE) { level = 'green'; suggestAdjustment = false; }
       else if (absoluteDifference < WARNING_TOLERANCE) level = 'yellow';

@@ -52,9 +52,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.18',
+    introTitle: 'Industrial IA 5.22',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.18 • Plant Assistant'
+    footer: 'Industrial IA 5.22 • BW Tolerance Fix'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -80,9 +80,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.18',
+    introTitle: 'Industrial IA 5.22',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.18 • Asistente de planta'
+    footer: 'Industrial IA 5.22 • Corrección de tolerancia BW'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -108,9 +108,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.18',
+    introTitle: 'Industrial IA 5.22',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.18 • Assistant industriel'
+    footer: 'Industrial IA 5.22 • Correction de tolérance BW'
   }
 };
 
@@ -409,7 +409,7 @@ const optimizerText = {
   en: {
     targetBW:'Target BW', currentSWrap:'Current S-Wrap', difference:'Difference', suggestedSWrap:'Suggested S-Wrap',
     tooLight:'Too light', tooHeavy:'Too heavy', greenStatus:'ON TARGET', yellowStatus:'NEAR LIMIT', redStatus:'OUT OF RANGE',
-    greenMessage:'Within ±0.17. No adjustment needed.', yellowMessage:'Between 0.17 and 0.30 from target. Warning — watch the next cut and prepare an S-Wrap correction.',
+    greenMessage:'Within ±0.17. No adjustment needed.', yellowMessage:'More than ±0.17 and less than ±0.25 from target. Warning — watch the next cut and prepare an S-Wrap correction.',
     redMessage:'Adjust the S-Wrap now.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
     decrease:'Decrease S-Wrap by {amount}, from {current} to {suggested}.', increase:'Increase S-Wrap by {amount}, from {current} to {suggested}.',
     hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}', formulaSuggestion:'Formula suggestion', learnedSuggestion:'Learned suggestion', confidence:'Confidence', rollsLearned:'Rolls learned', recordResult:'Record actual result', learningQuestion:'After making the change, enter the S-Wrap you used and the final BW.', appliedSWrap:'Applied S-Wrap', finalBW:'Final BW', saveLearn:'Save and learn', cancel:'Cancel', learningSaved:'Result saved. Viejito learned from this roll.', machineLearning:'Machine learning', resetLearning:'Reset learning', averageCorrection:'Average correction', successRate:'Success rate', deviceOnly:'Learning is stored only on this device.', resetDone:'Machine learning was reset.', trendPredictor:'Trend Predictor', trendWaiting:'Add {remaining} more BW roll(s) to activate the prediction.', trendStable:'The last 5 rolls are stable. No preventive change is recommended.', trendUp:'BW is increasing by about {slope} per roll. The next roll is projected at {projected}. Increase S-Wrap by {amount} points now, from {current} to {suggested}.', trendDown:'BW is decreasing by about {slope} per roll. The next roll is projected at {projected}. Decrease S-Wrap by {amount} points now, from {current} to {suggested}.', trendProjected:'Projected next BW', trendDirection:'Direction', trendConsistency:'Consistency', trendRolls:'Last rolls', trendClear:'Clear trend', trendCleared:'BW trend history cleared.', trendUpLabel:'Increasing', trendDownLabel:'Decreasing', trendStableLabel:'Stable', trendApply:'Apply S-Wrap {speed}', trendApplied:'Preventive change applied — Current S-Wrap: {speed}. Waiting for the next completed cut.', trendAppliedToast:'Preventive S-Wrap changed from {current} to {suggested}.'
@@ -417,7 +417,7 @@ const optimizerText = {
   es: {
     targetBW:'BW objetivo', currentSWrap:'S-Wrap actual', difference:'Diferencia', suggestedSWrap:'S-Wrap sugerido',
     tooLight:'Muy liviano', tooHeavy:'Muy pesado', greenStatus:'DENTRO DEL OBJETIVO', yellowStatus:'CERCA DEL LÍMITE', redStatus:'FUERA DE RANGO',
-    greenMessage:'Dentro de ±0.17. No se necesita ajuste.', yellowMessage:'Entre 0.17 y menos de 0.30 del objetivo. ADVERTENCIA: vigila el próximo corte y prepárate para corregir el S-Wrap.',
+    greenMessage:'Dentro de ±0.17. No se necesita ajuste.', yellowMessage:'Más de ±0.17 y menos de ±0.25 del objetivo. ADVERTENCIA: vigila el próximo corte y prepárate para corregir el S-Wrap.',
     redMessage:'FUERA DE RANGO. Ajusta el S-Wrap ahora.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
     decrease:'Baja el S-Wrap {amount}, de {current} a {suggested}.', increase:'Sube el S-Wrap {amount}, de {current} a {suggested}.',
     hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}', formulaSuggestion:'Sugerencia por fórmula', learnedSuggestion:'Sugerencia aprendida', confidence:'Confianza', rollsLearned:'Rollos aprendidos', recordResult:'Registrar resultado real', learningQuestion:'Después del cambio, escribe el S-Wrap que usaste y el BW final.', appliedSWrap:'S-Wrap aplicado', finalBW:'BW final', saveLearn:'Guardar y aprender', cancel:'Cancelar', learningSaved:'Resultado guardado. Viejito aprendió de este rollo.', machineLearning:'Aprendizaje de la máquina', resetLearning:'Borrar aprendizaje', averageCorrection:'Corrección promedio', successRate:'Porcentaje de éxito', deviceOnly:'El aprendizaje se guarda solamente en este dispositivo.', resetDone:'Se borró el aprendizaje de la máquina.', trendPredictor:'Predictor de tendencia', trendWaiting:'Agrega {remaining} rollo(s) de BW para activar la predicción.', trendStable:'Los últimos 5 rollos están estables. No se recomienda ningún cambio preventivo.', trendUp:'El BW está aumentando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Sube el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendDown:'El BW está bajando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Baja el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendProjected:'Próximo BW proyectado', trendDirection:'Dirección', trendConsistency:'Consistencia', trendRolls:'Últimos rollos', trendClear:'Borrar tendencia', trendCleared:'Se borró el historial de tendencia de BW.', trendUpLabel:'Aumentando', trendDownLabel:'Bajando', trendStableLabel:'Estable', trendApply:'Aplicar S-Wrap {speed}', trendApplied:'Cambio preventivo aplicado — S-Wrap actual: {speed}. Esperando el próximo corte completo.', trendAppliedToast:'S-Wrap preventivo cambiado de {current} a {suggested}.'
@@ -425,7 +425,7 @@ const optimizerText = {
   fr: {
     targetBW:'BW cible', currentSWrap:'S-Wrap actuel', difference:'Différence', suggestedSWrap:'S-Wrap suggéré',
     tooLight:'Trop léger', tooHeavy:'Trop lourd', greenStatus:'DANS LA CIBLE', yellowStatus:'PRÈS DE LA LIMITE', redStatus:'HORS PLAGE',
-    greenMessage:'Dans ±0,20. Aucun réglage nécessaire.', yellowMessage:'Entre 0,20 et moins de 0,30 de la cible. Attention : surveillez la prochaine coupe et préparez une correction du S-Wrap.',
+    greenMessage:'Dans ±0,17. Aucun réglage nécessaire.', yellowMessage:'Plus de ±0,17 et moins de ±0,25 de la cible. Attention : surveillez la prochaine coupe et préparez une correction du S-Wrap.',
     redMessage:'Modifiez le S-Wrap maintenant.', noChange:'Gardez le S-Wrap à {speed}. Aucun changement recommandé.',
     decrease:'Réduisez le S-Wrap de {amount}, de {current} à {suggested}.', increase:'Augmentez le S-Wrap de {amount}, de {current} à {suggested}.',
     hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}', formulaSuggestion:'Suggestion par formule', learnedSuggestion:'Suggestion apprise', confidence:'Confiance', rollsLearned:'Rouleaux appris', recordResult:'Enregistrer le résultat réel', learningQuestion:'Après le changement, saisissez le S-Wrap utilisé et le BW final.', appliedSWrap:'S-Wrap appliqué', finalBW:'BW final', saveLearn:'Enregistrer et apprendre', cancel:'Annuler', learningSaved:'Résultat enregistré. Viejito a appris de ce rouleau.', machineLearning:'Apprentissage machine', resetLearning:'Réinitialiser', averageCorrection:'Correction moyenne', successRate:'Taux de réussite', deviceOnly:'Les données restent uniquement sur cet appareil.', resetDone:'Apprentissage réinitialisé.', trendPredictor:'Prédicteur de tendance', trendWaiting:'Ajoutez encore {remaining} rouleau(x) BW pour activer la prévision.', trendStable:'Les 5 derniers rouleaux sont stables. Aucun changement préventif recommandé.', trendUp:'Le BW augmente d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Augmentez le S-Wrap de {amount} points, de {current} à {suggested}.', trendDown:'Le BW diminue d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Réduisez le S-Wrap de {amount} points, de {current} à {suggested}.', trendProjected:'Prochain BW estimé', trendDirection:'Direction', trendConsistency:'Cohérence', trendRolls:'Derniers rouleaux', trendClear:'Effacer la tendance', trendCleared:'Historique de tendance BW effacé.', trendUpLabel:'En hausse', trendDownLabel:'En baisse', trendStableLabel:'Stable', trendApply:'Appliquer S-Wrap {speed}', trendApplied:'Changement préventif appliqué — S-Wrap actuel : {speed}. En attente de la prochaine coupe terminée.', trendAppliedToast:'S-Wrap préventif modifié de {current} à {suggested}.'
@@ -520,10 +520,10 @@ function renderProcessPrioritySummary(result){
   $('priority-message').textContent=status.message;
   $('priority-current-swrap').textContent=fmt(result.currentSWrap,1);
   $('priority-suggested-swrap').textContent=result.suggestAdjustment?fmt(result.suggestedSWrap,1):fmt(result.currentSWrap,1);
-  const outer=Number(result.warningTolerance)||0.30,low=result.targetBW-outer,high=result.targetBW+outer;
-  if($('priority-range-low'))$('priority-range-low').textContent=fmt(low,2);
-  if($('priority-range-target'))$('priority-range-target').textContent=fmt(result.targetBW,2);
-  if($('priority-range-high'))$('priority-range-high').textContent=fmt(high,2);
+  const outer=Number(result.warningTolerance)||0.25,low=result.targetBW-outer,high=result.targetBW+outer;
+  if($('priority-range-low'))$('priority-range-low').textContent=Number(low).toFixed(2);
+  if($('priority-range-target'))$('priority-range-target').textContent=Number(result.targetBW).toFixed(2);
+  if($('priority-range-high'))$('priority-range-high').textContent=Number(high).toFixed(2);
   if($('priority-range-marker'))$('priority-range-marker').style.left=`${Math.max(0,Math.min(100,((result.actualBW-low)/(high-low||1))*100))}%`;
 }
 
@@ -550,9 +550,9 @@ function renderOptimizerPanel(result){
   $('learning-form').classList.add('hidden');
   $('applied-swrap').value=result.suggestAdjustment?fmt(result.suggestedSWrap,1):'';
   renderLearningDashboard();
-  $('range-low').textContent=fmt(result.targetBW-result.warningTolerance);
-  $('range-target').textContent=fmt(result.targetBW);
-  $('range-high').textContent=fmt(result.targetBW+result.warningTolerance);
+  $('range-low').textContent=Number(result.targetBW-result.warningTolerance).toFixed(2);
+  $('range-target').textContent=Number(result.targetBW).toFixed(2);
+  $('range-high').textContent=Number(result.targetBW+result.warningTolerance).toFixed(2);
   const span=result.warningTolerance*2;
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
@@ -597,7 +597,7 @@ function trendDirectionLabel(direction){
 }
 function analyzeTrend(targetBW=state.targetBW,currentSWrap=state.currentSWrap){
   sanitizeTrendHistory();
-  const predictor=new TrendPredictor({sampleSize:TREND_SAMPLE_SIZE,targetBW,tolerance:window.VIEJITO_TOLERANCES?.warning||0.30,preventiveStep:2});
+  const predictor=new TrendPredictor({sampleSize:TREND_SAMPLE_SIZE,targetBW,tolerance:window.VIEJITO_TOLERANCES?.warning||0.25,preventiveStep:2});
   const context=currentProcessContext();
   const matching=state.bwTrendHistory.filter(item=>{
     const sameProduct=!context.product||String(item.product||'').toUpperCase()===context.product;
@@ -995,12 +995,13 @@ function buildChatChangeoverRecommendation(flow,actualBW){
   const context=currentProcessContext();
   const learning=comparableLearningForChat({product:flow.product,target,mandrel:context.mandrel,extruder:context.extruder,formulaSuggestion});
   const suggestedSWrap=learning.active?learning.learnedSuggestion:formulaSuggestion;
-  const difference=Number((actual-target).toFixed(2));
-  const absoluteDifference=Math.abs(difference);
-  const level=absoluteDifference<=.20?'green':absoluteDifference<.30?'yellow':'red';
+  const rawDifference=actual-target;
+  const difference=Number(rawDifference.toFixed(2));
+  const absoluteDifference=Math.abs(rawDifference);
+  const level=absoluteDifference<=.17?'green':absoluteDifference<.25?'yellow':'red';
   const adjustment=Number((suggestedSWrap-currentSWrap).toFixed(1));
   const direction=adjustment<0?'decrease':adjustment>0?'increase':'hold';
-  return {actualBW:actual,targetBW:target,difference,absoluteDifference,level,suggestAdjustment:absoluteDifference>.20,currentSWrap,formulaSuggestion,suggestedSWrap,adjustment,direction,learning,greenTolerance:.20,warningTolerance:.30};
+  return {actualBW:actual,targetBW:target,difference,absoluteDifference,level,suggestAdjustment:absoluteDifference>.17,currentSWrap,formulaSuggestion,suggestedSWrap,adjustment,direction,learning,greenTolerance:.17,warningTolerance:.25};
 }
 function handleChangeoverChat(text){
   const request=detectChatChangeover(text);
@@ -1136,7 +1137,7 @@ function lineStatusAnswer(line){
     const avg=Number(last.averageBW),target=Number(last.targetBW??s.target),diff=Number.isFinite(avg)&&Number.isFinite(target)?avg-target:null;
     parts.push(es?`Último BW ${fmt(avg,3)}; target ${fmt(target,2)}; S-Wrap ${fmt(Number(last.currentSWrap??s.swrap),1)}.`:fr?`Dernier BW ${fmt(avg,3)} ; cible ${fmt(target,2)} ; S-Wrap ${fmt(Number(last.currentSWrap??s.swrap),1)}.`:`Last BW ${fmt(avg,3)}; target ${fmt(target,2)}; S-Wrap ${fmt(Number(last.currentSWrap??s.swrap),1)}.`);
     if(Number.isFinite(diff)){
-      const ad=Math.abs(diff),level=ad<=0.17?'green':ad<0.30?'warning':'out';
+      const ad=Math.abs(diff),level=ad<=0.17?'green':ad<0.25?'warning':'out';
       parts.push(es?(level==='green'?'BW dentro de rango.':level==='warning'?`BW en WARNING (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW FUERA DE RANGO (${diff>=0?'+':''}${fmt(diff,3)}).`):fr?(level==='green'?'BW dans la plage.':level==='warning'?`BW en ALERTE (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW HORS PLAGE (${diff>=0?'+':''}${fmt(diff,3)}).`):(level==='green'?'BW is in range.':level==='warning'?`BW WARNING (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW OUT OF RANGE (${diff>=0?'+':''}${fmt(diff,3)}).`));
     }
     if(Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2))){
@@ -1940,7 +1941,7 @@ function individualWinderStatus(value){
   if(!positive(target)) return {level:'idle',label:'',difference:null};
   const difference=Math.abs(value-target);
   if(difference<=0.17) return {level:'green',label:state.language==='es'?'EN OBJETIVO':state.language==='fr'?'DANS LA CIBLE':'ON TARGET',difference};
-  if(difference<0.30) return {level:'yellow',label:state.language==='es'?'ADVERTENCIA':state.language==='fr'?'ATTENTION':'WARNING',difference};
+  if(difference<0.25) return {level:'yellow',label:state.language==='es'?'ADVERTENCIA':state.language==='fr'?'ATTENTION':'WARNING',difference};
   return {level:'red',label:state.language==='es'?'FUERA DE RANGO':state.language==='fr'?'HORS PLAGE':'OUT OF RANGE',difference};
 }
 function renderWinderSaved(index,value){
@@ -2632,7 +2633,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.21',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.22',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
