@@ -68,6 +68,10 @@
 .trend-grid>div{padding:11px;border-radius:13px;background:rgba(255,255,255,.04);display:grid;gap:5px;min-width:0}
 .trend-grid span{font-size:.75rem;color:var(--muted)}
 .trend-grid strong{font-size:.95rem;overflow-wrap:anywhere}
+.trend-apply-row{margin-top:12px;display:flex;justify-content:flex-end}
+.trend-apply-button{min-height:46px;padding:10px 18px;font-size:.92rem;font-weight:900;border-radius:13px;box-shadow:0 7px 18px rgba(0,0,0,.12)}
+.trend-apply-button.hidden{display:none}
+@media(max-width:620px){.trend-apply-button{width:100%}}
 .chat-trend{margin-top:10px;padding:11px;border-radius:12px;border-left:4px solid}
 .chat-trend.green{border-color:#35c96f;background:rgba(53,201,111,.1)}
 .chat-trend.yellow{border-color:#f6c344;background:rgba(246,195,68,.1)}

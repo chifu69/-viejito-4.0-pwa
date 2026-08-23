@@ -1,10 +1,10 @@
-const CACHE='industrial-ia-5.19-chat-learning-safety';
+const CACHE='industrial-ia-5.21-preventive-swrap-apply';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.19.0',
+  './styles.css?v=5.21',
   './optimizer.js?v=5.17.0',
-  './app.js?v=5.19.0',
+  './app.js?v=5.21',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

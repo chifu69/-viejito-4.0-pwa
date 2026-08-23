@@ -412,7 +412,7 @@ const optimizerText = {
     greenMessage:'Within ±0.17. No adjustment needed.', yellowMessage:'Between 0.17 and 0.30 from target. Warning — watch the next cut and prepare an S-Wrap correction.',
     redMessage:'Adjust the S-Wrap now.', noChange:'Keep S-Wrap at {speed}. No change recommended.',
     decrease:'Decrease S-Wrap by {amount}, from {current} to {suggested}.', increase:'Increase S-Wrap by {amount}, from {current} to {suggested}.',
-    hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}', formulaSuggestion:'Formula suggestion', learnedSuggestion:'Learned suggestion', confidence:'Confidence', rollsLearned:'Rolls learned', recordResult:'Record actual result', learningQuestion:'After making the change, enter the S-Wrap you used and the final BW.', appliedSWrap:'Applied S-Wrap', finalBW:'Final BW', saveLearn:'Save and learn', cancel:'Cancel', learningSaved:'Result saved. Viejito learned from this roll.', machineLearning:'Machine learning', resetLearning:'Reset learning', averageCorrection:'Average correction', successRate:'Success rate', deviceOnly:'Learning is stored only on this device.', resetDone:'Machine learning was reset.', trendPredictor:'Trend Predictor', trendWaiting:'Add {remaining} more BW roll(s) to activate the prediction.', trendStable:'The last 5 rolls are stable. No preventive change is recommended.', trendUp:'BW is increasing by about {slope} per roll. The next roll is projected at {projected}. Increase S-Wrap by {amount} points now, from {current} to {suggested}.', trendDown:'BW is decreasing by about {slope} per roll. The next roll is projected at {projected}. Decrease S-Wrap by {amount} points now, from {current} to {suggested}.', trendProjected:'Projected next BW', trendDirection:'Direction', trendConsistency:'Consistency', trendRolls:'Last rolls', trendClear:'Clear trend', trendCleared:'BW trend history cleared.', trendUpLabel:'Increasing', trendDownLabel:'Decreasing', trendStableLabel:'Stable'
+    hold:'Keep S-Wrap at {speed}.', smartMeta:'Target {target} • Current S-Wrap {speed}', formulaSuggestion:'Formula suggestion', learnedSuggestion:'Learned suggestion', confidence:'Confidence', rollsLearned:'Rolls learned', recordResult:'Record actual result', learningQuestion:'After making the change, enter the S-Wrap you used and the final BW.', appliedSWrap:'Applied S-Wrap', finalBW:'Final BW', saveLearn:'Save and learn', cancel:'Cancel', learningSaved:'Result saved. Viejito learned from this roll.', machineLearning:'Machine learning', resetLearning:'Reset learning', averageCorrection:'Average correction', successRate:'Success rate', deviceOnly:'Learning is stored only on this device.', resetDone:'Machine learning was reset.', trendPredictor:'Trend Predictor', trendWaiting:'Add {remaining} more BW roll(s) to activate the prediction.', trendStable:'The last 5 rolls are stable. No preventive change is recommended.', trendUp:'BW is increasing by about {slope} per roll. The next roll is projected at {projected}. Increase S-Wrap by {amount} points now, from {current} to {suggested}.', trendDown:'BW is decreasing by about {slope} per roll. The next roll is projected at {projected}. Decrease S-Wrap by {amount} points now, from {current} to {suggested}.', trendProjected:'Projected next BW', trendDirection:'Direction', trendConsistency:'Consistency', trendRolls:'Last rolls', trendClear:'Clear trend', trendCleared:'BW trend history cleared.', trendUpLabel:'Increasing', trendDownLabel:'Decreasing', trendStableLabel:'Stable', trendApply:'Apply S-Wrap {speed}', trendApplied:'Preventive change applied — Current S-Wrap: {speed}. Waiting for the next completed cut.', trendAppliedToast:'Preventive S-Wrap changed from {current} to {suggested}.'
   },
   es: {
     targetBW:'BW objetivo', currentSWrap:'S-Wrap actual', difference:'Diferencia', suggestedSWrap:'S-Wrap sugerido',
@@ -420,7 +420,7 @@ const optimizerText = {
     greenMessage:'Dentro de ±0.17. No se necesita ajuste.', yellowMessage:'Entre 0.17 y menos de 0.30 del objetivo. ADVERTENCIA: vigila el próximo corte y prepárate para corregir el S-Wrap.',
     redMessage:'FUERA DE RANGO. Ajusta el S-Wrap ahora.', noChange:'Mantén el S-Wrap en {speed}. No se recomienda cambio.',
     decrease:'Baja el S-Wrap {amount}, de {current} a {suggested}.', increase:'Sube el S-Wrap {amount}, de {current} a {suggested}.',
-    hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}', formulaSuggestion:'Sugerencia por fórmula', learnedSuggestion:'Sugerencia aprendida', confidence:'Confianza', rollsLearned:'Rollos aprendidos', recordResult:'Registrar resultado real', learningQuestion:'Después del cambio, escribe el S-Wrap que usaste y el BW final.', appliedSWrap:'S-Wrap aplicado', finalBW:'BW final', saveLearn:'Guardar y aprender', cancel:'Cancelar', learningSaved:'Resultado guardado. Viejito aprendió de este rollo.', machineLearning:'Aprendizaje de la máquina', resetLearning:'Borrar aprendizaje', averageCorrection:'Corrección promedio', successRate:'Porcentaje de éxito', deviceOnly:'El aprendizaje se guarda solamente en este dispositivo.', resetDone:'Se borró el aprendizaje de la máquina.', trendPredictor:'Predictor de tendencia', trendWaiting:'Agrega {remaining} rollo(s) de BW para activar la predicción.', trendStable:'Los últimos 5 rollos están estables. No se recomienda ningún cambio preventivo.', trendUp:'El BW está aumentando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Sube el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendDown:'El BW está bajando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Baja el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendProjected:'Próximo BW proyectado', trendDirection:'Dirección', trendConsistency:'Consistencia', trendRolls:'Últimos rollos', trendClear:'Borrar tendencia', trendCleared:'Se borró el historial de tendencia de BW.', trendUpLabel:'Aumentando', trendDownLabel:'Bajando', trendStableLabel:'Estable'
+    hold:'Mantén el S-Wrap en {speed}.', smartMeta:'Objetivo {target} • S-Wrap actual {speed}', formulaSuggestion:'Sugerencia por fórmula', learnedSuggestion:'Sugerencia aprendida', confidence:'Confianza', rollsLearned:'Rollos aprendidos', recordResult:'Registrar resultado real', learningQuestion:'Después del cambio, escribe el S-Wrap que usaste y el BW final.', appliedSWrap:'S-Wrap aplicado', finalBW:'BW final', saveLearn:'Guardar y aprender', cancel:'Cancelar', learningSaved:'Resultado guardado. Viejito aprendió de este rollo.', machineLearning:'Aprendizaje de la máquina', resetLearning:'Borrar aprendizaje', averageCorrection:'Corrección promedio', successRate:'Porcentaje de éxito', deviceOnly:'El aprendizaje se guarda solamente en este dispositivo.', resetDone:'Se borró el aprendizaje de la máquina.', trendPredictor:'Predictor de tendencia', trendWaiting:'Agrega {remaining} rollo(s) de BW para activar la predicción.', trendStable:'Los últimos 5 rollos están estables. No se recomienda ningún cambio preventivo.', trendUp:'El BW está aumentando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Sube el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendDown:'El BW está bajando aproximadamente {slope} por rollo. El siguiente se proyecta en {projected}. Baja el S-Wrap {amount} puntos ahora, de {current} a {suggested}.', trendProjected:'Próximo BW proyectado', trendDirection:'Dirección', trendConsistency:'Consistencia', trendRolls:'Últimos rollos', trendClear:'Borrar tendencia', trendCleared:'Se borró el historial de tendencia de BW.', trendUpLabel:'Aumentando', trendDownLabel:'Bajando', trendStableLabel:'Estable', trendApply:'Aplicar S-Wrap {speed}', trendApplied:'Cambio preventivo aplicado — S-Wrap actual: {speed}. Esperando el próximo corte completo.', trendAppliedToast:'S-Wrap preventivo cambiado de {current} a {suggested}.'
   },
   fr: {
     targetBW:'BW cible', currentSWrap:'S-Wrap actuel', difference:'Différence', suggestedSWrap:'S-Wrap suggéré',
@@ -428,7 +428,7 @@ const optimizerText = {
     greenMessage:'Dans ±0,20. Aucun réglage nécessaire.', yellowMessage:'Entre 0,20 et moins de 0,30 de la cible. Attention : surveillez la prochaine coupe et préparez une correction du S-Wrap.',
     redMessage:'Modifiez le S-Wrap maintenant.', noChange:'Gardez le S-Wrap à {speed}. Aucun changement recommandé.',
     decrease:'Réduisez le S-Wrap de {amount}, de {current} à {suggested}.', increase:'Augmentez le S-Wrap de {amount}, de {current} à {suggested}.',
-    hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}', formulaSuggestion:'Suggestion par formule', learnedSuggestion:'Suggestion apprise', confidence:'Confiance', rollsLearned:'Rouleaux appris', recordResult:'Enregistrer le résultat réel', learningQuestion:'Après le changement, saisissez le S-Wrap utilisé et le BW final.', appliedSWrap:'S-Wrap appliqué', finalBW:'BW final', saveLearn:'Enregistrer et apprendre', cancel:'Annuler', learningSaved:'Résultat enregistré. Viejito a appris de ce rouleau.', machineLearning:'Apprentissage machine', resetLearning:'Réinitialiser', averageCorrection:'Correction moyenne', successRate:'Taux de réussite', deviceOnly:'Les données restent uniquement sur cet appareil.', resetDone:'Apprentissage réinitialisé.', trendPredictor:'Prédicteur de tendance', trendWaiting:'Ajoutez encore {remaining} rouleau(x) BW pour activer la prévision.', trendStable:'Les 5 derniers rouleaux sont stables. Aucun changement préventif recommandé.', trendUp:'Le BW augmente d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Augmentez le S-Wrap de {amount} points, de {current} à {suggested}.', trendDown:'Le BW diminue d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Réduisez le S-Wrap de {amount} points, de {current} à {suggested}.', trendProjected:'Prochain BW estimé', trendDirection:'Direction', trendConsistency:'Cohérence', trendRolls:'Derniers rouleaux', trendClear:'Effacer la tendance', trendCleared:'Historique de tendance BW effacé.', trendUpLabel:'En hausse', trendDownLabel:'En baisse', trendStableLabel:'Stable'
+    hold:'Gardez le S-Wrap à {speed}.', smartMeta:'Cible {target} • S-Wrap actuel {speed}', formulaSuggestion:'Suggestion par formule', learnedSuggestion:'Suggestion apprise', confidence:'Confiance', rollsLearned:'Rouleaux appris', recordResult:'Enregistrer le résultat réel', learningQuestion:'Après le changement, saisissez le S-Wrap utilisé et le BW final.', appliedSWrap:'S-Wrap appliqué', finalBW:'BW final', saveLearn:'Enregistrer et apprendre', cancel:'Annuler', learningSaved:'Résultat enregistré. Viejito a appris de ce rouleau.', machineLearning:'Apprentissage machine', resetLearning:'Réinitialiser', averageCorrection:'Correction moyenne', successRate:'Taux de réussite', deviceOnly:'Les données restent uniquement sur cet appareil.', resetDone:'Apprentissage réinitialisé.', trendPredictor:'Prédicteur de tendance', trendWaiting:'Ajoutez encore {remaining} rouleau(x) BW pour activer la prévision.', trendStable:'Les 5 derniers rouleaux sont stables. Aucun changement préventif recommandé.', trendUp:'Le BW augmente d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Augmentez le S-Wrap de {amount} points, de {current} à {suggested}.', trendDown:'Le BW diminue d’environ {slope} par rouleau. Le prochain est estimé à {projected}. Réduisez le S-Wrap de {amount} points, de {current} à {suggested}.', trendProjected:'Prochain BW estimé', trendDirection:'Direction', trendConsistency:'Cohérence', trendRolls:'Derniers rouleaux', trendClear:'Effacer la tendance', trendCleared:'Historique de tendance BW effacé.', trendUpLabel:'En hausse', trendDownLabel:'En baisse', trendStableLabel:'Stable', trendApply:'Appliquer S-Wrap {speed}', trendApplied:'Changement préventif appliqué — S-Wrap actuel : {speed}. En attente de la prochaine coupe terminée.', trendAppliedToast:'S-Wrap préventif modifié de {current} à {suggested}.'
   }
 };
 function ot(key,vars={}){
@@ -573,6 +573,23 @@ function saveTrendHistory(){
   sanitizeTrendHistory();
   lineSet(TREND_HISTORY_KEY,JSON.stringify(state.bwTrendHistory));
 }
+const ACCEPTED_PREVENTIVE_TREND_KEY='viejitoAcceptedPreventiveTrendV1';
+function acceptedPreventiveTrend(){
+  try{return JSON.parse(lineGet(ACCEPTED_PREVENTIVE_TREND_KEY,'null')||'null');}catch(_){return null;}
+}
+function trendSignature(trend){
+  if(!trend||!Array.isArray(trend.values))return '';
+  const ctx=currentProcessContext();
+  return [ctx.product,ctx.mandrel,ctx.extruder||'',fmt(Number(trend.targetBW||state.targetBW),3),trend.direction,fmt(Number(trend.projectedBW||0),3),trend.values.map(value=>fmt(Number(value),3)).join(',')].join('|');
+}
+function preventiveTrendAlreadyApplied(trend){
+  const accepted=acceptedPreventiveTrend();
+  return !!(accepted&&accepted.signature&&accepted.signature===trendSignature(trend));
+}
+function saveAcceptedPreventiveTrend(value){
+  if(value)lineSet(ACCEPTED_PREVENTIVE_TREND_KEY,JSON.stringify(value));
+  else lineRemove(ACCEPTED_PREVENTIVE_TREND_KEY);
+}
 function trendDirectionLabel(direction){
   if(direction==='up') return ot('trendUpLabel');
   if(direction==='down') return ot('trendDownLabel');
@@ -595,6 +612,8 @@ function analyzeTrend(targetBW=state.targetBW,currentSWrap=state.currentSWrap){
 }
 function trendMessage(trend){
   if(!trend.ready) return ot('trendWaiting',{remaining:Math.max(0,trend.required-trend.count)});
+  const accepted=acceptedPreventiveTrend();
+  if(preventiveTrendAlreadyApplied(trend)&&positive(accepted?.appliedSWrap)) return ot('trendApplied',{speed:fmt(accepted.appliedSWrap,1)});
   if(!trend.recommendAdjustment) return ot('trendStable');
   const vars={slope:fmt(Math.abs(trend.slope),3),projected:fmt(trend.projectedBW,3),amount:Math.abs(trend.adjustment),current:fmt(trend.suggestedSWrap-trend.adjustment,1),suggested:fmt(trend.suggestedSWrap,1)};
   return trend.direction==='up'?ot('trendUp',vars):ot('trendDown',vars);
@@ -621,6 +640,40 @@ function renderTrendPanel(trend=analyzeTrend()){
   $('trend-direction').textContent=trend.ready?trendDirectionLabel(trend.direction):'—';
   $('trend-consistency').textContent=trend.ready?`${trend.consistency}%`:'—';
   $('trend-rolls').textContent=trend.values.length?trend.values.map(value=>fmt(value,3)).join(' → '):'—';
+  const applyButton=$('apply-preventive-swrap');
+  if(applyButton){
+    const show=!!(trend.ready&&trend.recommendAdjustment&&positive(trend.suggestedSWrap)&&!preventiveTrendAlreadyApplied(trend));
+    applyButton.classList.toggle('hidden',!show);
+    applyButton.disabled=!show;
+    if(show)applyButton.textContent=ot('trendApply',{speed:fmt(trend.suggestedSWrap,1)});
+  }
+}
+function acceptPreventiveSWrapChange(){
+  const trend=state.latestTrend||analyzeTrend();
+  if(!trend?.ready||!trend.recommendAdjustment||!positive(trend.suggestedSWrap)||preventiveTrendAlreadyApplied(trend))return;
+  const before=Number(state.currentSWrap);
+  const applied=Number(trend.suggestedSWrap);
+  const ctx=currentProcessContext();
+  saveAcceptedPreventiveTrend({
+    signature:trendSignature(trend),acceptedAt:new Date().toISOString(),beforeSWrap:before,appliedSWrap:applied,
+    targetBW:Number(trend.targetBW||state.targetBW),projectedBW:Number(trend.projectedBW),direction:trend.direction,
+    consistency:Number(trend.consistency)||0,values:Array.isArray(trend.values)?trend.values.map(Number):[],
+    product:ctx.product,mandrel:ctx.mandrel,extruder:ctx.extruder,shiftId:ctx.shiftId,runId:ctx.runId
+  });
+  syncCurrentSWrap(applied,{save:true});
+  if($('bw-current-swrap'))$('bw-current-swrap').value=fmt(applied,1);
+
+  // Refresh the last BW decision using the newly accepted current S-Wrap so the
+  // operator never sees the stale pre-change value (for example 180 after applying 178).
+  const last=state.latestOptimization;
+  if(last&&positive(Number(last.actualBW),Number(last.targetBW))){
+    const refreshed=optimizeBasisWeight(Number(last.actualBW),Number(last.targetBW),applied);
+    renderOptimizerPanel(refreshed);
+  }
+  const refreshedTrend=analyzeTrend(Number(trend.targetBW||state.targetBW),applied);
+  renderTrendPanel(refreshedTrend);
+  addHistory('Preventive S-Wrap',`${fmt(before,1)} → ${fmt(applied,1)} • ${trendDirectionLabel(trend.direction)} • Projected BW ${fmt(trend.projectedBW,3)} • Accepted`);
+  showToast(ot('trendAppliedToast',{current:fmt(before,1),suggested:fmt(applied,1)}));
 }
 function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentSWrap,pair=null){
   if(inChatQuery) return analyzeTrend(targetBW,currentSWrap);
@@ -1151,7 +1204,19 @@ function conversationalChat(text){
   }
   if(/(what product|qué producto|que producto|producto.*corriendo|what are we running)/.test(q))return {kind:'info',message:state.product?(state.language==='es'?`Line ${ACTIVE_LINE} está corriendo ${state.product}.`:`Line ${ACTIVE_LINE} is running ${state.product}.`):(state.language==='es'?`Line ${ACTIVE_LINE} no tiene producto activo.`:`Line ${ACTIVE_LINE} has no active product.`)};
   if(/(what mandrel|qué mandrel|que mandrel|mandrel.*usando)/.test(q))return {kind:'info',message:state.language==='es'?`Line ${ACTIVE_LINE} está usando mandrel de ${state.mandrel} pulgadas.`:`Line ${ACTIVE_LINE} is using the ${state.mandrel}-inch mandrel.`};
+  if(/^(how are you|how're you|how are you doing|cómo estás|como estas|cómo andas|como andas|qué tal estás|que tal estas)[!?. ]*$/.test(q)){
+    const name=first?` ${first}`:'';
+    const pools=state.language==='es'?[`Muy bien${name}. Aquí pendiente de Line ${ACTIVE_LINE}. ¿Cómo va tu turno?`,`Todo bien${name}. Listo para ayudarte con Line ${ACTIVE_LINE}.`,`Bien${name} 😄. Aquí estoy contigo en Line ${ACTIVE_LINE}.`]:[`Doing good${name}. I’m here with you on Line ${ACTIVE_LINE}. How’s the shift going?`,`I’m doing well${name}. Ready to help on Line ${ACTIVE_LINE}.`,`Doing good${name} 😄. I’m keeping an eye on Line ${ACTIVE_LINE} with you.`];
+    return {kind:'info',message:pools[Math.floor(Math.random()*pools.length)]};
+  }
+  if(/^(ok|okay|alright|got it|vale|está bien|esta bien|bueno|perfecto|bien)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Perfecto. Aquí sigo pendiente.':'Sounds good. I’m right here if you need me.'};
+  if(/^(yes|yeah|yep|si|sí|no|nope)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Entendido.':'Got it.'};
+  if(/^(bye|goodbye|see you|later|hasta luego|adiós|adios|nos vemos)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?`Nos vemos${first?`, ${first}`:''}. Que tengas buen turno.`:`See you${first?`, ${first}`:''}. Have a good shift.`};
+  if(/(what do you think|qué piensas|que piensas|qué opinas|que opinas)/.test(q))return {kind:'info',message:state.language==='es'?'Dime qué quieres que revise y te doy mi mejor respuesta con los datos que tengo de la línea.':'Tell me what you want me to look at and I’ll give you my best answer from the line data I have.'};
   return null;
+}
+function unsupportedChatResponse(){
+  return {kind:'info',message:state.language==='es'?'Lo siento, todavía no tengo la capacidad de entender lo que me pides.':state.language==='fr'?`Désolé, je n’ai pas encore la capacité de comprendre cette demande.`:`Sorry, I don’t have the ability to understand that request yet.`};
 }
 
 function localIntelligenceQuery(text){
@@ -1196,7 +1261,7 @@ function interpret(text){
     }
   }
 
-  if(!intent) return {kind:'help',message:t('help')};
+  if(!intent) return unsupportedChatResponse();
 
   try{
     if(intent==='bw'){
@@ -1447,9 +1512,9 @@ let productDialogMode='change';
 let selectedExtruder=ACTIVE_LINE;
 function productDialogText(key){
   const copy={
-    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',swrap:'Current S-Wrap',extruder:'Select extruder',operator:'Operator',operatorPrompt:'Select operator',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
-    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',swrap:'S-Wrap actual',extruder:'Selecciona el extruder',operator:'Operador',operatorPrompt:'Selecciona operador',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
-    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',swrap:'S-Wrap actuel',extruder:'Sélectionnez l’extrudeuse',operator:'Opérateur',operatorPrompt:'Sélectionnez l’opérateur',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
+    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',swrap:'Current S-Wrap',extruder:'Select extruder',operator:'Operator',operatorPrompt:'Select operator',language:'Language',languagePrompt:'Select language',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
+    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',swrap:'S-Wrap actual',extruder:'Selecciona el extruder',operator:'Operador',operatorPrompt:'Selecciona operador',language:'Idioma',languagePrompt:'Selecciona idioma',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
+    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',swrap:'S-Wrap actuel',extruder:'Sélectionnez l’extrudeuse',operator:'Opérateur',operatorPrompt:'Sélectionnez l’opérateur',language:'Langue',languagePrompt:'Choisir la langue',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
   };
   return (copy[state.language]||copy.en)[key]||key;
 }
@@ -1537,6 +1602,16 @@ function openProductDialog(mode='change'){
     if(select){
       select.options[0].text=productDialogText('operatorPrompt');
       select.value=state.operator||'';
+    }
+  }
+  const languageRow=$('shift-language-picker');
+  if(languageRow){
+    languageRow.classList.toggle('hidden',mode!=='start');
+    const label=$('shift-language-picker-label'); if(label)label.textContent=state.language==='es'?'Idioma / Language':'Language / Idioma';
+    const select=$('product-language');
+    if(select){
+      select.options[0].text=state.language==='es'?'Selecciona idioma / Select language':'Select language / Selecciona idioma';
+      select.value='';
     }
   }
   const picker=$('extruder-picker');
@@ -1771,21 +1846,25 @@ function clearPendingCutForRun(){
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
   renderPendingCut();
 }
-function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null){
+function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null,shiftLanguage=null){
   const name=new Date().toLocaleDateString();
   product=normalizeProduct(product);
   if(!product)return showToast(shiftText('needProduct'));
   const operator=String($('product-operator')?.value||state.operator||'').trim();
   if(!OPERATORS.includes(operator))return showToast(state.language==='es'?'Selecciona el operador.':state.language==='fr'?"Sélectionnez l’opérateur.":'Select the operator.');
+  shiftLanguage=String(shiftLanguage||$('product-language')?.value||'').trim();
+  if(!['en','es'].includes(shiftLanguage))return showToast(state.language==='es'?'Selecciona el idioma del turno.':'Select the shift language.');
+  if(state.language!==shiftLanguage)applyLanguage(shiftLanguage,false);
   state.operator=operator;
   lineSet(OPERATOR_KEY,operator);
+  lineSet('viejitoLanguage',shiftLanguage);
   applyAutomaticMandrelForProduct(product,{forceDefault:true});
   const target=syncTargetFromProduct(product);
   const swrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
   if(!positive(target,swrap))return showToast(t('invalidNumbers'));
   extruder=ACTIVE_LINE;
   const now=new Date().toISOString();
-  state.activeShift={id:newId('shift'),name,operator,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,operator,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
+  state.activeShift={id:newId('shift'),name,operator,language:shiftLanguage,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,operator,language:shiftLanguage,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
   state.activeShift.runs[0].id=state.activeShift.runId;
   $('bw-product').value=product; $('bw-target').value=String(target); $('bw-current-swrap').value=fmt(swrap,1);
   state.product=product; saveOptimizerSettings(target,swrap); clearPendingCutForRun(); saveShift(); saveSession();
@@ -2140,8 +2219,9 @@ function restoreChatMessages(){
 }
 
 function persistLineOperationalState(){
-  if(demoMode()) return true;
   try{
+    // Operational UI/session state must persist per line even in Demo Mode.
+    // Demo Mode disables learning/production recording, not line isolation.
     if(state.activeShift){
       state.activeShift.product=state.product||state.activeShift.product;
       state.activeShift.currentSWrap=Number(state.currentSWrap)||state.activeShift.currentSWrap;
@@ -2215,6 +2295,48 @@ function renderLastWinderBW(){
   if(l2)l2.textContent=`${label}: ${Number.isFinite(w2)?fmt(w2,3):'—'}`;
 }
 
+// Keep every visible BW/result/recommendation panel synchronized with the selected line.
+// Previously only the inputs and Last BW changed; the red/green result cards could keep
+// the previous line's target/S-Wrap recommendation on screen.
+function renderSelectedLineResult(){
+  const last=state.lastCompletedCut||null;
+  const avg=Number(last?.averageBW);
+  const resultBox=$('bw-result-box');
+  const optimizerPanel=$('optimizer-panel');
+  const priority=$('process-priority-summary');
+  const statusBox=$('result-status');
+
+  if(!Number.isFinite(avg)||avg<=0){
+    state.latestOptimization=null;
+    if($('bw-result')){ $('bw-result').textContent='—'; delete $('bw-result').dataset.averageBw; delete $('bw-result').dataset.value; }
+    if($('bw-meta'))$('bw-meta').textContent='';
+    if(resultBox){ resultBox.classList.remove('green','yellow','red'); }
+    if(optimizerPanel){ optimizerPanel.classList.add('hidden'); optimizerPanel.classList.remove('green','yellow','red'); }
+    if(priority){ priority.classList.add('hidden'); priority.classList.remove('green','yellow','red'); }
+    if(statusBox){
+      statusBox.classList.remove('green','yellow','red','status-pop');
+      statusBox.classList.add('idle');
+      if($('result-status-title'))$('result-status-title').textContent='';
+      if($('result-status-message'))$('result-status-message').textContent='';
+    }
+    return;
+  }
+
+  const product=state.activeShift?.product||state.product||last.product||'';
+  const target=Number(last.targetBW)||Number(targetFromProduct(product))||Number(state.targetBW)||DEFAULT_TARGET_BW;
+  const swrap=Number(last.currentSWrap)||Number(state.currentSWrap)||DEFAULT_CURRENT_SWRAP;
+  const mandrel=Number(last.mandrel)||Number(state.mandrel)||DEFAULT_MANDREL;
+  const result=optimizeBasisWeight(avg,target,swrap);
+
+  if($('bw-result')){
+    $('bw-result').textContent=fmt(avg);
+    $('bw-result').dataset.averageBw=String(avg);
+    $('bw-result').dataset.value=String(avg);
+  }
+  if($('bw-meta'))$('bw-meta').textContent=`${mandrel}” • ${t('averageBW')}`;
+  renderOptimizerPanel(result);
+}
+
 function renderSelectedLineState(){
   SESSION_FIELDS.forEach(id=>{const el=$(id);if(el)el.value='';});
   selectMandrel('bw',state.mandrel);
@@ -2239,6 +2361,7 @@ function renderSelectedLineState(){
   applyLanguage(state.language);
   renderOperatorGreeting();
   renderLastWinderBW();
+  renderSelectedLineResult();
   renderShiftPanel();
   renderHistory();
   renderLearningDashboard();
@@ -2256,41 +2379,105 @@ function switchLine(line){
   sessionStorage.setItem('viejitoLineChosenSession','1');
   hydrateLineState();
   renderSelectedLineState();
+  noteOperatorActivity();
+  setTimeout(checkSmartReminders,900);
   showToast(`Line ${line}`);
 }
 function openLinePicker(){}
 function closeLinePicker(){}
 
 const BLADE_REMINDER_KEY='viejitoBladeReminderV1';
+const HYDRATION_REMINDER_KEY='viejitoHydrationReminderV1';
+let lastOperatorActivityAt=Date.now();
+let reminderActivityTimer=null;
 function localDayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function bladeReminderState(){try{return JSON.parse(lineGet(BLADE_REMINDER_KEY,'null')||'null')||{};}catch(_){return {};}}
-function saveBladeReminderState(v){lineSet(BLADE_REMINDER_KEY,JSON.stringify(v));}
+function reminderState(key){try{return JSON.parse(lineGet(key,'null')||'null')||{};}catch(_){return {};}}
+function saveReminderState(key,v){lineSet(key,JSON.stringify(v));}
+function bladeReminderState(){return reminderState(BLADE_REMINDER_KEY);}
+function saveBladeReminderState(v){saveReminderState(BLADE_REMINDER_KEY,v);}
+function hydrationReminderState(){return reminderState(HYDRATION_REMINDER_KEY);}
+function saveHydrationReminderState(v){saveReminderState(HYDRATION_REMINDER_KEY,v);}
+function operatorRecentlyActive(){return Date.now()-lastOperatorActivityAt<=20000;}
+function reminderFirstName(){return operatorFirstName()||'';}
+function randomChoice(items){return items[Math.floor(Math.random()*items.length)];}
 function scheduleBladeReminderIfNeeded(){
   if(!state.activeShift)return;
   const day=localDayKey(),r=bladeReminderState();
   if(r.day===day&&(r.done||r.dueAt))return;
-  // Random reminder 20–90 minutes from now. Persisted per line/day.
-  saveBladeReminderState({day,dueAt:Date.now()+(20+Math.floor(Math.random()*71))*60000,done:false});
+  saveBladeReminderState({day,dueAt:Date.now()+(30+Math.floor(Math.random()*91))*60000,done:false});
 }
-function showBladeReminder(){
-  if($('blade-reminder-modal'))return;
-  const modal=document.createElement('div'); modal.id='blade-reminder-modal'; modal.className='blade-reminder-modal';
-  const question=state.language==='es'?'¿Ya checaste tu navaja hoy?':state.language==='fr'?'Avez-vous vérifié votre lame aujourd’hui ?':'Have you checked your blade today?';
-  const yes=state.language==='es'?'Sí':state.language==='fr'?'Oui':'Yes';
-  const later=state.language==='es'?'Todavía no':state.language==='fr'?'Pas encore':'Not yet';
-  modal.innerHTML=`<div class="blade-reminder-card"><strong>🔪 ${escapeHTML(question)}</strong><div><button type="button" class="primary" data-blade-yes>${escapeHTML(yes)}</button><button type="button" class="secondary" data-blade-later>${escapeHTML(later)}</button></div></div>`;
-  document.body.appendChild(modal);
-  modal.querySelector('[data-blade-yes]').addEventListener('click',()=>{const r=bladeReminderState();saveBladeReminderState({...r,day:localDayKey(),done:true,dueAt:null});modal.remove();});
-  modal.querySelector('[data-blade-later]').addEventListener('click',()=>{const r=bladeReminderState();saveBladeReminderState({...r,day:localDayKey(),done:false,dueAt:Date.now()+(15+Math.floor(Math.random()*31))*60000});modal.remove();});
-}
-function checkBladeReminder(){
+function scheduleHydrationReminderIfNeeded(){
   if(!state.activeShift)return;
-  scheduleBladeReminderIfNeeded();
-  const r=bladeReminderState();
-  if(r.day===localDayKey()&&!r.done&&Number(r.dueAt)&&Date.now()>=Number(r.dueAt))showBladeReminder();
+  const day=localDayKey(),r=hydrationReminderState();
+  if(r.day===day&&Number(r.dueAt))return;
+  const count=r.day===day?Number(r.count)||0:0;
+  if(count>=2)return;
+  saveHydrationReminderState({day,count,dueAt:Date.now()+(60+Math.floor(Math.random()*121))*60000});
 }
-setInterval(checkBladeReminder,60000);
-setTimeout(checkBladeReminder,5000);
+function bladeReminderText(){
+  const n=reminderFirstName();
+  if(state.language==='es')return randomChoice([
+    `${n?n+', ':''}¿ya checaste tu navaja hoy?`,
+    `${n?n+', ':''}cuando tengas un momento, confirma que tu navaja esté bien. ¿Ya la revisaste?`,
+    `Una rápida${n?' para ti, '+n:''}: ¿la navaja ya quedó revisada hoy?`
+  ]);
+  return randomChoice([
+    `${n?n+', ':''}have you checked your blade today?`,
+    `${n?n+', ':''}quick check—have you looked over your blade today?`,
+    `Quick one${n?', '+n:''}: is your blade checked for today?`
+  ]);
+}
+function hydrationReminderText(){
+  const n=reminderFirstName();
+  if(state.language==='es')return randomChoice([
+    `${n?n+', ':''}¿ya tomaste un poco de agua hoy? 💧`,
+    `${n?'Ey '+n+', ':''}cuando tengas chance, échate un poco de agua. 💧`,
+    `${n?n+', ':''}¿cómo vamos? Acuérdate de hidratarte cuando puedas.`,
+    `${n?n+', ':''}turno largo 😅 ¿ya te hidrataste?`
+  ]);
+  return randomChoice([
+    `${n?n+', ':''}have you had some water today? 💧`,
+    `${n?'Hey '+n+', ':''}grab some water when you get a chance. 💧`,
+    `${n?n+', ':''}how’s it going? Remember to hydrate when you get a minute.`,
+    `Long shift${n?', '+n:''} 😅. Staying hydrated?`
+  ]);
+}
+function showSmartReminder(type){
+  if($('smart-reminder-modal')||$('blade-reminder-modal'))return false;
+  const isBlade=type==='blade';
+  const modal=document.createElement('div'); modal.id='smart-reminder-modal'; modal.className='blade-reminder-modal';
+  const question=isBlade?bladeReminderText():hydrationReminderText();
+  const yes=state.language==='es'?(isBlade?'Sí':'Gracias'):isBlade?'Yes':'Got it';
+  const later=state.language==='es'?'Todavía no':'Not yet';
+  modal.innerHTML=`<div class="blade-reminder-card"><strong>${isBlade?'🔪':'💧'} ${escapeHTML(question)}</strong><div><button type="button" class="primary" data-reminder-ok>${escapeHTML(yes)}</button>${isBlade?`<button type="button" class="secondary" data-reminder-later>${escapeHTML(later)}</button>`:''}</div></div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('[data-reminder-ok]').addEventListener('click',()=>{
+    if(isBlade){const r=bladeReminderState();saveBladeReminderState({...r,day:localDayKey(),done:true,dueAt:null});}
+    else{const r=hydrationReminderState(),count=(r.day===localDayKey()?Number(r.count)||0:0)+1;saveHydrationReminderState({day:localDayKey(),count,dueAt:count>=2?null:Date.now()+(90+Math.floor(Math.random()*121))*60000});}
+    modal.remove();
+  });
+  modal.querySelector('[data-reminder-later]')?.addEventListener('click',()=>{const r=bladeReminderState();saveBladeReminderState({...r,day:localDayKey(),done:false,dueAt:Date.now()+(45+Math.floor(Math.random()*46))*60000});modal.remove();});
+  return true;
+}
+function checkSmartReminders(){
+  if(!state.activeShift||!operatorRecentlyActive()||$('smart-reminder-modal')||$('blade-reminder-modal'))return;
+  scheduleBladeReminderIfNeeded();
+  scheduleHydrationReminderIfNeeded();
+  const now=Date.now(),day=localDayKey(),blade=bladeReminderState(),water=hydrationReminderState();
+  const bladeDue=blade.day===day&&!blade.done&&Number(blade.dueAt)&&now>=Number(blade.dueAt);
+  const waterDue=water.day===day&&(Number(water.count)||0)<2&&Number(water.dueAt)&&now>=Number(water.dueAt);
+  if(bladeDue&&waterDue){showSmartReminder(Math.random()<0.55?'blade':'hydration');return;}
+  if(bladeDue){showSmartReminder('blade');return;}
+  if(waterDue)showSmartReminder('hydration');
+}
+function noteOperatorActivity(){
+  lastOperatorActivityAt=Date.now();
+  if(reminderActivityTimer)return;
+  reminderActivityTimer=setTimeout(()=>{reminderActivityTimer=null;checkSmartReminders();},700);
+}
+['pointerdown','mousemove','keydown','touchstart'].forEach(type=>document.addEventListener(type,noteOperatorActivity,{passive:true}));
+setInterval(checkSmartReminders,45000);
+setTimeout(()=>{scheduleBladeReminderIfNeeded();scheduleHydrationReminderIfNeeded();},5000);
 
 $('chat-form').addEventListener('submit',event=>{
   event.preventDefault();
@@ -2353,7 +2540,8 @@ $('record-result-toggle').addEventListener('click',()=>{$('learning-form').class
 $('cancel-learning').addEventListener('click',()=>{$('learning-form').classList.add('hidden');});
 $('save-learning').addEventListener('click',saveLearningResult);
 $('clear-learning').addEventListener('click',()=>{state.learningEngine.clear();renderLearningDashboard();showToast(ot('resetDone'));});
-$('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
+$('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);saveAcceptedPreventiveTrend(null);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
+$('apply-preventive-swrap')?.addEventListener('click',acceptPreventiveSWrapChange);
 $('clear-history').addEventListener('click',()=>{state.history=[];lineRemove('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
 $('production-target')?.addEventListener('click',openProductionDialog);
 $('production-summary-toggle')?.addEventListener('click',openProductionDialog);
@@ -2385,7 +2573,7 @@ $('product-dialog')?.addEventListener('click',event=>{if(event.target===$('produ
 $('product-dialog-confirm')?.addEventListener('click',()=>{
   const product=normalizeProduct($('product-search').value);
   const swrap=Number($('product-swrap')?.value);
-  if(productDialogMode==='start')commitStartShift(product,selectedExtruder,swrap);else commitProductChange(product,swrap);
+  if(productDialogMode==='start')commitStartShift(product,selectedExtruder,swrap,$('product-language')?.value);else commitProductChange(product,swrap);
 });
 $('bw-product').addEventListener('input',()=>{syncTargetFromProduct($('bw-product').value);saveSession();});
 $('bw-current-swrap').addEventListener('input',()=>syncCurrentSWrap($('bw-current-swrap').value));
@@ -2444,7 +2632,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.19.0',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.21',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);
