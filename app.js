@@ -8,6 +8,8 @@ const DEFAULT_PERSONALITY = 'heavy';
 const VALID_PERSONALITIES = ['professional', 'light', 'heavy', 'off'];
 const DEFAULT_TARGET_BW = 6.35;
 const DEFAULT_CURRENT_SWRAP = 170;
+const MAX_SWRAP_SPEED = Number(window.VIEJITO_MAX_SWRAP)||228;
+const PROCESS_PERFORMANCE_KEY='viejitoProcessPerformanceV1';
 const TREND_HISTORY_KEY = 'viejitoBWTrendHistoryV3';
 const SHIFT_KEY = 'viejitoActiveShiftV1';
 const SHIFT_ARCHIVE_KEY = 'viejitoShiftArchiveV1';
@@ -16,8 +18,28 @@ const LAST_COMPLETED_CUT_KEY = 'viejitoLastCompletedCutV1';
 const MAX_AUTO_CONTEXT_AGE_MS = 12 * 60 * 60 * 1000;
 const ACTIVE_LINE_KEY = 'viejitoSelectedLineV1';
 let ACTIVE_LINE = [1,2,3,4].includes(Number(localStorage.getItem(ACTIVE_LINE_KEY))) ? Number(localStorage.getItem(ACTIVE_LINE_KEY)) : 1;
-const OPERATORS = ['Terry Davis','José Esquivel','Luis Rosario','Mateo Pascual'];
 const OPERATOR_KEY = 'viejitoOperatorV1';
+const OPERATOR_BAD_WORDS = new Set([
+  // English — exact normalized tokens only to avoid substring false positives.
+  'fuck','fucker','fucking','shit','bullshit','bitch','asshole','motherfucker','dickhead','cunt','whore','slut','bastard','pussy','cock','nigger','nigga','faggot',
+  // Spanish — exact normalized tokens only.
+  'puta','puto','putas','putos','pendejo','pendeja','pendejos','pendejas','cabron','cabrona','cabrones','chingada','chingado','chingar','verga','mierda','culero','culera','pinche','joto','maricon','maricona','coño','cono'
+]);
+function normalizeOperatorToken(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t').replace(/[^a-zñ]+/g,' ').trim();
+}
+function validateOperatorName(value){
+  const name=String(value||'').trim().replace(/\s+/g,' ');
+  if(name.length<2||name.length>50)return {ok:false,name};
+  if(!/^[\p{L}\p{M}][\p{L}\p{M}.'’ -]{1,49}$/u.test(name))return {ok:false,name};
+  const normalized=normalizeOperatorToken(name);
+  const tokens=normalized.split(/\s+/).filter(Boolean);
+  if(tokens.some(token=>OPERATOR_BAD_WORDS.has(token)))return {ok:false,name};
+  const compact=normalized.replace(/\s+/g,'');
+  const blockedPhrases=['fuckyou','fuckoff','chinga tu madre'.replace(/\s+/g,''),'hijo de puta'.replace(/\s+/g,''),'hija de puta'.replace(/\s+/g,'')];
+  if(blockedPhrases.some(phrase=>compact===phrase))return {ok:false,name};
+  return {ok:true,name};
+}
 const lineKey = base => `${base}::line${ACTIVE_LINE}`;
 const lineGet = (base, fallback=null) => localStorage.getItem(lineKey(base)) ?? fallback;
 const lineSet = (base, value) => localStorage.setItem(lineKey(base), value);
@@ -41,7 +63,7 @@ const translations = {
     currentWeight: 'Current weight', currentSpeed: 'Current speed', targetWeight: 'Target weight',
     newSpeed: 'New speed', swFormula: 'Current weight × speed ÷ target weight',
     local: 'LOCAL', recentHistory: 'Recent history', clear: 'Clear', send: 'Send',
-    chatPlaceholder: 'Example: 520 6578, 180, FT 10 520...', chatAria: 'Message for Viejito',
+    chatPlaceholder: 'Example: 520 6578 • Primary 110 Secondary 10 • Why is melt high?', chatAria: 'Message for Viejito',
     calculateBW: 'Calculate BW', calculateFT: 'Calculate FT', calculateSWrap: 'Calculate S-Wrap',
     defaultMandrel: '{m}” mandrel (default)', mandrelOnly: '{m}” mandrel',
     noHistory: 'No calculations saved yet.', historyCleared: 'History cleared',
@@ -52,9 +74,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.22',
-    intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 230 is interpreted as S-Wrap Speed; more than 230 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.22 • BW Tolerance Fix'
+    introTitle: 'Industrial IA 5.32.2',
+    intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 228 is interpreted as S-Wrap Speed; more than 228 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
+    footer: 'Industrial IA 5.32.2 • Natural Chat Follow-up Fix'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -69,7 +91,7 @@ const translations = {
     currentWeight: 'Peso actual', currentSpeed: 'Velocidad actual', targetWeight: 'Peso objetivo',
     newSpeed: 'Nueva velocidad', swFormula: 'Peso actual × velocidad ÷ peso objetivo',
     local: 'LOCAL', recentHistory: 'Historial reciente', clear: 'Borrar', send: 'Enviar',
-    chatPlaceholder: 'Ej.: 520 6578, 180, FT 10 520...', chatAria: 'Mensaje para Viejito',
+    chatPlaceholder: 'Ej.: 520 6578 • Primary 110 Secondary 10 • ¿Por qué sube el melt?', chatAria: 'Mensaje para Viejito',
     calculateBW: 'Calcular BW', calculateFT: 'Calcular FT', calculateSWrap: 'Calcular S-Wrap',
     defaultMandrel: 'Mandrel {m}” (predeterminado)', mandrelOnly: 'Mandrel {m}”',
     noHistory: 'Todavía no hay cálculos guardados.', historyCleared: 'Historial borrado',
@@ -80,9 +102,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.22',
-    intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 230 interpreto S-Wrap Speed; más de 230 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.22 • Corrección de tolerancia BW'
+    introTitle: 'Industrial IA 5.32.2',
+    intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 228 interpreto S-Wrap Speed; más de 228 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
+    footer: 'Industrial IA 5.32.2 • Chat natural + límite de máquina'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -97,7 +119,7 @@ const translations = {
     currentWeight: 'Poids actuel', currentSpeed: 'Vitesse actuelle', targetWeight: 'Poids cible',
     newSpeed: 'Nouvelle vitesse', swFormula: 'Poids actuel × vitesse ÷ poids cible',
     local: 'LOCAL', recentHistory: 'Historique récent', clear: 'Effacer', send: 'Envoyer',
-    chatPlaceholder: 'Ex. : 520 6578, 180, FT 10 520...', chatAria: 'Message pour Viejito',
+    chatPlaceholder: 'Ex. : 520 6578 • Primary 110 Secondary 10 • Pourquoi le melt monte ?', chatAria: 'Message pour Viejito',
     calculateBW: 'Calculer BW', calculateFT: 'Calculer FT', calculateSWrap: 'Calculer S-Wrap',
     defaultMandrel: 'Mandrin {m}” (par défaut)', mandrelOnly: 'Mandrin {m}”',
     noHistory: 'Aucun calcul enregistré pour le moment.', historyCleared: 'Historique effacé',
@@ -108,9 +130,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.22',
-    intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 230 est interprété comme la vitesse S-Wrap; plus de 230 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.22 • Correction de tolérance BW'
+    introTitle: 'Industrial IA 5.32.2',
+    intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 228 est interprété comme la vitesse S-Wrap; plus de 228 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
+    footer: 'Industrial IA 5.32.2 • Chat naturel + limite machine'
   }
 };
 
@@ -356,7 +378,7 @@ const state = {
   context: JSON.parse(lineGet('viejitoContext','{}') || '{}'),
   history: JSON.parse(lineGet('viejitoHistory','[]') || '[]'),
   targetBW: Number(lineGet('viejitoTargetBW')) || DEFAULT_TARGET_BW,
-  currentSWrap: Number(lineGet('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP,
+  currentSWrap: clampSWrap(Number(lineGet('viejitoCurrentSWrap')) || DEFAULT_CURRENT_SWRAP),
   product: lineGet('viejitoProduct','') || '',
   activeShift: JSON.parse(lineGet(SHIFT_KEY,'null') || 'null'),
   shiftArchive: JSON.parse(lineGet(SHIFT_ARCHIVE_KEY,'[]') || '[]'),
@@ -366,7 +388,8 @@ const state = {
   latestTrend: null,
   lastCompletedCut: JSON.parse(lineGet(LAST_COMPLETED_CUT_KEY,'null') || 'null'),
   selectedLine: ACTIVE_LINE,
-  learningEngine: new AdaptiveLearningEngine(window.localStorage, lineKey('viejitoMachineLearningV3'))
+  learningEngine: new AdaptiveLearningEngine(window.localStorage, lineKey('viejitoMachineLearningV3')),
+  processLearning: new ProcessPerformanceLearning(window.localStorage, lineKey(PROCESS_PERFORMANCE_KEY))
 };
 
 const $ = (id) => document.getElementById(id);
@@ -399,10 +422,17 @@ function calculateFT(bw, weight, mandrel=DEFAULT_MANDREL){
   if(!positive(bw,weight,mandrel)) throw new Error(t('invalidNumbers'));
   return (weight * FACTOR_GRAMS_PER_LB * 100) / (bw * 12 * mandrel);
 }
-function calculateSWrap(currentWeight,currentSpeed,targetWeight){
+function rawSWrapCalculation(currentWeight,currentSpeed,targetWeight){
   if(!positive(currentWeight,currentSpeed,targetWeight)) throw new Error(t('invalidNumbers'));
   return currentWeight * currentSpeed / targetWeight;
 }
+function clampSWrap(value){
+  const n=Number(value);return Number.isFinite(n)?Math.min(MAX_SWRAP_SPEED,Math.max(1,n)):n;
+}
+function calculateSWrap(currentWeight,currentSpeed,targetWeight){
+  return clampSWrap(rawSWrapCalculation(currentWeight,currentSpeed,targetWeight));
+}
+function swrapLimitCopy(){return chatLang(`Maximum S-Wrap limit reached: ${MAX_SWRAP_SPEED} ft/min.`,`Límite máximo de S-Wrap alcanzado: ${MAX_SWRAP_SPEED} ft/min.`,`Limite maximale S-Wrap atteinte : ${MAX_SWRAP_SPEED} ft/min.`);}
 
 
 const optimizerText = {
@@ -439,7 +469,7 @@ function ot(key,vars={}){
 function saveOptimizerSettings(targetBW,currentSWrap){
   if(!positive(targetBW,currentSWrap)) throw new Error(t('invalidNumbers'));
   state.targetBW=Number(targetBW);
-  state.currentSWrap=Number(currentSWrap);
+  state.currentSWrap=clampSWrap(currentSWrap);
   lineSet('viejitoTargetBW',String(state.targetBW));
   lineSet('viejitoCurrentSWrap',String(state.currentSWrap));
 }
@@ -479,10 +509,14 @@ function optimizerStatus(result){
     : (state.language==='es'?'BAJAR':state.language==='fr'?'RÉDUIRE':'DECREASE');
   const label=state.language==='es'?'S-Wrap sugerido':state.language==='fr'?'S-Wrap suggéré':'Suggested S-Wrap';
   const amount=Math.abs(change);
-  return {title:ot('redStatus'),message:`${label}: ${fmt(suggested,1)} • ${direction} ${amount?fmt(amount,1):''}`.trim()};
+  const maxNote=result.limitReached?` • MAX ${MAX_SWRAP_SPEED}`:'';
+  return {title:ot('redStatus'),message:`${label}: ${fmt(suggested,1)} • ${direction} ${amount?fmt(amount,1):''}${maxNote}`.trim()};
 }
 function operatorSWrapInstruction(result){
   const suggested=fmt(result.suggestAdjustment?result.suggestedSWrap:result.currentSWrap,1);
+  if(result.limitReached&&Number(result.suggestedSWrap)>=MAX_SWRAP_SPEED){
+    return state.language==='es'?`S-Wrap sugerido ${MAX_SWRAP_SPEED} — límite máximo alcanzado. No exceder ${MAX_SWRAP_SPEED} ft/min.`:state.language==='fr'?`S-Wrap ${MAX_SWRAP_SPEED} — limite maximale atteinte.`:`Suggested S-Wrap ${MAX_SWRAP_SPEED} — maximum limit reached. Do not exceed ${MAX_SWRAP_SPEED} ft/min.`;
+  }
   if(!result.suggestAdjustment) return state.language==='es'?`Mantén el S-Wrap en ${suggested}`:state.language==='fr'?`Gardez le S-Wrap à ${suggested}`:`Keep S-Wrap at ${suggested}`;
   if(result.direction==='increase') return state.language==='es'?`Súbele el S-Wrap a ${suggested}`:state.language==='fr'?`Augmentez le S-Wrap à ${suggested}`:`Increase S-Wrap to ${suggested}`;
   if(result.direction==='decrease') return state.language==='es'?`Bájale el S-Wrap a ${suggested}`:state.language==='fr'?`Réduisez le S-Wrap à ${suggested}`:`Decrease S-Wrap to ${suggested}`;
@@ -623,31 +657,94 @@ function trendMarkup(trend){
   const values=trend.values.map(value=>fmt(value,3)).join(' → ');
   return `<div class="chat-trend ${level}"><strong>${escapeHTML(ot('trendPredictor'))}</strong><small>${escapeHTML(trendMessage(trend))}</small>${trend.ready?`<div class="chat-trend-grid"><span>${escapeHTML(ot('trendProjected'))}: <b>${escapeHTML(fmt(trend.projectedBW,3))}</b></span><span>${escapeHTML(ot('trendDirection'))}: <b>${escapeHTML(trendDirectionLabel(trend.direction))}</b></span><span>${escapeHTML(ot('trendConsistency'))}: <b>${escapeHTML(trend.consistency+'%')}</b></span><span>${escapeHTML(ot('trendRolls'))}: <b>${escapeHTML(values)}</b></span></div>`:''}</div>`;
 }
+function targetForTrendRecord(item){
+  const saved=Number(item?.targetBW);
+  if(positive(saved))return saved;
+  const fromProduct=targetFromProduct(item?.product||'');
+  if(positive(fromProduct))return fromProduct;
+  return null;
+}
+function todayLinePerformance(){
+  sanitizeTrendHistory();
+  const now=new Date();
+  const dayKey=`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+  const rows=state.bwTrendHistory.map(item=>{
+    const d=new Date(item.time||0);
+    const key=Number.isFinite(d.getTime())?`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`:'';
+    const target=targetForTrendRecord(item);
+    const bw=Number(item.bw);
+    return {item,key,target,bw,delta:positive(target,bw)?bw-target:null};
+  }).filter(row=>row.key===dayKey&&Number.isFinite(row.delta));
+  if(!rows.length)return {count:0,onTarget:0,warning:0,red:0,onTargetRate:0,avgDelta:0,avgAbs:0,last:null};
+  const onTarget=rows.filter(r=>Math.abs(r.delta)<=0.17).length;
+  const warning=rows.filter(r=>Math.abs(r.delta)>0.17&&Math.abs(r.delta)<0.25).length;
+  const red=rows.filter(r=>Math.abs(r.delta)>=0.25).length;
+  const avgDelta=rows.reduce((s,r)=>s+r.delta,0)/rows.length;
+  const avgAbs=rows.reduce((s,r)=>s+Math.abs(r.delta),0)/rows.length;
+  return {count:rows.length,onTarget,warning,red,onTargetRate:Math.round(onTarget*100/rows.length),avgDelta,avgAbs,last:rows[rows.length-1]};
+}
+function currentLineStatusFromPerformance(perf){
+  const delta=Number(perf?.last?.delta);
+  if(!Number.isFinite(delta))return 'waiting';
+  const abs=Math.abs(delta);
+  if(abs<=0.17)return 'green';
+  if(abs<0.25)return 'yellow';
+  return 'red';
+}
+function localizedTrendCopy(key){
+  const copy={
+    en:{building:'BUILDING',onTarget:'ON TARGET',warning:'WARNING',out:'OUT OF RANGE',todayNone:'Today: no completed cuts',today:'Today {rate}% on target • Avg Δ {delta}',stable:'Stable',rising:'Rising',falling:'Falling',waiting:'Waiting',noAction:'No action needed',watch:'Watch next cut',preventive:'Preventive',rolls:'{count}/{need} rolls',confidence:'{value}% confidence',action:'Preventive Action',applySuggestion:'Apply Suggestion',applyShort:'Apply',correctiveBelow:'Corrective action below',next:'Next BW'},
+    es:{building:'FORMANDO',onTarget:'EN TARGET',warning:'ADVERTENCIA',out:'FUERA DE RANGO',todayNone:'Hoy: sin cortes completos',today:'Hoy {rate}% en target • Prom Δ {delta}',stable:'Estable',rising:'Subiendo',falling:'Bajando',waiting:'Esperando',noAction:'Sin acción preventiva',watch:'Vigila próximo corte',preventive:'Preventivo',rolls:'{count}/{need} rollos',confidence:'{value}% confianza',action:'Acción preventiva',applySuggestion:'Aplicar sugerencia',applyShort:'Aplicar',correctiveBelow:'Acción correctiva abajo',next:'Próximo BW'},
+    fr:{building:'EN COURS',onTarget:'SUR CIBLE',warning:'ATTENTION',out:'HORS PLAGE',todayNone:'Aujourd’hui : aucune coupe terminée',today:'Aujourd’hui {rate}% cible • Δ moy {delta}',stable:'Stable',rising:'En hausse',falling:'En baisse',waiting:'En attente',noAction:'Aucune action préventive',watch:'Surveiller prochaine coupe',preventive:'Préventif',rolls:'{count}/{need} rouleaux',confidence:'Confiance {value}%',action:'Action préventive',applySuggestion:'Appliquer suggestion',applyShort:'Appliquer',correctiveBelow:'Action corrective ci-dessous',next:'Prochain BW'}
+  };
+  return (copy[state.language]||copy.en)[key]||key;
+}
+function fillTemplate(value,vars={}){let out=String(value);Object.entries(vars).forEach(([k,v])=>out=out.replaceAll(`{${k}}`,String(v)));return out;}
 function renderTrendPanel(trend=analyzeTrend()){
   const panel=$('trend-panel');
-  if(!panel) return;
+  if(!panel)return;
+  const perf=todayLinePerformance();
+  const currentStatus=currentLineStatusFromPerformance(perf);
   panel.classList.remove('waiting','green','yellow','red');
-  const level=!trend.ready?'waiting':trend.level==='danger'?'red':trend.level==='warning'?'yellow':'green';
-  panel.classList.add(level);
-  $('trend-title').textContent=ot('trendPredictor');
-  $('trend-message').textContent=trendMessage(trend);
-  $('trend-projected-label').textContent=ot('trendProjected');
-  $('trend-direction-label').textContent=ot('trendDirection');
-  $('trend-consistency-label').textContent=ot('trendConsistency');
-  $('trend-rolls-label').textContent=ot('trendRolls');
-  $('clear-trend').textContent=ot('trendClear');
-  $('trend-projected').textContent=trend.ready?fmt(trend.projectedBW,3):'—';
-  $('trend-direction').textContent=trend.ready?trendDirectionLabel(trend.direction):'—';
-  $('trend-consistency').textContent=trend.ready?`${trend.consistency}%`:'—';
-  $('trend-rolls').textContent=trend.values.length?trend.values.map(value=>fmt(value,3)).join(' → '):'—';
+  panel.classList.add(currentStatus);
+  if($('trend-title'))$('trend-title').textContent=ot('trendPredictor');
+  if($('trend-action-label'))$('trend-action-label').textContent=localizedTrendCopy('action');
+  if($('trend-projected-label'))$('trend-projected-label').textContent=localizedTrendCopy('next');
+  if($('trend-direction-label'))$('trend-direction-label').textContent=ot('trendDirection');
+  if($('trend-message'))$('trend-message').textContent=trendMessage(trend);
+
+  const statusText=currentStatus==='green'?localizedTrendCopy('onTarget'):currentStatus==='yellow'?localizedTrendCopy('warning'):currentStatus==='red'?localizedTrendCopy('out'):localizedTrendCopy('building');
+  if($('trend-status'))$('trend-status').textContent=statusText;
+  if($('trend-day-summary')){
+    const delta=perf.avgDelta>=0?`+${fmt(perf.avgDelta,3)}`:fmt(perf.avgDelta,3);
+    $('trend-day-summary').textContent=perf.count?fillTemplate(localizedTrendCopy('today'),{rate:perf.onTargetRate,delta}):localizedTrendCopy('todayNone');
+  }
+
+  const direction=trend.ready?(trend.direction==='up'?localizedTrendCopy('rising'):trend.direction==='down'?localizedTrendCopy('falling'):localizedTrendCopy('stable')):localizedTrendCopy('waiting');
+  if($('trend-direction'))$('trend-direction').textContent=direction;
+  if($('trend-consistency'))$('trend-consistency').textContent=trend.ready?fillTemplate(localizedTrendCopy('confidence'),{value:trend.consistency}):fillTemplate(localizedTrendCopy('rolls'),{count:trend.count||0,need:trend.required||TREND_SAMPLE_SIZE});
+  if($('trend-projected'))$('trend-projected').textContent=trend.ready?fmt(trend.projectedBW,3):'—';
+  if($('trend-rolls'))$('trend-rolls').textContent=fillTemplate(localizedTrendCopy('rolls'),{count:trend.count||0,need:trend.required||TREND_SAMPLE_SIZE});
+
   const applyButton=$('apply-preventive-swrap');
+  const show=!!(trend.ready&&trend.recommendAdjustment&&positive(trend.suggestedSWrap)&&!preventiveTrendAlreadyApplied(trend));
   if(applyButton){
-    const show=!!(trend.ready&&trend.recommendAdjustment&&positive(trend.suggestedSWrap)&&!preventiveTrendAlreadyApplied(trend));
     applyButton.classList.toggle('hidden',!show);
     applyButton.disabled=!show;
-    if(show)applyButton.textContent=ot('trendApply',{speed:fmt(trend.suggestedSWrap,1)});
+    if(show)applyButton.textContent=window.innerWidth<=520?localizedTrendCopy('applyShort'):localizedTrendCopy('applySuggestion');
+  }
+  if($('trend-action')){
+    $('trend-action').classList.remove('hidden');
+    if(show){
+      const before=Number(state.currentSWrap)||Number(trend.suggestedSWrap-trend.adjustment);
+      $('trend-action').textContent=`S-Wrap ${fmt(before,1)} → ${fmt(trend.suggestedSWrap,1)}`;
+    }else if(trend?.blockedByMax)$('trend-action').textContent=`MAX S-Wrap ${MAX_SWRAP_SPEED}`;
+    else if(currentStatus==='red')$('trend-action').textContent=localizedTrendCopy('correctiveBelow');
+    else if(currentStatus==='yellow'||(trend.ready&&trend.level==='warning'))$('trend-action').textContent=localizedTrendCopy('watch');
+    else $('trend-action').textContent=localizedTrendCopy('noAction');
   }
 }
+
 function acceptPreventiveSWrapChange(){
   const trend=state.latestTrend||analyzeTrend();
   if(!trend?.ready||!trend.recommendAdjustment||!positive(trend.suggestedSWrap)||preventiveTrendAlreadyApplied(trend))return;
@@ -680,7 +777,7 @@ function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentS
   if(!positive(bw)) return analyzeTrend(targetBW,currentSWrap);
   sanitizeTrendHistory();
   const context=currentProcessContext();
-  state.bwTrendHistory.push({bw:Number(bw),winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,extruder:context.extruder,shiftId:context.shiftId,runId:context.runId,time:new Date().toISOString()});
+  state.bwTrendHistory.push({bw:Number(bw),targetBW:Number(targetBW)||Number(state.targetBW)||null,currentSWrap:Number(currentSWrap)||Number(state.currentSWrap)||null,winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,extruder:context.extruder,shiftId:context.shiftId,runId:context.runId,time:new Date().toISOString()});
   state.bwTrendHistory=state.bwTrendHistory.slice(-250);
   saveTrendHistory();
   const trend=analyzeTrend(targetBW,currentSWrap);
@@ -796,7 +893,9 @@ function saveLearningResult(){
   if(demoMode())return showToast(state.language==='es'?'Modo Demo: aprendizaje desactivado.':'Demo Mode: learning disabled.');
   const optimization=state.latestOptimization;
   if(!optimization) return showToast(t('invalidNumbers'));
-  const appliedSWrap=Number($('applied-swrap').value);
+  const requestedAppliedSWrap=Number($('applied-swrap').value);
+  const appliedSWrap=clampSWrap(requestedAppliedSWrap);
+  if(requestedAppliedSWrap>MAX_SWRAP_SPEED){$('applied-swrap').value=fmt(appliedSWrap,1);showToast(swrapLimitCopy());}
   const finalBW=Number($('final-bw').value);
   try{
     state.learningEngine.add({
@@ -908,7 +1007,7 @@ function comparableLearningForChat({product,target,mandrel,extruder,formulaSugge
     return Number.isFinite(Number(record.correction));
   }).slice(-100);
   const count=matched.length;
-  if(!count) return {count:0,correction:0,confidence:0,successRate:0,spread:0,active:false,learnedSuggestion:Math.round(formulaSuggestion)};
+  if(!count){const rawLearnedSuggestion=Math.round(formulaSuggestion);return {count:0,correction:0,confidence:0,successRate:0,spread:0,active:false,rawLearnedSuggestion,learnedSuggestion:clampSWrap(rawLearnedSuggestion)};}
   let weighted=0,totalWeight=0;
   matched.forEach((record,index)=>{
     const recencyWeight=.35+.65*((index+1)/count);
@@ -923,7 +1022,8 @@ function comparableLearningForChat({product,target,mandrel,extruder,formulaSugge
   const confidence=Math.round(100*Math.min(1,count/30)*Math.max(0,1-spread/5));
   const successRate=Math.round(100*matched.filter(r=>r.success).length/count);
   const active=count>=5;
-  return {count,correction:Number(correction.toFixed(1)),confidence,successRate,spread:Number(spread.toFixed(1)),active,minimumRequired:5,learnedSuggestion:Math.round(formulaSuggestion+(active?correction:0))};
+  const rawLearnedSuggestion=Math.round(formulaSuggestion+(active?correction:0));
+  return {count,correction:Number(correction.toFixed(1)),confidence,successRate,spread:Number(spread.toFixed(1)),active,minimumRequired:5,rawLearnedSuggestion,learnedSuggestion:clampSWrap(rawLearnedSuggestion),limitReached:rawLearnedSuggestion>MAX_SWRAP_SPEED};
 }
 function latestCompletedBWContext(){
   const activeShiftId=state.activeShift?.id||null;
@@ -956,7 +1056,8 @@ function currentSWrapForChat(){
   const runSpeed=Number(run?.swrap);
   const stored=Number(state.currentSWrap);
   const persisted=Number(lineGet('viejitoCurrentSWrap'));
-  return [screen,shift,runSpeed,stored,persisted].find(value=>positive(Number(value)))||null;
+  const found=[screen,shift,runSpeed,stored,persisted].find(value=>positive(Number(value)))||null;
+  return positive(found)?clampSWrap(found):null;
 }
 
 function sharedOperationalContextForChat(){
@@ -991,17 +1092,18 @@ function buildAutomaticChangeoverResponse(flow,actual,contextInfo){
 function buildChatChangeoverRecommendation(flow,actualBW){
   const target=Number(flow.target),currentSWrap=Number(flow.currentSWrap),actual=Number(actualBW);
   if(!positive(target,currentSWrap,actual)) throw new Error(t('invalidNumbers'));
-  const formulaSuggestion=Math.round(currentSWrap*actual/target);
+  const rawFormulaSuggestion=Math.round(currentSWrap*actual/target);
+  const formulaSuggestion=clampSWrap(rawFormulaSuggestion);
   const context=currentProcessContext();
   const learning=comparableLearningForChat({product:flow.product,target,mandrel:context.mandrel,extruder:context.extruder,formulaSuggestion});
-  const suggestedSWrap=learning.active?learning.learnedSuggestion:formulaSuggestion;
+  const suggestedSWrap=clampSWrap(learning.active?learning.learnedSuggestion:formulaSuggestion);
   const rawDifference=actual-target;
   const difference=Number(rawDifference.toFixed(2));
   const absoluteDifference=Math.abs(rawDifference);
   const level=absoluteDifference<=.17?'green':absoluteDifference<.25?'yellow':'red';
   const adjustment=Number((suggestedSWrap-currentSWrap).toFixed(1));
   const direction=adjustment<0?'decrease':adjustment>0?'increase':'hold';
-  return {actualBW:actual,targetBW:target,difference,absoluteDifference,level,suggestAdjustment:absoluteDifference>.17,currentSWrap,formulaSuggestion,suggestedSWrap,adjustment,direction,learning,greenTolerance:.17,warningTolerance:.25};
+  return {actualBW:actual,targetBW:target,difference,absoluteDifference,level,suggestAdjustment:absoluteDifference>.17,currentSWrap,formulaSuggestion,rawFormulaSuggestion,suggestedSWrap,adjustment,direction,limitReached:rawFormulaSuggestion>MAX_SWRAP_SPEED||Number(learning.rawLearnedSuggestion)>MAX_SWRAP_SPEED,maxSWrap:MAX_SWRAP_SPEED,learning,greenTolerance:.17,warningTolerance:.25};
 }
 function handleChangeoverChat(text){
   const request=detectChatChangeover(text);
@@ -1198,7 +1300,7 @@ function conversationalChat(text){
     return {kind:'info',message:state.language==='es'?`La última recomendación fue S-Wrap ${fmt(last.swrap,1)}${product}.`:`Your last recommended S-Wrap was ${fmt(last.swrap,1)}${product}.`};
   }
   if(/^(thanks|thank you|gracias|merci)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'De nada. Aquí estoy.':state.language==='fr'?`Avec plaisir. Je suis là.`:`You're welcome. I'm here.`};
-  if(/(what can you do|qué puedes hacer|que puedes hacer|qué haces|que haces|help me|ayuda)/.test(q))return {kind:'info',title:state.language==='es'?'Puedo ayudarte con la línea':'Line assistant',message:state.language==='es'?'Puedo calcular BW y pies, recomendar S-Wrap, revisar los últimos rollos, decirte cómo va la línea, mostrar el balance de los winders y vigilar la tendencia del BW.':state.language==='fr'?`Je peux calculer BW et pieds, recommander le S-Wrap, revoir les derniers rouleaux, résumer la ligne et surveiller la tendance BW.`:'I can calculate BW and feet, recommend S-Wrap, review recent rolls, summarize the line, check winder balance, and watch the BW trend.'};
+  if(/(what can you do|qué puedes hacer|que puedes hacer|qué haces|que haces|help me|ayuda)/.test(q))return {kind:'info',title:state.language==='es'?'Puedo ayudarte con la línea':'Line assistant',message:state.language==='es'?`Puedo operar las funciones principales de Viejito desde el chat: BW/Feet/S-Wrap, winders y cortes, estado/tendencia por línea, Changeover, sugerencias preventivas, producción y Adaptive Learning. También tengo un cerebro separado de conocimiento Davis-Standard para proceso/troubleshooting y Process Performance Learning para aprender Primary RPM + Secondary RPM → output/presión, guardar corridas manuales de dos rollos y consultarlas después en el chat. Para cambios ocasionales e intencionales de velocidad, Tools → Speed Change Advisor calcula un starting point coordinado de Primary + Secondary + Secondary Heat usando Last BW y el output real de dos rollos. Para correcciones normales de BW, S-Wrap sigue siendo el control principal. El S-Wrap nunca se recomienda por encima de ${MAX_SWRAP_SPEED}. Settings y borrado de datos siguen protegidos.`:state.language==='fr'?`Je peux calculer BW et pieds, recommander le S-Wrap, revoir les derniers rouleaux, résumer la ligne et utiliser le cerveau Davis-Standard.`:`I can operate Viejito's main functions from chat: BW/Feet/S-Wrap, winders and cuts, per-line status/trend, Changeover, preventive suggestions, production and Adaptive Learning. I also have a separate Davis-Standard knowledge brain for process/troubleshooting and Process Performance Learning that learns Primary RPM + Secondary RPM → output/pressure behavior, stores manual two-roll process records you can query later in chat. For occasional intentional line-speed changes, Tools → Speed Change Advisor calculates a coordinated Primary + Secondary + Secondary Heat starting point from Last BW and actual two-roll output. Routine BW correction still uses S-Wrap first. S-Wrap is never recommended above ${MAX_SWRAP_SPEED}. Settings and destructive data actions remain protected.`};
   if(/(who.*operator|quién.*operador|quien.*operador|operador.*quién|operador.*quien)/.test(q)){
     const op=state.activeShift?.operator||state.operator||'';
     return {kind:'info',message:op?(state.language==='es'?`El operador de Line ${ACTIVE_LINE} es ${op}.`:`Line ${ACTIVE_LINE} operator is ${op}.`):(state.language==='es'?`No hay operador seleccionado para Line ${ACTIVE_LINE}.`:`No operator is selected for Line ${ACTIVE_LINE}.`)};
@@ -1210,12 +1312,806 @@ function conversationalChat(text){
     const pools=state.language==='es'?[`Muy bien${name}. Aquí pendiente de Line ${ACTIVE_LINE}. ¿Cómo va tu turno?`,`Todo bien${name}. Listo para ayudarte con Line ${ACTIVE_LINE}.`,`Bien${name} 😄. Aquí estoy contigo en Line ${ACTIVE_LINE}.`]:[`Doing good${name}. I’m here with you on Line ${ACTIVE_LINE}. How’s the shift going?`,`I’m doing well${name}. Ready to help on Line ${ACTIVE_LINE}.`,`Doing good${name} 😄. I’m keeping an eye on Line ${ACTIVE_LINE} with you.`];
     return {kind:'info',message:pools[Math.floor(Math.random()*pools.length)]};
   }
+  // V5.32.2 — Natural short follow-up replies. These are intentionally
+  // exact/short-message matches so process phrases such as "good quality" are not swallowed.
+  if(/^(not bad|not too bad|pretty good|good|great|awesome|doing good|doing okay|doing ok|i'm good|i am good|i'm okay|i am okay|fine|all good|can't complain|cant complain|could be worse|no está mal|no esta mal|muy bien|todo bien|voy bien|vamos bien|pasable|ça va|ca va|pas mal|très bien|tres bien)[!?. ]*$/.test(q)){
+    const name=first?` ${first}`:'';
+    const pools=state.language==='es'
+      ?[`Me alegra${name}. Vamos a mantener Line ${ACTIVE_LINE} tranquila y estable. 👍`,`Eso suena bien${name}. Aquí sigo pendiente por si necesitas algo en Line ${ACTIVE_LINE}.`,`Bien${name} 😄. Que siga así el turno.`]
+      :state.language==='fr'
+        ?[`Content de l’entendre${name}. Je reste avec vous sur Line ${ACTIVE_LINE}.`,`Très bien${name}. On garde Line ${ACTIVE_LINE} stable. 👍`]
+        :[`Glad to hear it${name}. Let’s keep Line ${ACTIVE_LINE} running smooth. 👍`,`Not bad is a win${name} 😄. I’m right here if Line ${ACTIVE_LINE} needs anything.`,`Good${name}. Let’s keep the shift moving in the right direction.`];
+    return {kind:'info',message:pools[Math.floor(Math.random()*pools.length)]};
+  }
+  if(/^(could be better|been better|i've been better|ive been better|tired|i'm tired|im tired|busy|very busy|rough|rough shift|bad|not good|stressful|long shift|long day|exhausted|más o menos|mas o menos|podría estar mejor|podria estar mejor|cansado|cansada|estoy cansado|estoy cansada|ocupado|ocupada|muy ocupado|muy ocupada|pesado|turno pesado|fatigué|fatigue|occupé|occupe|difficile)[!?. ]*$/.test(q)){
+    const name=first?` ${first}`:'';
+    const pools=state.language==='es'
+      ?[`Te entiendo${name}. Aquí estoy para hacerte más fácil lo que pueda en Line ${ACTIVE_LINE}.`,`Turno pesado${name}. Dime qué necesitas de Line ${ACTIVE_LINE} y vamos directo al punto.`,`Entendido${name}. Vamos una cosa a la vez; yo te ayudo con los números de Line ${ACTIVE_LINE}.`]
+      :state.language==='fr'
+        ?[`Je comprends${name}. Dites-moi ce dont vous avez besoin sur Line ${ACTIVE_LINE}.`,`Courage${name}. Je peux vous aider avec les données de Line ${ACTIVE_LINE}.`]
+        :[`I hear you${name}. Tell me what you need on Line ${ACTIVE_LINE} and I’ll keep it simple.`,`Sounds like a long shift${name}. I’m here to help with the numbers on Line ${ACTIVE_LINE}.`,`Got you${name}. Let me take some of the thinking off your plate on Line ${ACTIVE_LINE}.`];
+    return {kind:'info',message:pools[Math.floor(Math.random()*pools.length)]};
+  }
   if(/^(ok|okay|alright|got it|vale|está bien|esta bien|bueno|perfecto|bien)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Perfecto. Aquí sigo pendiente.':'Sounds good. I’m right here if you need me.'};
   if(/^(yes|yeah|yep|si|sí|no|nope)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Entendido.':'Got it.'};
   if(/^(bye|goodbye|see you|later|hasta luego|adiós|adios|nos vemos)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?`Nos vemos${first?`, ${first}`:''}. Que tengas buen turno.`:`See you${first?`, ${first}`:''}. Have a good shift.`};
   if(/(what do you think|qué piensas|que piensas|qué opinas|que opinas)/.test(q))return {kind:'info',message:state.language==='es'?'Dime qué quieres que revise y te doy mi mejor respuesta con los datos que tengo de la línea.':'Tell me what you want me to look at and I’ll give you my best answer from the line data I have.'};
   return null;
 }
+
+
+// V5.27 — Davis-Standard Knowledge Brain + chat command bridge.
+// Keeps plant calculations deterministic while giving the chat a broad offline
+// extrusion-process knowledge base. Dangerous or machine-specific operations
+// always defer to the approved plant SOP and equipment manual.
+function normalizeKnowledgeQuery(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9/#+.\- ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function knowledgeTokens(value){return normalizeKnowledgeQuery(value).split(' ').filter(token=>token.length>2);}
+function extrusionSafetyGuard(text){
+  const q=normalizeKnowledgeQuery(text);
+  const bypass=/\b(bypass|defeat|disable|jump|override|anular|puentear|saltar|desactivar)\b/.test(q)&&/\b(interlock|e stop|estop|safety|guard|lockout|loto|alarma|seguridad)\b/.test(q);
+  const hazardous=/\b(remove screw|pull screw|open die|disassemble die|purge procedure|screen change procedure|how to purge|remove screen|quitar tornillo|sacar tornillo|abrir die|desarmar die|procedimiento de purga|cambiar screen)\b/.test(q);
+  const gas=/\b(set isobutane|isobutane setting|co2 setting|blowing agent setting|gas setting|ajustar isobutano|setting isobutano|setting co2|ajustar gas)\b/.test(q);
+  if(!(bypass||hazardous||gas))return null;
+  return {kind:'info',title:chatLang('Safety-controlled task','Tarea controlada por seguridad','Tâche contrôlée par sécurité'),message:chatLang(
+    'I can explain the process principle and help diagnose symptoms, but I will not invent or bypass a machine-specific safety procedure. Use the approved SOP/equipment manual and trained-personnel procedure for this task.',
+    'Puedo explicarte el principio del proceso y ayudarte a diagnosticar síntomas, pero no voy a inventar ni bypass un procedimiento de seguridad específico de la máquina. Para esta tarea usa el SOP/manual aprobado y el procedimiento para personal entrenado.',
+    'Je peux expliquer le principe du procédé, mais cette tâche doit suivre la procédure de sécurité approuvée de la machine.'
+  )};
+}
+function bestKnowledgeMatch(items,text){
+  const q=normalizeKnowledgeQuery(text),tokens=new Set(knowledgeTokens(text));
+  if(!q||!Array.isArray(items)||!items.length)return null;
+  let best=null,bestScore=0;
+  for(const item of items){
+    let score=0;
+    for(const raw of (item.keys||[])){
+      const key=normalizeKnowledgeQuery(raw); if(!key)continue;
+      if(q===key)score+=12;
+      else if(q.includes(key))score+=key.includes(' ')?7:4;
+      else{
+        const kt=knowledgeTokens(key);
+        const overlap=kt.filter(token=>tokens.has(token)).length;
+        if(overlap===kt.length&&overlap)score+=Math.min(5,overlap*1.6);
+        else if(overlap>=2)score+=overlap;
+      }
+    }
+    if(score>bestScore){best=item;bestScore=score;}
+  }
+  return best&&bestScore>=4?{item:best,score:bestScore}:null;
+}
+function extrusionKnowledgeQuery(text){
+  const safety=extrusionSafetyGuard(text); if(safety)return safety;
+  // Plant-specific extrusion knowledge gets first priority for Primary/Secondary/melt behavior.
+  // General equipment/process questions then default to the Davis-Standard knowledge brain.
+  const plant=bestKnowledgeMatch(window.PLANT_PROCESS_KNOWLEDGE||[],text);
+  const davis=bestKnowledgeMatch(window.DAVIS_STANDARD_KNOWLEDGE||window.EXTRUSION_KNOWLEDGE||[],text);
+  const match=plant && (!davis||plant.score>=davis.score)?plant:davis;
+  if(!match)return null;
+  const lang=state.language==='es'?'es':'en';
+  const item=match.item;
+  const source=item.source==='plant'?chatLang('Plant process knowledge','Conocimiento de proceso de planta','Connaissance procédé usine'):
+    item.source==='plant+davis'?chatLang('Plant + Davis-Standard process knowledge','Conocimiento de planta + Davis-Standard','Connaissance usine + Davis-Standard'):
+    chatLang('Davis-Standard knowledge brain','Cerebro de conocimiento Davis-Standard','Cerveau Davis-Standard');
+  return {kind:'info',title:item.title?.[lang]||item.title?.en||'Extrusion process',message:item[lang]||item.en,meta:source};
+}
+
+// V5.28 — Process Performance Learning + coordinated speed/BW recommendation.
+function totalWebWidthForMandrel(mandrel=currentMandrel('bw')){return Number(mandrel)===51?102:96;}
+function predictiveBWFromOutput(outputLbHr,swrapSpeed,mandrel=currentMandrel('bw')){
+  const output=Number(outputLbHr),speed=Number(swrapSpeed),width=totalWebWidthForMandrel(mandrel);
+  if(!positive(output,speed,width))return null;
+  return (output*FACTOR_GRAMS_PER_LB*100)/(speed*60*12*width);
+}
+function predictiveSWrapForBW(outputLbHr,targetBW,mandrel=currentMandrel('bw')){
+  const output=Number(outputLbHr),target=Number(targetBW),width=totalWebWidthForMandrel(mandrel);
+  if(!positive(output,target,width))return null;
+  return (output*FACTOR_GRAMS_PER_LB*100)/(target*60*12*width);
+}
+function labeledProcessNumber(text,label){
+  const raw=String(text||'');
+  const patterns={
+    primary:/\b(?:primary|primario)\s*(?:rpm)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    secondary:/\b(?:secondary|secundario)\s*(?:rpm)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    w1:/\b(?:winder\s*1|w1|roll\s*1|rollo\s*1)\s*(?:weight|peso|lb|lbs)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    w2:/\b(?:winder\s*2|w2|roll\s*2|rollo\s*2)\s*(?:weight|peso|lb|lbs)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    minutes:/\b(?:time|tiempo|run|corrió|corrio)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)\s*(?:min|mins|minutes|minutos)\b/i,
+    swrap:/\b(?:s[- ]?wrap|swrap|line speed|velocidad)\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    melt:/\bmelt\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    heat:/\b(?:secondary heat|sec heat|heat secundario)\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    load:/\b(?:motor load|secondary load|load)\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    pressure:/\b(?:primary pressure|pressure primary|primary psi|presi[oó]n (?:del )?primary|presi[oó]n (?:del )?primario)\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
+    output:/\b(?:output|rate|lbs\/?hr|lb\/?hr|libras por hora)\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i
+  };
+  const m=raw.match(patterns[label]);return m?Number(m[1]):null;
+}
+function processLearningOutputMessage(primary,secondary,estimate,requestedSpeed=null){
+  const mandrel=currentMandrel('bw'),product=state.activeShift?.product||state.product||'';
+  const speeds=[];
+  const addSpeed=v=>{v=Number(v);if(positive(v)){v=clampSWrap(v);if(!speeds.some(x=>Math.abs(x-v)<.01))speeds.push(v);}};
+  if(positive(requestedSpeed))addSpeed(requestedSpeed);
+  else{addSpeed(state.currentSWrap);addSpeed(150);addSpeed(200);}
+  const parts=speeds.map(speed=>{
+    const bw=predictiveBWFromOutput(estimate.outputLbHr,speed,mandrel);
+    return `S-Wrap ${fmt(speed,1)} → BW ${fmt(bw,3)}`;
+  });
+  const target=Number(state.targetBW)||targetFromProduct(product);
+  const rawTargetSpeed=positive(target)?predictiveSWrapForBW(estimate.outputLbHr,target,mandrel):null;
+  let targetLine='';
+  if(positive(rawTargetSpeed)){
+    const capped=clampSWrap(rawTargetSpeed);
+    targetLine=chatLang(` Expected S-Wrap for target ${fmt(target,2)}: ${fmt(capped,1)} ft/min${rawTargetSpeed>MAX_SWRAP_SPEED?' (MAX 228 reached)':''}.`,` S-Wrap esperado para target ${fmt(target,2)}: ${fmt(capped,1)} ft/min${rawTargetSpeed>MAX_SWRAP_SPEED?' (límite MAX 228)':''}.`,` S-Wrap attendu : ${fmt(capped,1)}.`);
+  }
+  const scope=estimate.scope==='product'&&product?` • ${product}`:'';
+  const cautions=[];
+  if(Number(secondary)>12.5)cautions.push(chatLang('Plant caution: Secondary above ~12.5 RPM can generate heavy friction/shear heat and challenge cooling.','Precaución de planta: Secondary arriba de ~12.5 RPM puede generar mucho friction/shear heat y superar la capacidad de cooling.','Attention usine : Secondary > ~12,5 RPM peut augmenter fortement le friction heat.'));
+  if(Number(primary)<60||Number(primary)>128)cautions.push(chatLang('Primary is outside the usual plant production range of 60–128 RPM.','Primary está fuera del rango normal de producción de planta de 60–128 RPM.','Primary hors de la plage usine habituelle 60–128 RPM.'));
+  if(Number(secondary)<5||Number(secondary)>13)cautions.push(chatLang('Secondary is outside the usual plant production range of 5–13 RPM.','Secondary está fuera del rango normal de producción de planta de 5–13 RPM.','Secondary hors de la plage usine habituelle 5–13 RPM.'));
+  const cautionText=cautions.length?` ${cautions.join(' ')}`:'';
+  const learningScope=estimate.scope==='product'?chatLang('same product','mismo producto','même produit'):estimate.scope==='mandrel'?chatLang('same mandrel / limited product history','mismo mandrel / historial de producto limitado','même mandrin'):chatLang('same line / limited product history','misma línea / historial de producto limitado','même ligne');
+  return {kind:'result',title:chatLang('Process Performance Prediction','Predicción de desempeño del proceso','Prévision de performance'),message:chatLang(
+    `Primary ${fmt(primary,1)} RPM + Secondary ${fmt(secondary,1)} RPM → predicted output ${fmt(estimate.outputLbHr,0)} lb/hr${scope}. ${parts.join(' • ')}.${targetLine}${cautionText}`,
+    `Primary ${fmt(primary,1)} RPM + Secondary ${fmt(secondary,1)} RPM → output predicho ${fmt(estimate.outputLbHr,0)} lb/hr${scope}. ${parts.join(' • ')}.${targetLine}${cautionText}`,
+    `Primary ${fmt(primary,1)} + Secondary ${fmt(secondary,1)} → débit prévu ${fmt(estimate.outputLbHr,0)} lb/h. ${parts.join(' • ')}.${cautionText}`
+  ),meta:chatLang(`Predictive only — completed-roll measured BW remains final. Confidence ${estimate.confidence}% • ${estimate.count} comparable sample(s) • ${learningScope} • ${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” total width`,`Solo predictivo — el BW medido del rollo completo sigue siendo el valor final. Confianza ${estimate.confidence}% • ${estimate.count} muestra(s) comparable(s) • ${learningScope} • ${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” de ancho total`,`Prévision seulement — le BW mesuré reste final. Confiance ${estimate.confidence}% • ${estimate.count} échantillon(s) • ${learningScope}`) };
+}
+function saveProcessPerformanceSample(flow){
+  if(demoMode())return {kind:'info',message:chatLang('Demo Mode: process learning is disabled.','Modo Demo: el aprendizaje de proceso está desactivado.','Mode démo : apprentissage désactivé.')};
+  const primary=Number(flow.primaryRPM),secondary=Number(flow.secondaryRPM),w1=Number(flow.w1),w2=Number(flow.w2),minutes=Number(flow.minutes),swrap=clampSWrap(flow.swrapSpeed||state.currentSWrap);
+  if(!positive(primary,secondary,w1,w2,minutes,swrap))return {kind:'error',message:t('invalidNumbers')};
+  const output=(w1+w2)*60/minutes;
+  const mandrel=currentMandrel('bw'),product=state.activeShift?.product||state.product||'';
+  const predictedBW=predictiveBWFromOutput(output,swrap,mandrel);
+  const row=state.processLearning.add({primaryRPM:primary,secondaryRPM:secondary,outputLbHr:output,swrapSpeed:swrap,product,mandrel,totalWidth:totalWebWidthForMandrel(mandrel),line:ACTIVE_LINE,winder1Weight:w1,winder2Weight:w2,runMinutes:minutes,melt:flow.melt,secondaryHeat:flow.heat,motorLoad:flow.load,primaryPressure:flow.pressure,targetBW:state.targetBW,measuredBW:positive(flow.measuredBW)?Number(flow.measuredBW):null,winder1BW:positive(flow.winder1BW)?Number(flow.winder1BW):null,winder2BW:positive(flow.winder2BW)?Number(flow.winder2BW):null,entrySource:flow.entrySource||'chat',operator:flow.operator||state.activeShift?.operator||state.operator||''});
+  return {kind:'result',recordId:row.id,record:row,title:chatLang('Process sample learned','Muestra de proceso aprendida','Échantillon appris'),message:chatLang(
+    `Saved: Primary ${fmt(primary,1)} • Secondary ${fmt(secondary,1)} • ${fmt(output,0)} lb/hr • S-Wrap ${fmt(swrap,1)} • predictive BW ${fmt(predictedBW,3)}${positive(flow.pressure)?` • Primary Pressure ${fmt(Number(flow.pressure),0)}`:''}.`,
+    `Guardado: Primary ${fmt(primary,1)} • Secondary ${fmt(secondary,1)} • ${fmt(output,0)} lb/hr • S-Wrap ${fmt(swrap,1)} • BW predictivo ${fmt(predictedBW,3)}${positive(flow.pressure)?` • Primary Pressure ${fmt(Number(flow.pressure),0)}`:''}.`,
+    `Enregistré : Primary ${fmt(primary,1)} • Secondary ${fmt(secondary,1)} • ${fmt(output,0)} lb/h.`
+  ),meta:chatLang(`${state.processLearning.records.length} process-performance sample(s) stored on Line ${ACTIVE_LINE}.`,` ${state.processLearning.records.length} muestra(s) de desempeño guardadas en Line ${ACTIVE_LINE}.`,` ${state.processLearning.records.length} échantillon(s).`) };
+}
+function processWorkflowNextStage(flow={}){
+  if(!positive(flow.primaryRPM))return 'primary';
+  if(!positive(flow.secondaryRPM))return 'secondary';
+  if(!positive(flow.w1))return 'w1';
+  if(!positive(flow.w2))return 'w2';
+  if(!positive(flow.minutes))return 'minutes';
+  if(!positive(flow.swrapSpeed))return 'swrap';
+  return 'complete';
+}
+function processWorkflowPrompt(stage){
+  if(stage==='primary')return chatLang('What was the Primary RPM?','¿A cuántos RPM estaba el Primary?','RPM Primary ?');
+  if(stage==='secondary')return chatLang('What was the Secondary RPM?','¿A cuántos RPM estaba el Secondary?','RPM Secondary ?');
+  if(stage==='w1')return chatLang('What was Winder 1 roll weight in lb?','¿Cuánto pesó el rollo de Winder 1 en lb?','Poids Winder 1 ?');
+  if(stage==='w2')return chatLang('What was Winder 2 roll weight in lb?','¿Cuánto pesó el rollo de Winder 2 en lb?','Poids Winder 2 ?');
+  if(stage==='minutes')return chatLang('How many minutes did the line run for those two rolls?','¿Cuántos minutos corrió la línea para esos dos rollos?','Combien de minutes ?');
+  if(stage==='conditions')return chatLang('Optional process readings: type Primary Pressure, Melt, Secondary Heat and Motor Load in one message, or type “skip”. Example: Pressure 4200 Melt 303 Heat 190 Load 70.','Lecturas opcionales: escribe Primary Pressure, Melt, Secondary Heat y Motor Load en un solo mensaje, o escribe “skip”. Ejemplo: Pressure 4200 Melt 303 Heat 190 Load 70.','Lectures optionnelles : Pressure, Melt, Heat, Load, ou “skip”.');
+  return chatLang(`What S-Wrap/line speed was used? Maximum is ${MAX_SWRAP_SPEED} ft/min.`,`¿Qué S-Wrap/velocidad de línea usaste? El máximo es ${MAX_SWRAP_SPEED} ft/min.`,`Quelle vitesse S-Wrap ? Maximum ${MAX_SWRAP_SPEED} ft/min.`);
+}
+function startProcessLearningWorkflow(seed={}){
+  chatWorkflow={type:'process-performance',...seed,startedAt:new Date().toISOString()};
+  chatWorkflow.stage=processWorkflowNextStage(chatWorkflow);
+  if(chatWorkflow.stage==='complete'){const result=saveProcessPerformanceSample(chatWorkflow);chatWorkflow=null;saveChatWorkflow();return result;}
+  saveChatWorkflow();
+  return {kind:'info',title:chatLang('Teach Process Performance','Enseñar desempeño del proceso','Apprentissage process'),message:processWorkflowPrompt(chatWorkflow.stage)};
+}
+function handleProcessPerformanceWorkflow(text){
+  if(!chatWorkflow||chatWorkflow.type!=='process-performance')return null;
+  const q=normalizeKnowledgeQuery(text);
+  if(/\b(cancel|cancelar|cancela|annuler)\b/.test(q)){chatWorkflow=null;saveChatWorkflow();return {kind:'info',message:chatLang('Process learning cancelled.','Aprendizaje de proceso cancelado.','Apprentissage annulé.')};}
+  const numericReply=numbers(text).some(v=>positive(v));
+  const conditionsSkip=/\b(skip|saltar|omitir|no tengo|none|aucun)\b/.test(q);
+  const hasWords=/[a-záéíóúñàèùâêîôûç]/i.test(String(text||''));
+  // Do not trap normal conversation inside a numeric guided workflow.
+  // If Viejito is waiting for a number and the operator asks a normal question,
+  // release the workflow and let interpret() process the same message normally.
+  if(chatWorkflow.stage!=='conditions'&&!numericReply&&hasWords){
+    chatWorkflow=null;saveChatWorkflow();return null;
+  }
+  if(chatWorkflow.stage==='conditions'&&!numericReply&&!conditionsSkip&&hasWords){
+    chatWorkflow=null;saveChatWorkflow();return null;
+  }
+  const first=numbers(text).find(v=>positive(v));
+  if(chatWorkflow.stage==='primary'){
+    const v=labeledProcessNumber(text,'primary')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter the Primary RPM.','Escribe los RPM del Primary.','Entrez RPM Primary.')};
+    chatWorkflow.primaryRPM=v;chatWorkflow.stage='secondary';saveChatWorkflow();return {kind:'info',message:chatLang('What was the Secondary RPM?','¿A cuántos RPM estaba el Secondary?','RPM Secondary ?')};
+  }
+  if(chatWorkflow.stage==='secondary'){
+    const v=labeledProcessNumber(text,'secondary')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter the Secondary RPM.','Escribe los RPM del Secondary.','Entrez RPM Secondary.')};
+    chatWorkflow.secondaryRPM=v;chatWorkflow.stage='w1';saveChatWorkflow();return {kind:'info',message:chatLang('What was Winder 1 roll weight in lb?','¿Cuánto pesó el rollo de Winder 1 en lb?','Poids Winder 1 ?')};
+  }
+  if(chatWorkflow.stage==='w1'){
+    const v=labeledProcessNumber(text,'w1')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter Winder 1 weight.','Escribe el peso de Winder 1.','Poids Winder 1.')};
+    chatWorkflow.w1=v;chatWorkflow.stage='w2';saveChatWorkflow();return {kind:'info',message:chatLang('What was Winder 2 roll weight in lb?','¿Cuánto pesó el rollo de Winder 2 en lb?','Poids Winder 2 ?')};
+  }
+  if(chatWorkflow.stage==='w2'){
+    const v=labeledProcessNumber(text,'w2')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter Winder 2 weight.','Escribe el peso de Winder 2.','Poids Winder 2.')};
+    chatWorkflow.w2=v;chatWorkflow.stage='minutes';saveChatWorkflow();return {kind:'info',message:chatLang('How many minutes did the line run for those two rolls?','¿Cuántos minutos corrió la línea para esos dos rollos?','Combien de minutes ?')};
+  }
+  if(chatWorkflow.stage==='minutes'){
+    const v=labeledProcessNumber(text,'minutes')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter the run time in minutes.','Escribe el tiempo corrido en minutos.','Entrez le temps en minutes.')};
+    chatWorkflow.minutes=v;chatWorkflow.stage='swrap';saveChatWorkflow();return {kind:'info',message:chatLang(`What S-Wrap speed was running? Current is ${fmt(state.currentSWrap,1)}.`,`¿A qué S-Wrap estaba corriendo? El actual es ${fmt(state.currentSWrap,1)}.`,`Vitesse S-Wrap ?`)};
+  }
+  if(chatWorkflow.stage==='swrap'){
+    const v=labeledProcessNumber(text,'swrap')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter the S-Wrap speed.','Escribe la velocidad del S-Wrap.','Entrez S-Wrap.')};
+    chatWorkflow.swrapSpeed=clampSWrap(v);chatWorkflow.stage='conditions';saveChatWorkflow();return {kind:'info',message:processWorkflowPrompt('conditions')};
+  }
+  if(chatWorkflow.stage==='conditions'){
+    if(!/\b(skip|saltar|omitir|no tengo|none|aucun)\b/.test(q)){
+      chatWorkflow.pressure=labeledProcessNumber(text,'pressure')||((first&&first>=1000&&first<=6000)?first:null);
+      chatWorkflow.melt=labeledProcessNumber(text,'melt');chatWorkflow.heat=labeledProcessNumber(text,'heat');chatWorkflow.load=labeledProcessNumber(text,'load');
+    }
+    const flow={...chatWorkflow};chatWorkflow=null;saveChatWorkflow();return saveProcessPerformanceSample(flow);
+  }
+  return null;
+}
+function parseCoordinatedSpeedRequest(text){
+  const raw=String(text||'').replace(/,/g,'.');
+  const q=normalizeKnowledgeQuery(raw);
+  const keepsBW=/\b(same bw|same basis weight|maintain(?:ing)? (?:the )?(?:same )?(?:bw|basis weight)|keep(?:ing)? (?:the )?(?:same )?(?:bw|basis weight)|mantener|manteniendo|mantenido|mantenga|mismo bw|misma basis weight|mismo basis weight|sin cambiar (?:el )?bw|conservar (?:el )?bw)\b/.test(q);
+  const speedIntent=/\b(baja|bajar|bajarlo|sube|subir|cambia|cambiar|cambio|ajusta|ajustar|reduce|reducir|lower|raise|increase|decrease|change|set)\b/.test(q)&&( /\b(speed|velocidad|s wrap|swrap)\b/.test(q) || /\d+(?:\.\d+)?\s*(?:ft(?:\/?min)?|fpm)\b/.test(q) );
+  if(!keepsBW||!speedIntent)return null;
+  let currentSpeed=Number(state.currentSWrap),targetSpeed=null;
+  const pair=raw.match(/\b(?:de|from)\s*(\d+(?:\.\d+)?)\s*(?:ft(?:\/?min)?|fpm)?\s*(?:a|to)\s*(\d+(?:\.\d+)?)\s*(?:ft(?:\/?min)?|fpm)?/i);
+  if(pair){currentSpeed=Number(pair[1]);targetSpeed=Number(pair[2]);}
+  if(!positive(targetSpeed)){
+    const change=raw.match(/\b(?:baja(?:r|lo)?|sube|subir|cambia(?:r)?|ajusta(?:r)?|reduce|reducir|lower|raise|increase|decrease|change|set)\b[^\d]{0,30}(?:a|to)?\s*(\d+(?:\.\d+)?)\s*(?:ft(?:\/?min)?|fpm)/i);
+    if(change)targetSpeed=Number(change[1]);
+  }
+  if(!positive(targetSpeed)){
+    const ft=[...raw.matchAll(/(\d+(?:\.\d+)?)\s*(?:ft(?:\/?min)?|fpm)\b/ig)].map(m=>Number(m[1])).filter(positive);
+    if(ft.length)targetSpeed=ft[ft.length-1];
+  }
+  if(!positive(targetSpeed))return null;
+  return {
+    type:'coordinated-speed-bw',currentSWrap:currentSpeed,targetSWrap:clampSWrap(targetSpeed),
+    primaryRPM:labeledProcessNumber(raw,'primary'),secondaryRPM:labeledProcessNumber(raw,'secondary'),
+    currentOutputLbHr:labeledProcessNumber(raw,'output'),currentPrimaryPressure:labeledProcessNumber(raw,'pressure')
+  };
+}
+function currentProductionOutputForRecommendation(){
+  try{const stats=runStats(currentProductionRun());return positive(stats?.rate)?Number(stats.rate):null;}catch(_){return null;}
+}
+function coordinatedSpeedRecommendation(flow={}){
+  const primary=Number(flow.primaryRPM),secondary=Number(flow.secondaryRPM),currentSpeed=Number(flow.currentSWrap||state.currentSWrap),targetSpeed=clampSWrap(flow.targetSWrap);
+  if(!positive(primary,secondary,currentSpeed,targetSpeed))return {kind:'error',message:t('invalidNumbers')};
+  const product=state.activeShift?.product||state.product||'',mandrel=currentMandrel('bw');
+  const liveOutput=positive(flow.currentOutputLbHr)?Number(flow.currentOutputLbHr):currentProductionOutputForRecommendation();
+  const rec=state.processLearning.recommendForSpeedChange({currentPrimaryRPM:primary,currentSecondaryRPM:secondary,currentSWrap:currentSpeed,targetSWrap:targetSpeed,product,mandrel,currentOutputLbHr:liveOutput,currentPrimaryPressure:flow.currentPrimaryPressure});
+  if(!rec.ready)return {kind:'info',message:chatLang('I need the current Primary RPM and Secondary RPM before I can coordinate this speed change.','Necesito los RPM actuales del Primary y Secondary antes de coordinar este cambio de velocidad.','J’ai besoin des RPM Primary et Secondary actuels.')};
+  const heatText=positive(rec.secondaryHeat)?chatLang(`Secondary Heat start: ~${fmt(rec.secondaryHeat,0)} (${rec.secondaryHeatSource==='learned'?'learned from this line':'plant friction-heat starting curve'})`,`Secondary Heat inicial: ~${fmt(rec.secondaryHeat,0)} (${rec.secondaryHeatSource==='learned'?'aprendido de esta línea':'curva inicial de friction heat de planta'})`,`Secondary Heat initial : ~${fmt(rec.secondaryHeat,0)}`):chatLang('Secondary Heat: verify from melt/load.','Secondary Heat: verificar con melt/load.','Secondary Heat : vérifier melt/load.');
+  const outputText=positive(rec.expectedOutputLbHr)?chatLang(`Expected output: ~${fmt(rec.expectedOutputLbHr,0)} lb/hr`,`Output esperado: ~${fmt(rec.expectedOutputLbHr,0)} lb/hr`,`Débit prévu : ~${fmt(rec.expectedOutputLbHr,0)} lb/h`):positive(rec.targetOutputLbHr)?chatLang(`Target output for same BW: ~${fmt(rec.targetOutputLbHr,0)} lb/hr`,`Output objetivo para conservar BW: ~${fmt(rec.targetOutputLbHr,0)} lb/hr`,`Débit cible : ~${fmt(rec.targetOutputLbHr,0)} lb/h`):chatLang('Output prediction: not learned yet','Predicción de output: todavía no aprendida','Débit : pas encore appris');
+  const pressureText=positive(rec.expectedPrimaryPressure)?chatLang(`Expected Primary Pressure: ~${fmt(rec.expectedPrimaryPressure,0)} • margin to 5,500 shutdown: ~${fmt(rec.pressureMargin,0)}`,`Primary Pressure esperada: ~${fmt(rec.expectedPrimaryPressure,0)} • margen al shutdown de 5,500: ~${fmt(rec.pressureMargin,0)}`,`Pression Primary prévue : ~${fmt(rec.expectedPrimaryPressure,0)} • marge : ~${fmt(rec.pressureMargin,0)}`):chatLang('Primary Pressure prediction is not learned yet — verify pressure after the coordinated move; high-pressure shutdown is 5,500.','La predicción de Primary Pressure todavía no está aprendida — verifica la presión después del cambio coordinado; el high-pressure shutdown es 5,500.','La pression Primary n’est pas encore apprise — vérifier après le changement; shutdown 5 500.');
+  const meltText=positive(rec.expectedMelt)?chatLang(`Expected melt: ~${fmt(rec.expectedMelt,1)} (plant target 300–305)`,`Melt esperado: ~${fmt(rec.expectedMelt,1)} (target de planta 300–305)`,`Melt prévu : ~${fmt(rec.expectedMelt,1)} (cible 300–305)`):chatLang('Melt target: 300–305; verify actual melt after the move.','Target de melt: 300–305; verifica el melt real después del cambio.','Cible melt : 300–305.');
+  const method=rec.method==='learned-search'?chatLang(`learned search • ${rec.comparableSamples} comparable sample(s) • confidence ${rec.confidence}%`,`búsqueda aprendida • ${rec.comparableSamples} muestra(s) comparable(s) • confianza ${rec.confidence}%`,`recherche apprise • confiance ${rec.confidence}%`):chatLang('proportional starting point — keep teaching real process samples to improve it','punto inicial proporcional — sigue enseñando muestras reales para mejorarlo','point de départ proportionnel');
+  const caution=rec.frictionHeatCaution?chatLang(' Secondary is near the 13 RPM quality cap: watch friction/shear heat closely.',' Secondary está cerca del límite de calidad de 13 RPM: vigila de cerca el friction/shear heat.',' Secondary près de 13 RPM : surveiller friction heat.') : '';
+  if(rec.qualityLimited){
+    const joke=speedChangeHumor(rec),jokeLine=joke?`\n${joke}`:'';
+    const primaryLimited=rec.limitingComponent==='primary';
+    const bothLimited=rec.limitingComponent==='both';
+    const limiting=primaryLimited
+      ?chatLang(`Primary reaches the machine-enforced maximum of ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM first. The machine will not allow Primary to run faster.`,`Primary llega primero al máximo real de la máquina de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM. La máquina no permite que Primary corra más rápido.`,`Primary atteint d'abord la limite réelle de la machine de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM. La machine ne permet pas d'aller plus vite.`)
+      :bothLimited
+        ?chatLang(`Primary reaches the machine maximum of ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM while Secondary reaches its 13.0 RPM quality cap.`,`Primary llega al máximo de máquina de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM al mismo tiempo que Secondary llega a su límite de calidad de 13.0 RPM.`,`Primary atteint sa limite machine pendant que Secondary atteint sa limite qualité.`)
+        :chatLang(`Secondary would require ${fmt(rec.theoreticalSecondaryRPM,1)} RPM, above the 13.0 RPM quality cap.`,`Secondary necesitaría ${fmt(rec.theoreticalSecondaryRPM,1)} RPM, arriba del límite de calidad de 13.0 RPM.`,`Secondary demanderait ${fmt(rec.theoreticalSecondaryRPM,1)} RPM, au-dessus de 13,0 RPM.`);
+    const title=primaryLimited?chatLang('Machine limit reached','Límite de máquina alcanzado','Limite machine atteinte'):bothLimited?chatLang('Machine + quality limits reached','Límites de máquina + calidad alcanzados','Limites machine + qualité atteintes'):chatLang('Quality limit reached','Límite de calidad alcanzado','Limite qualité atteinte');
+    const requestLine=primaryLimited
+      ?chatLang(`Requested ${fmt(targetSpeed,1)} ft/min cannot be reached with this coordinated relationship because the theoretical Primary requirement is ${fmt(rec.theoreticalPrimaryRPM,1)} RPM, above the machine maximum.`,`No se puede llegar a ${fmt(targetSpeed,1)} ft/min con esta relación coordinada porque el Primary teórico sería ${fmt(rec.theoreticalPrimaryRPM,1)} RPM, por encima del máximo de la máquina.`,`La vitesse demandée ne peut pas être atteinte car le Primary théorique dépasse la limite machine.`)
+      :chatLang(`Requested ${fmt(targetSpeed,1)} ft/min is NOT recommended for good roll quality.`,`No recomiendo ${fmt(targetSpeed,1)} ft/min si quieres mantener buena calidad.`,`La vitesse ${fmt(targetSpeed,1)} ft/min n’est pas recommandée pour maintenir la qualité.`);
+    const theoreticalLabel=primaryLimited?chatLang('Theoretical requirement — ABOVE MACHINE LIMIT','Requerimiento teórico — ARRIBA DEL LÍMITE DE MÁQUINA','Besoin théorique — AU-DESSUS DE LA LIMITE MACHINE'):chatLang('Theoretical requirement — NOT RECOMMENDED','Requerimiento teórico — NO RECOMENDADO','Besoin théorique — NON RECOMMANDÉ');
+    return {kind:'result',title,message:chatLang(
+      `${limiting}\n${requestLine}\n${theoreticalLabel}: Primary ${fmt(rec.theoreticalPrimaryRPM,1)} RPM • Secondary ${fmt(rec.theoreticalSecondaryRPM,1)} RPM.\nMaximum coordinated starting point: S-Wrap ${fmt(rec.maxRecommendedSWrap,1)} ft/min • Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM.\n${heatText}\n${pressureText}${jokeLine}`,
+      `${limiting}\n${requestLine}\n${theoreticalLabel}: Primary ${fmt(rec.theoreticalPrimaryRPM,1)} RPM • Secondary ${fmt(rec.theoreticalSecondaryRPM,1)} RPM.\nMáximo starting point coordinado: S-Wrap ${fmt(rec.maxRecommendedSWrap,1)} ft/min • Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM.\n${heatText}\n${pressureText}${jokeLine}`,
+      `${limiting}\n${requestLine} Besoin théorique : Primary ${fmt(rec.theoreticalPrimaryRPM,1)} • Secondary ${fmt(rec.theoreticalSecondaryRPM,1)}. Maximum coordonné : S-Wrap ${fmt(rec.maxRecommendedSWrap,1)} • Primary ${fmt(rec.primaryRPM,1)} • Secondary ${fmt(rec.secondaryRPM,1)}.`
+    ),meta:primaryLimited?chatLang('Primary 128 RPM is a machine-enforced maximum, not a friction-heat or quality recommendation. The theoretical value is shown only to explain what the requested speed would require.','Primary 128 RPM es un máximo impuesto por la máquina, no una recomendación de friction heat o calidad. El valor teórico solo explica lo que pediría la velocidad solicitada.','128 RPM Primary est une limite machine réelle.'):chatLang('The theoretical values explain what the requested speed would mathematically require; they are not approved setpoints. The first coordinated component limit determines the maximum recommended speed.','Los valores teóricos muestran lo que matemáticamente pediría la velocidad; no son setpoints aprobados. El primer componente coordinado que llega a su límite determina la velocidad máxima recomendada.','Les valeurs théoriques ne sont pas des réglages approuvés.')};
+  }
+  return {kind:'result',title:chatLang('Coordinated BW Speed Recommendation','Recomendación coordinada para mantener BW','Recommandation coordonnée'),message:chatLang(
+    `Keep BW while changing line speed ${fmt(currentSpeed,1)} → ${fmt(targetSpeed,1)} ft/min:\nPrimary: ${fmt(rec.primaryRPM,1)} RPM\nSecondary: ${fmt(rec.secondaryRPM,1)} RPM\n${heatText}\n${outputText}\n${pressureText}\n${meltText}${caution}`,
+    `Para mantener el mismo BW al cambiar la velocidad ${fmt(currentSpeed,1)} → ${fmt(targetSpeed,1)} ft/min:\nPrimary: ${fmt(rec.primaryRPM,1)} RPM\nSecondary: ${fmt(rec.secondaryRPM,1)} RPM\n${heatText}\n${outputText}\n${pressureText}\n${meltText}${caution}`,
+    `Pour conserver le BW à ${fmt(targetSpeed,1)} ft/min :\nPrimary ${fmt(rec.primaryRPM,1)} RPM\nSecondary ${fmt(rec.secondaryRPM,1)} RPM\n${heatText}\n${outputText}\n${pressureText}\n${meltText}${caution}`
+  ),meta:chatLang(`Viejito always coordinates Primary + Secondary; it will not issue a Secondary-only speed recommendation. ${method}. Predictive guidance only — actual pressure, melt, load and completed-roll BW remain authoritative.`,`Viejito siempre coordina Primary + Secondary; no dará una recomendación de velocidad solo para Secondary. ${method}. Guía predictiva solamente — presión, melt, load y BW real del rollo siguen siendo la autoridad.`,`Primary + Secondary sont toujours coordonnés. ${method}.`) };
+}
+function startCoordinatedSpeedWorkflow(seed={}){
+  chatWorkflow={type:'coordinated-speed-bw',...seed,startedAt:new Date().toISOString()};
+  chatWorkflow.stage=positive(chatWorkflow.primaryRPM)?(positive(chatWorkflow.secondaryRPM)?'complete':'secondary'):'primary';
+  if(chatWorkflow.stage==='complete'){const result=coordinatedSpeedRecommendation(chatWorkflow);chatWorkflow=null;saveChatWorkflow();return result;}
+  saveChatWorkflow();
+  return {kind:'info',title:chatLang('Coordinate Primary + Secondary','Coordinar Primary + Secondary','Coordonner Primary + Secondary'),message:chatWorkflow.stage==='primary'?chatLang(`What is the CURRENT Primary RPM at ${fmt(chatWorkflow.currentSWrap,1)} ft/min?`,`¿A cuántos RPM está el Primary AHORA a ${fmt(chatWorkflow.currentSWrap,1)} ft/min?`,`RPM Primary actuel ?`):chatLang('What is the CURRENT Secondary RPM?','¿A cuántos RPM está el Secondary AHORA?','RPM Secondary actuel ?')};
+}
+function handleCoordinatedSpeedWorkflow(text){
+  if(!chatWorkflow||chatWorkflow.type!=='coordinated-speed-bw')return null;
+  const q=normalizeKnowledgeQuery(text);
+  if(/\b(cancel|cancelar|cancela|annuler)\b/.test(q)){chatWorkflow=null;saveChatWorkflow();return {kind:'info',message:chatLang('Speed recommendation cancelled.','Recomendación de velocidad cancelada.','Recommandation annulée.')};}
+  const first=numbers(text).find(v=>positive(v));
+  if(chatWorkflow.stage==='primary'){
+    const v=labeledProcessNumber(text,'primary')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter the current Primary RPM.','Escribe los RPM actuales del Primary.','Entrez RPM Primary.')};
+    chatWorkflow.primaryRPM=v;chatWorkflow.stage='secondary';saveChatWorkflow();return {kind:'info',message:chatLang('What is the CURRENT Secondary RPM?','¿A cuántos RPM está el Secondary AHORA?','RPM Secondary actuel ?')};
+  }
+  if(chatWorkflow.stage==='secondary'){
+    const v=labeledProcessNumber(text,'secondary')||first;if(!positive(v))return {kind:'info',message:chatLang('Enter the current Secondary RPM.','Escribe los RPM actuales del Secondary.','Entrez RPM Secondary.')};
+    chatWorkflow.secondaryRPM=v;const flow={...chatWorkflow};chatWorkflow=null;saveChatWorkflow();return coordinatedSpeedRecommendation(flow);
+  }
+  return null;
+}
+function manualProcessCopy(key){
+  const copy={
+    en:{tool:'Process Record',eyebrow:'PROCESS PERFORMANCE',title:'Manual Process Record',hint:'Save a real two-roll run so Viejito can learn it and answer questions about it later in chat.',primary:'Primary RPM',secondary:'Secondary RPM',w1:'Roll 1 weight (lb)',w2:'Roll 2 weight (lb)',minutes:'Run time (minutes)',total:'Total weight',output:'Calculated output',note:'Line, product, S-Wrap, date/time and operator are saved automatically from the current Viejito context.',cancel:'Cancel',save:'Save Process Record',saved:'Process record saved.'},
+    es:{tool:'Registro de proceso',eyebrow:'DESEMPEÑO DEL PROCESO',title:'Registro manual de proceso',hint:'Guarda una corrida real de dos rollos para que Viejito la aprenda y después puedas consultarla en el chat.',primary:'Primary RPM',secondary:'Secondary RPM',w1:'Peso Roll 1 (lb)',w2:'Peso Roll 2 (lb)',minutes:'Tiempo de corrida (minutos)',total:'Peso total',output:'Output calculado',note:'Line, producto, S-Wrap, fecha/hora y operador se guardan automáticamente del contexto actual de Viejito.',cancel:'Cancelar',save:'Guardar registro',saved:'Registro de proceso guardado.'},
+    fr:{tool:'Journal procédé',eyebrow:'PERFORMANCE PROCÉDÉ',title:'Journal manuel du procédé',hint:'Enregistrez une production réelle de deux rouleaux pour que Viejito puisse l’apprendre et la retrouver dans le chat.',primary:'RPM Primary',secondary:'RPM Secondary',w1:'Poids rouleau 1 (lb)',w2:'Poids rouleau 2 (lb)',minutes:'Temps de production (minutes)',total:'Poids total',output:'Débit calculé',note:'Ligne, produit, S-Wrap, date/heure et opérateur sont enregistrés automatiquement.',cancel:'Annuler',save:'Enregistrer',saved:'Enregistrement du procédé sauvegardé.'}
+  };
+  return (copy[state.language]||copy.en)[key]||key;
+}
+function renderManualProcessLanguage(){
+  const ids={tool:'manual-process-tool-label',eyebrow:'manual-process-eyebrow',title:'manual-process-title',hint:'manual-process-hint',primary:'manual-primary-label',secondary:'manual-secondary-label',w1:'manual-w1-label',w2:'manual-w2-label',minutes:'manual-minutes-label',total:'manual-total-label',output:'manual-output-label',note:'manual-process-note',cancel:'manual-process-cancel',save:'manual-process-save'};
+  Object.entries(ids).forEach(([key,id])=>{if($(id))$(id).textContent=manualProcessCopy(key);});
+}
+function manualProcessContextText(){
+  const product=state.activeShift?.product||state.product||'—';
+  const sw=Number(state.currentSWrap);
+  const operator=state.activeShift?.operator||state.operator||'';
+  return chatLang(
+    `Line ${ACTIVE_LINE} • Product ${product} • S-Wrap ${positive(sw)?fmt(sw,1):'—'}${operator?` • ${operator}`:''}`,
+    `Line ${ACTIVE_LINE} • Producto ${product} • S-Wrap ${positive(sw)?fmt(sw,1):'—'}${operator?` • ${operator}`:''}`,
+    `Line ${ACTIVE_LINE} • Produit ${product} • S-Wrap ${positive(sw)?fmt(sw,1):'—'}${operator?` • ${operator}`:''}`
+  );
+}
+function manualProcessValues(){return {primaryRPM:Number($('manual-primary')?.value),secondaryRPM:Number($('manual-secondary')?.value),w1:Number($('manual-w1')?.value),w2:Number($('manual-w2')?.value),minutes:Number($('manual-minutes')?.value)};}
+function updateManualProcessPreview(){
+  const v=manualProcessValues(),complete=positive(v.w1,v.w2,v.minutes);
+  const total=complete?v.w1+v.w2:null,output=complete?total*60/v.minutes:null;
+  if($('manual-total'))$('manual-total').textContent=positive(total)?fmt(total,0):'—';
+  if($('manual-output'))$('manual-output').textContent=positive(output)?fmt(output,0):'—';
+}
+function openManualProcessDialog(){
+  closeToolMenu();renderManualProcessLanguage();
+  if($('manual-process-context'))$('manual-process-context').textContent=manualProcessContextText();
+  ['manual-primary','manual-secondary','manual-w1','manual-w2','manual-minutes'].forEach(id=>{if($(id))$(id).value='';});
+  updateManualProcessPreview();
+  const box=$('manual-process-dialog');if(!box)return;box.classList.remove('hidden');box.setAttribute('aria-hidden','false');
+  setTimeout(()=>$('manual-primary')?.focus(),60);
+}
+function closeManualProcessDialog(){const box=$('manual-process-dialog');if(!box)return;box.classList.add('hidden');box.setAttribute('aria-hidden','true');}
+function saveManualProcessRecord(){
+  const v=manualProcessValues();
+  if(!positive(v.primaryRPM,v.secondaryRPM,v.w1,v.w2,v.minutes)){showToast(state.language==='es'?'Completa Primary, Secondary, los dos pesos y el tiempo.':'Enter Primary, Secondary, both roll weights and run time.');return;}
+  const result=saveProcessPerformanceSample({...v,swrapSpeed:state.currentSWrap,entrySource:'manual',operator:state.activeShift?.operator||state.operator||''});
+  if(result?.kind==='error'){showToast(result.message||t('invalidNumbers'));return;}
+  const output=(v.w1+v.w2)*60/v.minutes;
+  addHistory(chatLang('Process','Proceso','Procédé'),`P ${fmt(v.primaryRPM,1)} • S ${fmt(v.secondaryRPM,1)} • ${fmt(v.w1,0)} + ${fmt(v.w2,0)} lb • ${fmt(v.minutes,1)} min • ${fmt(output,0)} lb/hr`);
+  closeManualProcessDialog();showToast(manualProcessCopy('saved'));
+}
+function speedChangeCopy(key){
+  const copy={
+    en:{tool:'Speed Change Advisor',eyebrow:'OCCASIONAL SPEED CHANGE',title:'Speed Change Advisor',hint:'Use this only when line speed is intentionally being changed. Viejito uses current line speed, Last BW and actual two-roll output. If the request exceeds the quality envelope, it shows the real theoretical RPM requirement but recommends only the maximum coordinated setpoints.',primary:'Current Primary RPM',secondary:'Current Secondary RPM',w1:'Roll 1 weight (lb)',w2:'Roll 2 weight (lb)',minutes:'Run time (minutes)',targetSpeed:'Desired line speed',targetBW:'Desired BW',currentOutput:'Current output',targetOutput:'Required output',result:'Recommended starting point',setSWrap:'SET S-WRAP',setPrimary:'SET PRIMARY',setSecondary:'SET SECONDARY',setHeat:'SECONDARY HEAT START',qualityTitle:'QUALITY LIMIT — REQUEST NOT RECOMMENDED',theoretical:'THEORETICAL REQUIREMENT — NOT RECOMMENDED',theoreticalPrimary:'Required Primary',theoreticalSecondary:'Required Secondary',theoreticalSWrap:'Requested S-Wrap',note:'Starting point only. Secondary 13.0 RPM is the recommended quality cap. Verify actual Primary Pressure, melt, motor load and the next completed-roll BW after the change.',close:'Close',suggest:'Suggestion'},
+    es:{tool:'Cambio de velocidad',eyebrow:'CAMBIO OCASIONAL DE VELOCIDAD',title:'Speed Change Advisor',hint:'Úsalo solo cuando quieras cambiar intencionalmente la velocidad de línea. Viejito usa la velocidad actual, Last BW y el output real de dos rollos. Si lo pedido rebasa el rango de calidad, muestra los RPM teóricos reales pero recomienda solamente el máximo coordinado.',primary:'Primary RPM actual',secondary:'Secondary RPM actual',w1:'Peso Roll 1 (lb)',w2:'Peso Roll 2 (lb)',minutes:'Tiempo de los rollos (minutos)',targetSpeed:'Velocidad deseada',targetBW:'BW deseado',currentOutput:'Output actual',targetOutput:'Output necesario',result:'Starting point recomendado',setSWrap:'PON S-WRAP',setPrimary:'PON PRIMARY',setSecondary:'PON SECONDARY',setHeat:'SECONDARY HEAT INICIAL',qualityTitle:'LÍMITE DE CALIDAD — NO RECOMENDADO',theoretical:'REQUERIMIENTO TEÓRICO — NO RECOMENDADO',theoreticalPrimary:'Primary requerido',theoreticalSecondary:'Secondary requerido',theoreticalSWrap:'S-Wrap solicitado',note:'Solo es un starting point. 13.0 RPM de Secondary es el límite recomendado de calidad. Verifica Primary Pressure, melt, motor load y el BW de los siguientes rollos.',close:'Cerrar',suggest:'Suggestion'},
+    fr:{tool:'Changement vitesse',eyebrow:'CHANGEMENT OCCASIONNEL',title:'Speed Change Advisor',hint:'À utiliser seulement pour un changement volontaire de vitesse. Si la demande dépasse la limite qualité, Viejito montre les RPM théoriques mais recommande seulement les réglages coordonnés sûrs.',primary:'RPM Primary actuel',secondary:'RPM Secondary actuel',w1:'Poids rouleau 1 (lb)',w2:'Poids rouleau 2 (lb)',minutes:'Temps (minutes)',targetSpeed:'Vitesse désirée',targetBW:'BW désiré',currentOutput:'Débit actuel',targetOutput:'Débit requis',result:'Point de départ recommandé',setSWrap:'RÉGLER S-WRAP',setPrimary:'RÉGLER PRIMARY',setSecondary:'RÉGLER SECONDARY',setHeat:'SECONDARY HEAT INITIAL',qualityTitle:'LIMITE QUALITÉ — NON RECOMMANDÉ',theoretical:'BESOIN THÉORIQUE — NON RECOMMANDÉ',theoreticalPrimary:'Primary requis',theoreticalSecondary:'Secondary requis',theoreticalSWrap:'S-Wrap demandé',note:'Point de départ seulement. 13,0 RPM Secondary est la limite qualité recommandée. Vérifiez pression, melt, charge et BW réel.',close:'Fermer',suggest:'Suggestion'}
+  };
+  return (copy[state.language]||copy.en)[key]||key;
+}
+function renderSpeedChangeLanguage(){
+  const ids={tool:'speed-change-tool-label',eyebrow:'speed-change-eyebrow',title:'speed-change-title',hint:'speed-change-hint',primary:'speed-current-primary-label',secondary:'speed-current-secondary-label',w1:'speed-w1-label',w2:'speed-w2-label',minutes:'speed-minutes-label',targetSpeed:'speed-target-speed-label',targetBW:'speed-target-bw-label',currentOutput:'speed-current-output-label',targetOutput:'speed-target-output-label',result:'speed-result-title',setSWrap:'speed-set-swrap-label',setPrimary:'speed-set-primary-label',setSecondary:'speed-set-secondary-label',setHeat:'speed-set-heat-label',qualityTitle:'speed-quality-title',theoretical:'speed-theoretical-title',theoreticalPrimary:'speed-theoretical-primary-label',theoreticalSecondary:'speed-theoretical-secondary-label',theoreticalSWrap:'speed-theoretical-swrap-label',note:'speed-change-note',close:'speed-change-cancel',suggest:'speed-change-suggest'};
+  Object.entries(ids).forEach(([key,id])=>{if($(id))$(id).textContent=speedChangeCopy(key);});
+}
+function currentLastBW(){
+  const direct=Number(state.lastCompletedCut?.averageBW);
+  if(positive(direct))return direct;
+  try{const saved=JSON.parse(lineGet(LAST_COMPLETED_CUT_KEY)||'null');const bw=Number(saved?.averageBW);if(positive(bw))return bw;}catch(_){}
+  const bw=Number($('bw-result')?.textContent);return positive(bw)?bw:null;
+}
+function speedChangeValues(){return {primaryRPM:Number($('speed-current-primary')?.value),secondaryRPM:Number($('speed-current-secondary')?.value),w1:Number($('speed-w1')?.value),w2:Number($('speed-w2')?.value),minutes:Number($('speed-minutes')?.value),targetSpeed:Number($('speed-target-speed')?.value),targetBW:Number($('speed-target-bw')?.value)};}
+function speedChangeCurrentOutput(v=speedChangeValues()){return positive(v.w1,v.w2,v.minutes)?((v.w1+v.w2)*60/v.minutes):null;}
+function speedChangeTargetOutput(v=speedChangeValues()){
+  const currentOutput=speedChangeCurrentOutput(v),currentSpeed=Number(state.currentSWrap),lastBW=currentLastBW();
+  if(!positive(currentOutput,currentSpeed,v.targetSpeed,lastBW,v.targetBW))return null;
+  return currentOutput*(v.targetSpeed/currentSpeed)*(v.targetBW/lastBW);
+}
+function renderSpeedChangeContext(){
+  const speed=Number(state.currentSWrap),lastBW=currentLastBW(),product=state.activeShift?.product||state.product||'—';
+  if($('speed-change-context'))$('speed-change-context').textContent=chatLang(
+    `Line ${ACTIVE_LINE} • Product ${product} • Current speed ${positive(speed)?fmt(speed,1):'—'} ft/min • Last BW ${positive(lastBW)?fmt(lastBW,3):'—'}`,
+    `Line ${ACTIVE_LINE} • Producto ${product} • Velocidad actual ${positive(speed)?fmt(speed,1):'—'} ft/min • Last BW ${positive(lastBW)?fmt(lastBW,3):'—'}`,
+    `Line ${ACTIVE_LINE} • Produit ${product} • Vitesse ${positive(speed)?fmt(speed,1):'—'} • Last BW ${positive(lastBW)?fmt(lastBW,3):'—'}`
+  );
+}
+function updateSpeedChangePreview(){
+  const v=speedChangeValues(),currentOutput=speedChangeCurrentOutput(v),targetOutput=speedChangeTargetOutput(v);
+  if($('speed-current-output'))$('speed-current-output').textContent=positive(currentOutput)?fmt(currentOutput,0):'—';
+  if($('speed-target-output'))$('speed-target-output').textContent=positive(targetOutput)?fmt(targetOutput,0):'—';
+  $('speed-change-result')?.classList.add('hidden');
+}
+function openSpeedChangeDialog(){
+  closeToolMenu();renderSpeedChangeLanguage();renderSpeedChangeContext();
+  ['speed-current-primary','speed-current-secondary','speed-w1','speed-w2','speed-minutes','speed-target-speed'].forEach(id=>{if($(id))$(id).value='';});
+  const lastBW=currentLastBW();if($('speed-target-bw'))$('speed-target-bw').value=positive(lastBW)?String(Number(lastBW.toFixed(3))):'';
+  updateSpeedChangePreview();
+  const box=$('speed-change-dialog');if(!box)return;box.classList.remove('hidden');box.setAttribute('aria-hidden','false');
+  setTimeout(()=>$('speed-current-primary')?.focus(),60);
+}
+function closeSpeedChangeDialog(){const box=$('speed-change-dialog');if(!box)return;box.classList.add('hidden');box.setAttribute('aria-hidden','true');}
+function speedChangeHumor(rec){
+  if(!rec?.qualityLimited||state.personality==='professional'||state.personality==='off')return '';
+  if(rec.limitingComponent==='primary')return chatLang(
+    `You can ask for ${fmt(rec.theoreticalPrimaryRPM,1)} RPM… but the Primary already gave you everything it has. 😅 The machine stops at ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM.`,
+    `Puedes pedir ${fmt(rec.theoreticalPrimaryRPM,1)} RPM… pero el Primary ya dio todo lo que tiene. 😅 La máquina se queda en ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM.`,
+    `Vous pouvez demander ${fmt(rec.theoreticalPrimaryRPM,1)} RPM… mais le Primary a déjà tout donné. 😅 La machine s'arrête à ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM.`
+  );
+  if(rec.limitingComponent==='both')return chatLang(
+    `The math can keep asking for more… the machine and the Secondary have both called it a day. 😅`,
+    `Las matemáticas pueden seguir pidiendo más… pero la máquina y el Secondary ya dijeron hasta aquí. 😅`,
+    `Les maths peuvent demander davantage… la machine et le Secondary ont déjà dit stop. 😅`
+  );
+  return chatLang(
+    `Mathematically, sure… if you can cool the material by blowing on it. 😁 The theoretical numbers are shown for reference, not as a quality-approved setpoint.`,
+    `Matemáticamente sí… si puedes enfriar el material soplándole. 😁 Los números teóricos están ahí como referencia, no como setpoint aprobado para buena calidad.`,
+    `Mathématiquement oui… si vous pouvez refroidir le matériau en soufflant dessus. 😁 Les valeurs théoriques sont seulement une référence.`
+  );
+}
+function runSpeedChangeSuggestion(){
+  const v=speedChangeValues(),currentSpeed=Number(state.currentSWrap),lastBW=currentLastBW(),currentOutput=speedChangeCurrentOutput(v);
+  if(!positive(currentSpeed)){showToast(chatLang('Current line speed is missing. Start/set the line S-Wrap first.','Falta la velocidad actual de línea. Primero fija el S-Wrap de la línea.','Vitesse actuelle manquante.'));return;}
+  if(!positive(lastBW)){showToast(chatLang('Last BW is missing. Complete a two-winder BW cut first.','Falta Last BW. Completa primero un BW de los dos winders.','Last BW manquant.'));return;}
+  if(!positive(v.primaryRPM,v.secondaryRPM,v.w1,v.w2,v.minutes,v.targetSpeed,v.targetBW,currentOutput)){showToast(chatLang('Complete Primary, Secondary, both roll weights, run time, desired speed and Desired BW.','Completa Primary, Secondary, los dos pesos, el tiempo, la velocidad deseada y el BW deseado.','Complétez tous les champs.'));return;}
+  const rec=state.processLearning.recommendForSpeedChange({currentPrimaryRPM:v.primaryRPM,currentSecondaryRPM:v.secondaryRPM,currentSWrap:currentSpeed,targetSWrap:v.targetSpeed,currentBW:lastBW,targetBW:v.targetBW,product:state.activeShift?.product||state.product||'',mandrel:currentMandrel('bw'),currentOutputLbHr:currentOutput});
+  if(!rec.ready){showToast(chatLang('I could not calculate the speed-change starting point.','No pude calcular el starting point del cambio de velocidad.','Calcul impossible.'));return;}
+  const recommendedSWrap=positive(rec.maxRecommendedSWrap)?Number(rec.maxRecommendedSWrap):Number(v.targetSpeed);
+  $('speed-set-swrap').textContent=fmt(recommendedSWrap,1);
+  $('speed-set-primary').textContent=fmt(rec.primaryRPM,1);$('speed-set-secondary').textContent=fmt(rec.secondaryRPM,1);$('speed-set-heat').textContent=positive(rec.secondaryHeat)?fmt(rec.secondaryHeat,0):'—';
+  if($('speed-target-output'))$('speed-target-output').textContent=positive(rec.targetOutputLbHr)?fmt(rec.targetOutputLbHr,0):fmt(speedChangeTargetOutput(v),0);
+  const qualityBox=$('speed-quality-alert'),theoreticalBox=$('speed-theoretical'),humorBox=$('speed-quality-humor');
+  if(rec.qualityLimited){
+    qualityBox?.classList.remove('hidden');theoreticalBox?.classList.remove('hidden');
+    $('speed-theoretical-primary').textContent=fmt(rec.theoreticalPrimaryRPM,1);$('speed-theoretical-secondary').textContent=fmt(rec.theoreticalSecondaryRPM,1);$('speed-theoretical-swrap').textContent=fmt(v.targetSpeed,1);
+    const primaryLimited=rec.limitingComponent==='primary',bothLimited=rec.limitingComponent==='both';
+    const limitText=primaryLimited
+      ?chatLang(`Primary reaches the machine-enforced maximum of ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM first. The machine will not allow Primary above ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM.`,`Primary llega primero al máximo real de la máquina de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM. La máquina no permite pasar de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM.`,`Primary atteint d'abord la limite réelle de la machine de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM.`)
+      :bothLimited
+        ?chatLang(`Primary reaches the machine maximum of ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM while Secondary reaches its 13.0 RPM quality cap.`,`Primary llega al máximo de máquina de ${fmt(rec.qualityMaxPrimaryRPM,0)} RPM al mismo tiempo que Secondary llega a su límite de calidad de 13.0 RPM.`,`Primary atteint sa limite machine pendant que Secondary atteint sa limite qualité.`)
+        :chatLang(`Secondary would need ${fmt(rec.theoreticalSecondaryRPM,1)} RPM, above the 13.0 RPM quality cap.`,`Secondary necesitaría ${fmt(rec.theoreticalSecondaryRPM,1)} RPM, por encima del límite de calidad de 13.0 RPM.`,`Secondary demanderait ${fmt(rec.theoreticalSecondaryRPM,1)} RPM, au-dessus de la limite qualité de 13,0 RPM.`);
+    if($('speed-quality-title'))$('speed-quality-title').textContent=primaryLimited?chatLang('MACHINE LIMIT — REQUEST NOT POSSIBLE','LÍMITE DE MÁQUINA — SOLICITUD NO POSIBLE','LIMITE MACHINE — DEMANDE IMPOSSIBLE'):bothLimited?chatLang('MACHINE + QUALITY LIMITS','LÍMITES DE MÁQUINA + CALIDAD','LIMITES MACHINE + QUALITÉ'):chatLang('QUALITY LIMIT — REQUEST NOT RECOMMENDED','LÍMITE DE CALIDAD — SOLICITUD NO RECOMENDADA','LIMITE QUALITÉ — DEMANDE NON RECOMMANDÉE');
+    if($('speed-theoretical-title'))$('speed-theoretical-title').textContent=primaryLimited?chatLang('THEORETICAL REQUIREMENT — ABOVE MACHINE LIMIT','REQUERIMIENTO TEÓRICO — ARRIBA DEL LÍMITE DE MÁQUINA','BESOIN THÉORIQUE — AU-DESSUS DE LA LIMITE MACHINE'):chatLang('THEORETICAL REQUIREMENT — NOT RECOMMENDED','REQUERIMIENTO TEÓRICO — NO RECOMENDADO','BESOIN THÉORIQUE — NON RECOMMANDÉ');
+    $('speed-quality-message').textContent=primaryLimited?chatLang(
+      `${limitText} The requested ${fmt(v.targetSpeed,1)} ft/min would require Primary ${fmt(rec.theoreticalPrimaryRPM,1)} RPM, so it cannot be reached with this coordinated relationship. Maximum coordinated starting point: S-Wrap ${fmt(recommendedSWrap,1)} ft/min • Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM.`,
+      `${limitText} La velocidad solicitada de ${fmt(v.targetSpeed,1)} ft/min pediría Primary ${fmt(rec.theoreticalPrimaryRPM,1)} RPM, así que no se puede alcanzar con esta relación coordinada. Máximo starting point coordinado: S-Wrap ${fmt(recommendedSWrap,1)} ft/min • Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM.`,
+      `${limitText} La vitesse demandée nécessiterait Primary ${fmt(rec.theoreticalPrimaryRPM,1)} RPM. Maximum coordonné : S-Wrap ${fmt(recommendedSWrap,1)} • Primary ${fmt(rec.primaryRPM,1)} • Secondary ${fmt(rec.secondaryRPM,1)}.`
+    ):chatLang(
+      `${limitText} The requested ${fmt(v.targetSpeed,1)} ft/min is not recommended for maintaining good roll quality. Maximum coordinated starting point: S-Wrap ${fmt(recommendedSWrap,1)} ft/min • Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM.`,
+      `${limitText} No recomiendo correr a ${fmt(v.targetSpeed,1)} ft/min si quieres mantener buena calidad. Máximo starting point coordinado: S-Wrap ${fmt(recommendedSWrap,1)} ft/min • Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM.`,
+      `${limitText} La vitesse ${fmt(v.targetSpeed,1)} ft/min n’est pas recommandée pour maintenir la qualité. Maximum coordonné : S-Wrap ${fmt(recommendedSWrap,1)} • Primary ${fmt(rec.primaryRPM,1)} • Secondary ${fmt(rec.secondaryRPM,1)}.`
+    );
+    const joke=speedChangeHumor(rec);if(joke){humorBox.textContent=joke;humorBox.classList.remove('hidden');}else{humorBox.textContent='';humorBox.classList.add('hidden');}
+  }else{qualityBox?.classList.add('hidden');theoreticalBox?.classList.add('hidden');humorBox?.classList.add('hidden');}
+  const secDelta=Number(rec.secondaryRPM)-Number(v.secondaryRPM);let heatGuide='';
+  if(secDelta<-0.08)heatGuide=chatLang(`Secondary is slowing down, so friction/shear heat will decrease. Raise Secondary Heat toward ~${fmt(rec.secondaryHeat,0)}°F as a starting point, then verify melt/load.`,`El Secondary va a bajar, así que habrá menos friction/shear heat. Sube Secondary Heat hacia ~${fmt(rec.secondaryHeat,0)}°F como starting point y luego verifica melt/load.`,`Secondary ralentit : augmenter la chaleur vers ~${fmt(rec.secondaryHeat,0)}°F.`);
+  else if(secDelta>0.08)heatGuide=chatLang(`Secondary is speeding up, so friction/shear heat will increase. Lower Secondary Heat toward ~${fmt(rec.secondaryHeat,0)}°F as a starting point, then verify melt/load.`,`El Secondary va a subir, así que habrá más friction/shear heat. Baja Secondary Heat hacia ~${fmt(rec.secondaryHeat,0)}°F como starting point y luego verifica melt/load.`,`Secondary accélère : réduire la chaleur vers ~${fmt(rec.secondaryHeat,0)}°F.`);
+  else heatGuide=chatLang(`Secondary RPM changes very little. Keep Secondary Heat near ~${fmt(rec.secondaryHeat,0)}°F initially and verify melt/load.`,`El Secondary casi no cambia. Mantén Secondary Heat cerca de ~${fmt(rec.secondaryHeat,0)}°F inicialmente y verifica melt/load.`,`Peu de changement Secondary : maintenir la chaleur près de ~${fmt(rec.secondaryHeat,0)}°F.`);
+  if(rec.frictionHeatCaution)heatGuide+=' '+chatLang('Secondary is near the 13 RPM quality cap; watch friction/shear heat closely.','Secondary está cerca del límite de calidad de 13 RPM; vigila de cerca el friction/shear heat.','Secondary près de 13 RPM : surveiller friction heat.');
+  $('speed-heat-guidance').textContent=heatGuide;
+  $('speed-pressure-note').textContent=positive(rec.expectedPrimaryPressure)?chatLang(`Expected Primary Pressure ~${fmt(rec.expectedPrimaryPressure,0)} • margin to 5,500 shutdown ~${fmt(rec.pressureMargin,0)}.`,`Primary Pressure esperada ~${fmt(rec.expectedPrimaryPressure,0)} • margen al shutdown de 5,500 ~${fmt(rec.pressureMargin,0)}.`,`Pression Primary prévue ~${fmt(rec.expectedPrimaryPressure,0)}.`):chatLang('Pressure prediction is not learned yet. Verify actual Primary Pressure after the change; high-pressure shutdown is 5,500.','La presión todavía no está aprendida. Verifica Primary Pressure real después del cambio; high-pressure shutdown = 5,500.','Pression non apprise; vérifier après le changement.');
+  $('speed-result-method').textContent=rec.qualityLimited?(rec.limitingComponent==='primary'?chatLang('MACHINE LIMITED','LÍMITE DE MÁQUINA','LIMITE MACHINE'):rec.limitingComponent==='both'?chatLang('MACHINE + QUALITY LIMITED','MÁQUINA + CALIDAD','MACHINE + QUALITÉ'):chatLang('QUALITY LIMITED','LÍMITE DE CALIDAD','LIMITE QUALITÉ')):(rec.method==='learned-search'?chatLang('LEARNED','APRENDIDO','APPRIS'):chatLang('STARTING POINT','PUNTO INICIAL','POINT INITIAL'));
+  const bwText=Math.abs(v.targetBW-lastBW)<0.005?chatLang('same BW','mismo BW','même BW'):chatLang(`BW ${fmt(lastBW,3)} → ${fmt(v.targetBW,3)}`,`BW ${fmt(lastBW,3)} → ${fmt(v.targetBW,3)}`,`BW ${fmt(lastBW,3)} → ${fmt(v.targetBW,3)}`);
+  const maxOutputText=rec.qualityLimited&&positive(rec.maxRecommendedOutputLbHr)?(rec.limitingComponent==='primary'?chatLang(` Machine-limited output ~${fmt(rec.maxRecommendedOutputLbHr,0)} lb/hr.`,` Output limitado por máquina ~${fmt(rec.maxRecommendedOutputLbHr,0)} lb/hr.`,` Débit limité machine ~${fmt(rec.maxRecommendedOutputLbHr,0)} lb/h.`):chatLang(` Quality-limited output ~${fmt(rec.maxRecommendedOutputLbHr,0)} lb/hr.`,` Output limitado por calidad ~${fmt(rec.maxRecommendedOutputLbHr,0)} lb/hr.`,` Débit limité qualité ~${fmt(rec.maxRecommendedOutputLbHr,0)} lb/h.`)):'';
+  $('speed-result-source').textContent=chatLang(`Current ${fmt(currentSpeed,1)} → requested ${fmt(v.targetSpeed,1)} ft/min • ${bwText} • current output ${fmt(currentOutput,0)} → requested output ${fmt(rec.targetOutputLbHr,0)} lb/hr.${maxOutputText} ${rec.qualityLimited?'The theoretical RPMs are reference only — do not use them as approved setpoints.':rec.method==='learned-search'?`Learned from ${rec.comparableSamples} comparable samples, confidence ${rec.confidence}%.`:'Proportional starting point; Viejito will improve with real process history.'}`,`Actual ${fmt(currentSpeed,1)} → solicitada ${fmt(v.targetSpeed,1)} ft/min • ${bwText} • output actual ${fmt(currentOutput,0)} → output solicitado ${fmt(rec.targetOutputLbHr,0)} lb/hr.${maxOutputText} ${rec.qualityLimited?'Los RPM teóricos son solo referencia — no los uses como setpoints aprobados.':rec.method==='learned-search'?`Aprendido de ${rec.comparableSamples} muestras comparables, confianza ${rec.confidence}%.`:'Starting point proporcional; Viejito mejorará con historial real.'}`,`Vitesse ${fmt(currentSpeed,1)} → demandée ${fmt(v.targetSpeed,1)} • débit ${fmt(currentOutput,0)} → ${fmt(rec.targetOutputLbHr,0)} lb/h.${maxOutputText}`);
+  $('speed-change-result')?.classList.remove('hidden');
+  addHistory(chatLang('Speed change','Cambio velocidad','Changement vitesse'),`${fmt(currentSpeed,1)}→${fmt(v.targetSpeed,1)} requested • max ${fmt(recommendedSWrap,1)} • BW ${fmt(lastBW,3)}→${fmt(v.targetBW,3)} • theoretical P ${fmt(rec.theoreticalPrimaryRPM,1)} S ${fmt(rec.theoreticalSecondaryRPM,1)} • recommended P ${fmt(rec.primaryRPM,1)} S ${fmt(rec.secondaryRPM,1)}`);
+}
+
+function formatProcessRecord(row){
+  const locale=state.language==='es'?'es-US':state.language==='fr'?'fr-FR':'en-US';
+  let when='';try{when=new Date(row.timestamp).toLocaleString(locale,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}catch(_){when=relativeTime(row.timestamp);}
+  const product=row.product?` • ${row.product}`:'',pressure=positive(row.primaryPressure)?` • PSI ${fmt(row.primaryPressure,0)}`:'';
+  const bw=positive(row.measuredBW)?` • BW avg ${fmt(row.measuredBW,3)}`:'';
+  return `${when}${product} • Primary ${fmt(row.primaryRPM,1)} • Secondary ${fmt(row.secondaryRPM,1)} • Roll 1 ${fmt(row.winder1Weight,0)} lb • Roll 2 ${fmt(row.winder2Weight,0)} lb • ${fmt(row.runMinutes,1)} min • ${fmt(row.outputLbHr,0)} lb/hr • S-Wrap ${fmt(row.swrapSpeed,1)}${bw}${pressure}`;
+}
+function manualProcessHistoryChatQuery(text){
+  const q=normalizeKnowledgeQuery(text),primary=labeledProcessNumber(text,'primary'),secondary=labeledProcessNumber(text,'secondary');
+  const asksRecords=/\b(manual|record|records|registro|registros|corrida|corridas|run history|process history|historial de proceso|datos de proceso|process data|qué información|que informacion|what information|what data|tuve|tuvimos|hicimos|se hicieron|produje|produjimos|produced|did i make|did we make|pesaron|peso de los rollos|roll weights|tardaron|cuanto tiempo|how long)\b/.test(q);
+  const asksBest=/\b(most output|highest output|best output|produced most|más output|mas output|más producción|mas produccion|produjo más|produjo mas|mayor producción|mayor produccion)\b/.test(q);
+  const asksLatest=/\b(latest|last|recent|última|ultima|últimas|ultimas|reciente|recientes)\b/.test(q)&&/\b(record|registro|corrida|run|process|proceso)\b/.test(q);
+  if(!asksRecords&&!asksBest&&!asksLatest)return null;
+  let rows=(state.processLearning?.records||[]).filter(r=>r&&r.entrySource==='manual'&&positive(r.primaryRPM,r.secondaryRPM,r.outputLbHr));
+  if(!rows.length)return {kind:'info',title:chatLang('Manual Process Records','Registros manuales de proceso','Journaux manuels'),message:chatLang(`Line ${ACTIVE_LINE} does not have manual process records yet. Open Tools → Process Record to save one.`,`Line ${ACTIVE_LINE} todavía no tiene registros manuales. Abre Tools → Registro de proceso para guardar uno.`,`Aucun journal manuel pour Line ${ACTIVE_LINE}.`)};
+  if(positive(primary))rows=rows.filter(r=>Math.abs(Number(r.primaryRPM)-primary)<=0.6);
+  if(positive(secondary))rows=rows.filter(r=>Math.abs(Number(r.secondaryRPM)-secondary)<=0.12);
+  if(!rows.length)return {kind:'info',title:chatLang('No matching process record','No encontré una corrida igual','Aucun journal correspondant'),message:chatLang('I have manual records, but none match those Primary/Secondary settings on this line.','Tengo registros manuales, pero ninguno coincide con esos valores de Primary/Secondary en esta línea.','Aucun enregistrement ne correspond à ces réglages.')};
+  if(asksBest){const best=[...rows].sort((x,y)=>Number(y.outputLbHr)-Number(x.outputLbHr))[0];return {kind:'result',title:chatLang('Highest manual output','Mayor output manual','Débit manuel maximal'),message:formatProcessRecord(best)};}
+  const sorted=[...rows].sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)),shown=sorted.slice(0,5);
+  const avg=shown.reduce((sum,r)=>sum+Number(r.outputLbHr),0)/shown.length;
+  const prefix=positive(primary)&&positive(secondary)
+    ?chatLang(`${rows.length} matching manual run(s). Average output ${fmt(avg,0)} lb/hr.`,`${rows.length} corrida(s) manual(es) coinciden. Output promedio ${fmt(avg,0)} lb/hr.`,`${rows.length} production(s) correspondante(s). Débit moyen ${fmt(avg,0)} lb/h.`)
+    :chatLang(`Latest ${shown.length} manual process record(s) on Line ${ACTIVE_LINE}.`,`Últimos ${shown.length} registro(s) manual(es) de Line ${ACTIVE_LINE}.`,`Derniers ${shown.length} journaux manuels de Line ${ACTIVE_LINE}.`);
+  return {kind:'result',title:chatLang('Manual Process Records','Registros manuales de proceso','Journaux manuels'),message:`${prefix}\n${shown.map(formatProcessRecord).join('\n')}`};
+}
+
+
+function processProductKey(value){return String(value||'').trim().toUpperCase().replace(/\s+/g,' ');}
+function findProcessRecordForCut({w1Weight=null,w2Weight=null,product='',swrap=null,recordId=null}={}){
+  if(recordId&&state.processLearning?.byId){
+    const direct=state.processLearning.byId(recordId);if(direct)return direct;
+  }
+  const rows=[...(state.processLearning?.records||[])].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const pKey=processProductKey(product),a=Number(w1Weight),b=Number(w2Weight),speed=Number(swrap),now=Date.now();
+  const sameContext=r=>{
+    if(pKey&&processProductKey(r.product)&&processProductKey(r.product)!==pKey)return false;
+    if(positive(speed)&&positive(r.swrapSpeed)&&Math.abs(Number(r.swrapSpeed)-speed)>1.1)return false;
+    return true;
+  };
+  if(positive(a,b)){
+    const exact=rows.find(r=>{
+      if(!sameContext(r)||!positive(r.winder1Weight,r.winder2Weight))return false;
+      const age=now-new Date(r.timestamp||0).getTime();if(!Number.isFinite(age)||age<0||age>12*60*60*1000)return false;
+      const r1=Number(r.winder1Weight),r2=Number(r.winder2Weight);
+      const directErr=Math.abs(r1-a)+Math.abs(r2-b),swapErr=Math.abs(r1-b)+Math.abs(r2-a);
+      const tolerance=Math.max(4,(a+b)*0.008);
+      return Math.min(directErr,swapErr)<=tolerance;
+    });
+    if(exact)return exact;
+    return null;
+  }
+  return rows.find(r=>{
+    if(!sameContext(r))return false;
+    const age=now-new Date(r.timestamp||0).getTime();
+    return Number.isFinite(age)&&age>=0&&age<=30*60*1000;
+  })||null;
+}
+function bindProcessRecordToCompletedCut(cut={}){
+  const record=findProcessRecordForCut({w1Weight:cut.winder1Weight,w2Weight:cut.winder2Weight,product:cut.product,swrap:cut.currentSWrap,recordId:cut.processRecordId});
+  if(!record)return null;
+  const updated=state.processLearning?.update?.(record.id,{measuredBW:cut.averageBW,winder1BW:cut.winder1,winder2BW:cut.winder2,targetBW:cut.targetBW})||record;
+  return updated;
+}
+function buildBWProcessSetpointAdvisor(cut=state.lastCompletedCut||null){
+  const actual=Number(cut?.averageBW),target=Number(cut?.targetBW||state.targetBW),swrap=Number(cut?.currentSWrap||state.currentSWrap);
+  if(!positive(actual,target,swrap))return {ready:false,reason:'no-cut'};
+  const record=findProcessRecordForCut({w1Weight:cut?.winder1Weight,w2Weight:cut?.winder2Weight,product:cut?.product||state.product,swrap,recordId:cut?.processRecordId});
+  if(!record)return {ready:false,reason:'missing-process-record',actualBW:actual,targetBW:target,currentSWrap:swrap};
+  const rec=state.processLearning.recommendForBWCorrection({
+    currentPrimaryRPM:record.primaryRPM,currentSecondaryRPM:record.secondaryRPM,currentSWrap:swrap,
+    actualBW:actual,targetBW:target,product:cut?.product||state.product||'',mandrel:cut?.mandrel||currentMandrel('bw'),
+    currentOutputLbHr:record.outputLbHr,currentPrimaryPressure:record.primaryPressure,holdTolerance:.17
+  });
+  return rec.ready?{ready:true,record,rec,cut}:{ready:false,reason:rec.reason||'unavailable',record,cut};
+}
+function processSetpointChatResult(advisor=buildBWProcessSetpointAdvisor()){
+  if(!advisor?.ready){
+    if(advisor?.reason==='missing-process-record')return {kind:'info',title:chatLang('Primary + Secondary Setpoint','Setpoint Primary + Secondary','Setpoint Primary + Secondary'),message:chatLang(
+      'The BW cut is complete, but I need the current Primary RPM, Secondary RPM, both roll weights and run time from Tools → Process Record before I can calculate coordinated setpoints.',
+      'El BW ya está completo, pero necesito el Primary RPM, Secondary RPM, los dos pesos y el tiempo de esta corrida en Tools → Registro de proceso para calcular los setpoints coordinados.',
+      'Le BW est complet, mais il manque le journal de procédé de cette coupe.'
+    )};
+    return {kind:'info',message:chatLang('Complete both winders first so I have the actual average BW.','Primero completa los dos winders para tener el BW promedio real.','Terminez les deux winders.')};
+  }
+  const {rec}=advisor;
+  const action=rec.hold
+    ?chatLang(`HOLD current settings: Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM. Keep S-Wrap ${fmt(rec.currentSWrap,1)} ft/min.`,`MANTÉN los ajustes actuales: Primary ${fmt(rec.primaryRPM,1)} RPM • Secondary ${fmt(rec.secondaryRPM,1)} RPM. Mantén S-Wrap ${fmt(rec.currentSWrap,1)} ft/min.`,`Garder Primary ${fmt(rec.primaryRPM,1)} / Secondary ${fmt(rec.secondaryRPM,1)}.`)
+    :chatLang(`Keep S-Wrap ${fmt(rec.currentSWrap,1)} ft/min. Set Primary to ${fmt(rec.primaryRPM,1)} RPM and Secondary to ${fmt(rec.secondaryRPM,1)} RPM.`,`Mantén S-Wrap en ${fmt(rec.currentSWrap,1)} ft/min. Pon Primary en ${fmt(rec.primaryRPM,1)} RPM y Secondary en ${fmt(rec.secondaryRPM,1)} RPM.`,`Garder S-Wrap ${fmt(rec.currentSWrap,1)}. Régler Primary ${fmt(rec.primaryRPM,1)} / Secondary ${fmt(rec.secondaryRPM,1)}.`);
+  const heat=positive(rec.secondaryHeat)?chatLang(` Secondary Heat start ~${fmt(rec.secondaryHeat,0)}.`,` Secondary Heat inicial ~${fmt(rec.secondaryHeat,0)}.`,` Secondary Heat ~${fmt(rec.secondaryHeat,0)}.`):'';
+  const output=positive(rec.targetOutputLbHr)?chatLang(` Target output ~${fmt(rec.targetOutputLbHr,0)} lb/hr.`,` Output objetivo ~${fmt(rec.targetOutputLbHr,0)} lb/hr.`,` Débit cible ~${fmt(rec.targetOutputLbHr,0)} lb/h.`):'';
+  const pressure=positive(rec.expectedPrimaryPressure)?chatLang(` Expected Primary Pressure ~${fmt(rec.expectedPrimaryPressure,0)}; margin to 5,500 ~${fmt(rec.pressureMargin,0)}.`,` Primary Pressure esperada ~${fmt(rec.expectedPrimaryPressure,0)}; margen a 5,500 ~${fmt(rec.pressureMargin,0)}.`,` Pression Primary prévue ~${fmt(rec.expectedPrimaryPressure,0)}.`):chatLang(' Verify actual Primary Pressure after the move; pressure prediction is not learned yet.',' Verifica la Primary Pressure real después del cambio; todavía no hay suficiente aprendizaje de presión.',' Vérifier la pression réelle.');
+  return {kind:'result',title:chatLang('Primary + Secondary Setpoint','Setpoint Primary + Secondary','Setpoint Primary + Secondary'),message:`${action}${heat}${output}${pressure}`,meta:chatLang(`Actual BW ${fmt(rec.actualBW,3)} • Target ${fmt(rec.targetBW,3)} • ${rec.method==='learned-search'?`learned search, ${rec.comparableSamples} comparable sample(s), ${rec.confidence}% confidence`:'proportional starting point'}.`,`BW real ${fmt(rec.actualBW,3)} • Target ${fmt(rec.targetBW,3)} • ${rec.method==='learned-search'?`búsqueda aprendida, ${rec.comparableSamples} muestras, ${rec.confidence}% confianza`:'punto inicial proporcional'}.`,`BW réel ${fmt(rec.actualBW,3)} • Cible ${fmt(rec.targetBW,3)}.`)};
+}
+function renderBWProcessSetpointPanel(advisor=buildBWProcessSetpointAdvisor()){
+  const box=$('process-setpoint-panel');if(!box)return;
+  box.classList.remove('hidden','hold','adjust','missing');
+  if(!advisor?.ready){
+    if(advisor?.reason==='no-cut'){box.classList.add('hidden');return;}
+    box.classList.add('missing');
+    $('process-setpoint-badge').textContent=chatLang('NEED PROCESS RECORD','FALTA REGISTRO','JOURNAL REQUIS');
+    $('process-setpoint-instruction').textContent=chatLang(
+      'BW is complete. Save the current Primary, Secondary, both roll weights and run time in Tools → Process Record so Viejito can calculate the coordinated setpoints.',
+      'El BW está completo. Guarda Primary, Secondary, los dos pesos y el tiempo en Tools → Registro de proceso para que Viejito calcule los setpoints coordinados.',
+      'BW complet. Enregistrez Primary, Secondary, poids et temps.'
+    );
+    ['process-current-primary','process-current-secondary','process-set-primary','process-set-secondary','process-set-heat','process-target-output'].forEach(id=>{if($(id))$(id).textContent='—';});
+    $('process-pressure-note').textContent=chatLang('Primary/Secondary recommendation unavailable until the process record is linked to this cut.','La recomendación de Primary/Secondary estará disponible cuando este corte quede ligado al registro de proceso.','Recommandation indisponible sans journal de procédé.');
+    $('process-setpoint-source').textContent='';
+    return;
+  }
+  const {rec}=advisor;
+  box.classList.add(rec.hold?'hold':'adjust');
+  $('process-setpoint-badge').textContent=rec.hold?chatLang('HOLD','MANTÉN','GARDER'):chatLang('SETPOINT CHANGE','CAMBIO DE SETPOINT','CHANGER SETPOINT');
+  $('process-setpoint-instruction').textContent=rec.hold
+    ?chatLang(`BW ${fmt(rec.actualBW,3)} is within ±0.17 of target ${fmt(rec.targetBW,3)}. Keep S-Wrap ${fmt(rec.currentSWrap,1)}, Primary ${fmt(rec.primaryRPM,1)} and Secondary ${fmt(rec.secondaryRPM,1)}.`,`BW ${fmt(rec.actualBW,3)} está dentro de ±0.17 del target ${fmt(rec.targetBW,3)}. Mantén S-Wrap ${fmt(rec.currentSWrap,1)}, Primary ${fmt(rec.primaryRPM,1)} y Secondary ${fmt(rec.secondaryRPM,1)}.`,`BW dans la plage. Garder les réglages.`)
+    :chatLang(`Keep S-Wrap ${fmt(rec.currentSWrap,1)}. Set Primary to ${fmt(rec.primaryRPM,1)} RPM and Secondary to ${fmt(rec.secondaryRPM,1)} RPM to move average BW toward ${fmt(rec.targetBW,3)}.`,`Mantén S-Wrap ${fmt(rec.currentSWrap,1)}. Pon Primary en ${fmt(rec.primaryRPM,1)} RPM y Secondary en ${fmt(rec.secondaryRPM,1)} RPM para llevar el BW promedio hacia ${fmt(rec.targetBW,3)}.`,`Garder S-Wrap. Régler Primary ${fmt(rec.primaryRPM,1)} / Secondary ${fmt(rec.secondaryRPM,1)}.`);
+  $('process-current-primary').textContent=fmt(rec.currentPrimaryRPM,1);
+  $('process-current-secondary').textContent=fmt(rec.currentSecondaryRPM,1);
+  $('process-set-primary').textContent=fmt(rec.primaryRPM,1);
+  $('process-set-secondary').textContent=fmt(rec.secondaryRPM,1);
+  $('process-set-heat').textContent=positive(rec.secondaryHeat)?`~${fmt(rec.secondaryHeat,0)}`:'—';
+  $('process-target-output').textContent=positive(rec.targetOutputLbHr)?`~${fmt(rec.targetOutputLbHr,0)}`:'—';
+  $('process-pressure-note').textContent=positive(rec.expectedPrimaryPressure)
+    ?chatLang(`Expected Primary Pressure ~${fmt(rec.expectedPrimaryPressure,0)} • margin to 5,500 shutdown ~${fmt(rec.pressureMargin,0)}.`,`Primary Pressure esperada ~${fmt(rec.expectedPrimaryPressure,0)} • margen al shutdown de 5,500 ~${fmt(rec.pressureMargin,0)}.`,`Pression Primary prévue ~${fmt(rec.expectedPrimaryPressure,0)}.`)
+    :chatLang('Pressure prediction is not learned yet. Verify actual Primary Pressure, melt and motor load after the coordinated change.','La presión todavía no está aprendida. Verifica Primary Pressure, melt y motor load reales después del cambio coordinado.','Pression non apprise; vérifier les valeurs réelles.');
+  const source=rec.method==='learned-search'
+    ?chatLang(`Learned from ${rec.comparableSamples} comparable sample(s) • confidence ${rec.confidence}%.`,`Aprendido de ${rec.comparableSamples} muestra(s) comparable(s) • confianza ${rec.confidence}%.`,`Appris de ${rec.comparableSamples} échantillons.`)
+    :rec.hold?chatLang('Within the ±0.17 green BW band.','Dentro de la banda verde de BW ±0.17.','Dans la bande verte ±0,17.')
+    :chatLang('Proportional starting point; Viejito will improve it as real process records accumulate.','Punto inicial proporcional; Viejito lo irá mejorando con registros reales de proceso.','Point de départ proportionnel.');
+  const limits=(rec.primaryAtLimit||rec.secondaryAtLimit)?chatLang(' One setpoint reached the normal production range limit.',' Uno de los setpoints llegó al límite del rango normal de producción.',' Limite de plage atteinte.'):'';
+  const friction=rec.frictionHeatCaution?chatLang(' Secondary >12.5 RPM: watch friction/shear heat.',' Secondary >12.5 RPM: vigila friction/shear heat.',' Secondary >12,5 RPM : surveiller friction heat.'):'';
+  $('process-setpoint-source').textContent=source+limits+friction;
+}
+function processSetpointChatQuery(text){
+  const q=normalizeKnowledgeQuery(text);
+  const asks=/\b(set ?point|setpoint|primary.*secondary|primario.*secundario|primary.*secundario|primario.*secondary)\b/.test(q)&&/\b(what|que|qué|cuanto|cuánto|poner|set|recommended|recommend|debo|should|adjust|ajust)\b/.test(q);
+  if(!asks)return null;
+  return {kind:'info',title:chatLang('Use S-Wrap first','Primero usa S-Wrap','Utiliser S-Wrap d’abord'),message:chatLang(
+    'For a routine BW correction at the current line speed, adjust S-Wrap first. Primary/Secondary changes affect pressure, friction heat, melt, load and output. If the line speed is intentionally being changed, open Tools → Speed Change Advisor for a coordinated starting point. If the required S-Wrap would exceed 228, a coordinated process change may be needed.',
+    'Para una corrección normal de BW a la velocidad actual, ajusta primero el S-Wrap. Cambiar Primary/Secondary afecta presión, friction heat, melt, load y output. Si vas a cambiar la velocidad de línea intencionalmente, abre Tools → Speed Change Advisor para obtener un starting point coordinado. Si el S-Wrap requerido pasaría de 228, entonces puede ser necesario cambiar el proceso de forma coordinada.',
+    'Pour une correction BW normale, utiliser S-Wrap d’abord. Pour un changement volontaire de vitesse, ouvrir Speed Change Advisor.'
+  )};
+}
+
+function processPerformanceChatQuery(text){
+  const setpoint=processSetpointChatQuery(text); if(setpoint)return setpoint;
+  const history=manualProcessHistoryChatQuery(text); if(history)return history;
+  const q=normalizeKnowledgeQuery(text);
+  const coordinated=parseCoordinatedSpeedRequest(text);
+  if(coordinated)return positive(coordinated.primaryRPM,coordinated.secondaryRPM)?coordinatedSpeedRecommendation(coordinated):startCoordinatedSpeedWorkflow(coordinated);
+  const primary=labeledProcessNumber(text,'primary'),secondary=labeledProcessNumber(text,'secondary');
+  const wantsLearn=/\b(learn output|teach output|record output|save output|learn process|teach process|aprender output|ensenar output|enseñar output|guardar output|aprender proceso|guardar proceso)\b/.test(q);
+  if(wantsLearn){
+    const seed={primaryRPM:primary,secondaryRPM:secondary,w1:labeledProcessNumber(text,'w1'),w2:labeledProcessNumber(text,'w2'),minutes:labeledProcessNumber(text,'minutes'),swrapSpeed:labeledProcessNumber(text,'swrap')||state.currentSWrap,melt:labeledProcessNumber(text,'melt'),heat:labeledProcessNumber(text,'heat'),load:labeledProcessNumber(text,'load'),pressure:labeledProcessNumber(text,'pressure')};
+    if(positive(seed.primaryRPM,seed.secondaryRPM,seed.w1,seed.w2,seed.minutes,seed.swrapSpeed))return saveProcessPerformanceSample(seed);
+    return startProcessLearningWorkflow(seed);
+  }
+  if(!(positive(primary)&&positive(secondary)))return null;
+  const sampleW1=labeledProcessNumber(text,'w1'),sampleW2=labeledProcessNumber(text,'w2'),sampleMinutes=labeledProcessNumber(text,'minutes');
+  if(positive(sampleW1,sampleW2,sampleMinutes))return saveProcessPerformanceSample({primaryRPM:primary,secondaryRPM:secondary,w1:sampleW1,w2:sampleW2,minutes:sampleMinutes,swrapSpeed:labeledProcessNumber(text,'swrap')||state.currentSWrap,melt:labeledProcessNumber(text,'melt'),heat:labeledProcessNumber(text,'heat'),load:labeledProcessNumber(text,'load'),pressure:labeledProcessNumber(text,'pressure')});
+  const troubleshooting=/\b(why|porque|por que|trouble|problem|problema|melt|heat|load|pressure|presion|friction|friccion|hot|cold|caliente|frio|enfriar|cool)\b/.test(q);
+  const predictionIntent=/\b(output|rate|lbs|lb hr|bw|basis weight|predict|prediction|predicho|cuanto produce|cuánto produce|que bw|qué bw|s wrap|swrap)\b/.test(q);
+  if(troubleshooting&&!predictionIntent)return null;
+  const estimate=state.processLearning.estimate({primaryRPM:primary,secondaryRPM:secondary,product:state.activeShift?.product||state.product||'',mandrel:currentMandrel('bw')});
+  if(!estimate.ready)return {kind:'info',title:chatLang('Process Performance Learning','Aprendizaje de desempeño del proceso','Apprentissage process'),message:chatLang(
+    `I do not have enough real output history yet for Primary ${fmt(primary,1)} / Secondary ${fmt(secondary,1)}. Say “learn output” and I will ask for both roll weights and run time so I can calculate lb/hr and learn this line.`,
+    `Todavía no tengo suficiente historial real de output para Primary ${fmt(primary,1)} / Secondary ${fmt(secondary,1)}. Dime “aprender output” y te preguntaré el peso de los dos rollos y cuánto tiempo corrió para calcular lb/hr y aprender esta línea.`,
+    `Pas assez d’historique de débit. Dites “learn output”.`)};
+  const requestedSpeed=labeledProcessNumber(text,'swrap');
+  return processLearningOutputMessage(primary,secondary,estimate,requestedSpeed);
+}
+
+
+function outputRateResult(w1,w2,minutes){
+  const a=Number(w1),b=Number(w2),mins=Number(minutes);
+  if(!positive(a,b,mins))return {kind:'error',message:t('invalidNumbers')};
+  const output=(a+b)*60/mins;
+  const mandrel=currentMandrel('bw');
+  const speeds=[];const add=v=>{v=clampSWrap(v);if(positive(v)&&!speeds.includes(v))speeds.push(v);};
+  add(state.currentSWrap);add(150);add(200);
+  const predictions=speeds.map(speed=>`S-Wrap ${fmt(speed,1)} → BW ${fmt(predictiveBWFromOutput(output,speed,mandrel),3)}`).join(' • ');
+  return {kind:'result',title:chatLang('Output calculation','Cálculo de output','Calcul du débit'),message:chatLang(
+    `Both rolls: ${fmt(a+b,0)} lb in ${fmt(mins,1)} min → ${fmt(output,0)} lb/hr. ${predictions}.`,
+    `Los dos rollos: ${fmt(a+b,0)} lb en ${fmt(mins,1)} min → ${fmt(output,0)} lb/hr. ${predictions}.`,
+    `Deux rouleaux : ${fmt(a+b,0)} lb en ${fmt(mins,1)} min → ${fmt(output,0)} lb/h.`
+  ),meta:chatLang(`${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” total width • predictive BW only; completed-roll BW remains final.`,`${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” de ancho total • BW predictivo; el BW del rollo terminado sigue siendo el valor final.`,`BW prédictif uniquement.`)};
+}
+function startOutputRateWorkflow(w1=null,w2=null){
+  chatWorkflow={type:'output-rate',stage:'weights',w1:positive(w1)?Number(w1):null,w2:positive(w2)?Number(w2):null,startedAt:new Date().toISOString()};
+  if(positive(chatWorkflow.w1,chatWorkflow.w2))chatWorkflow.stage='minutes';
+  saveChatWorkflow();
+  return {kind:'info',title:chatLang('Output lb/hr','Output lb/hr','Débit lb/h'),message:chatWorkflow.stage==='minutes'?chatLang('How many minutes did those two rolls run?','¿Cuántos minutos corrieron esos dos rollos?','Combien de minutes ?'):chatLang('Give me Winder 1 and Winder 2 roll weights in lb.','Dame el peso de los rollos de Winder 1 y Winder 2 en lb.','Donnez les deux poids.')};
+}
+function handleOutputRateWorkflow(text){
+  if(!chatWorkflow||chatWorkflow.type!=='output-rate')return null;
+  const q=normalizeKnowledgeQuery(text);
+  if(/\b(cancel|cancelar|cancela|annuler)\b/.test(q)){chatWorkflow=null;saveChatWorkflow();return {kind:'info',message:chatLang('Output calculation cancelled.','Cálculo de output cancelado.','Calcul annulé.')};}
+  const vals=numbers(text).filter(positive);
+  if(chatWorkflow.stage==='weights'){
+    const w1=labeledProcessNumber(text,'w1')||vals[0],w2=labeledProcessNumber(text,'w2')||vals[1];
+    if(!positive(w1,w2))return {kind:'info',message:chatLang('Enter both roll weights, for example 520 515.','Escribe los dos pesos, por ejemplo 520 515.','Entrez les deux poids.')};
+    chatWorkflow.w1=w1;chatWorkflow.w2=w2;chatWorkflow.stage='minutes';saveChatWorkflow();
+    return {kind:'info',message:chatLang('How many minutes did those two rolls run?','¿Cuántos minutos corrieron esos dos rollos?','Combien de minutes ?')};
+  }
+  if(chatWorkflow.stage==='minutes'){
+    const mins=labeledProcessNumber(text,'minutes')||vals[0];
+    if(!positive(mins))return {kind:'info',message:chatLang('Enter the run time in minutes.','Escribe el tiempo corrido en minutos.','Entrez le temps en minutes.')};
+    const flow={...chatWorkflow};chatWorkflow=null;saveChatWorkflow();return outputRateResult(flow.w1,flow.w2,mins);
+  }
+  return null;
+}
+function standaloneOutputChatQuery(text){
+  const q=normalizeKnowledgeQuery(text);
+  // Questions about the already-tracked production rate belong to Production Status, not this calculator.
+  if(/\b(current rate|target rate|production status|estado de produccion|estado produccion|rate actual|target de produccion)\b/.test(q))return null;
+  const asks=/\b(calculate output|output calculation|calc output|output|lbs per hour|lb per hour|lbs hr|calcular output|calcula output|libras por hora|produccion por hora|producción por hora)\b/.test(q);
+  if(!asks)return null;
+  if(positive(labeledProcessNumber(text,'primary'),labeledProcessNumber(text,'secondary')))return null;
+  const w1=labeledProcessNumber(text,'w1'),w2=labeledProcessNumber(text,'w2'),mins=labeledProcessNumber(text,'minutes');
+  if(positive(w1,w2,mins))return outputRateResult(w1,w2,mins);
+  const vals=numbers(text).filter(positive);
+  if(positive(w1,w2))return startOutputRateWorkflow(w1,w2);
+  if(vals.length>=3&&/\b(min|mins|minutes|minutos)\b/.test(q))return outputRateResult(vals[0],vals[1],vals[2]);
+  if(vals.length>=2)return startOutputRateWorkflow(vals[0],vals[1]);
+  return startOutputRateWorkflow();
+}
+
+function learningSnapshotForChat(){
+  const records=(Array.isArray(state.learningEngine?.records)?state.learningEngine.records:[]).filter(r=>r&&r.source!=='completed_cut'&&Number.isFinite(Number(r.correction)));
+  const count=records.length;
+  if(!count)return {count:0,correction:0,success:0,confidence:0};
+  const recent=records.slice(-100);
+  const correction=recent.reduce((sum,r)=>sum+Number(r.correction||0),0)/recent.length;
+  const success=Math.round(100*recent.filter(r=>r.success).length/recent.length);
+  const variance=recent.reduce((sum,r)=>sum+Math.pow(Number(r.correction||0)-correction,2),0)/recent.length;
+  const confidence=Math.round(100*Math.min(1,recent.length/30)*Math.max(0,1-Math.sqrt(variance)/5));
+  return {count,correction:Number(correction.toFixed(1)),success,confidence};
+}
+function productionStatusForChat(){
+  if(!state.activeShift)return {kind:'info',message:chatLang('There is no active shift on this line.','No hay turno activo en esta línea.','Aucun quart actif sur cette ligne.')};
+  const run=currentProductionRun(),stats=runStats(run),target=Number(stats.target?.lbsPerHour)||0;
+  if(!stats.material||stats.hours<0.25)return {kind:'info',title:chatLang('Production status','Estado de producción','État de production'),message:chatLang(`Product ${state.activeShift.product}. ${fmt(stats.material,0)} lb recorded. Add completed cuts to build a reliable lbs/hr rate.`,`Producto ${state.activeShift.product}. ${fmt(stats.material,0)} lb registradas. Completa más cortes para calcular un rate de lbs/hr confiable.`,`Produit ${state.activeShift.product}. Ajoutez des coupes terminées pour calculer le débit.`)};
+  const forecast=productionForecastText(true,stats).text;
+  return {kind:'result',title:chatLang('Production status','Estado de producción','État de production'),message:chatLang(`Current ${fmt(stats.rate,0)} lbs/hr${target?` • Target ${fmt(target,0)} lbs/hr`:''} • Projected end ${fmt(stats.projected,0)} lb. ${forecast}`,`Actual ${fmt(stats.rate,0)} lbs/hr${target?` • Target ${fmt(target,0)} lbs/hr`:''} • Proyección final ${fmt(stats.projected,0)} lb. ${forecast}`,`Actuel ${fmt(stats.rate,0)} lb/h. ${forecast}`)};
+}
+function chatActionCommand(text){
+  const q=normalizeKnowledgeQuery(text);
+  const requested=requestedLineNumber(text);
+  if(requested&&/\b(go to|switch to|change to|show|ve a|cambia a|cambiar a|muestra|selecciona)\b/.test(q)&&/\b(line|linea|extruder|extrusor)\b/.test(q)){
+    if(requested!==ACTIVE_LINE)switchLine(requested);
+    return lineStatusAnswer(requested);
+  }
+  if(/\b(start shift|start the shift|begin shift|empezar turno|iniciar turno|comenzar turno)\b/.test(q)){
+    if(state.activeShift)return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} already has an active shift.`,`Line ${ACTIVE_LINE} ya tiene un turno activo.`,`Line ${ACTIVE_LINE} a déjà un quart actif.`)};
+    openProductDialog('start');
+    return {kind:'info',title:chatLang('Start Shift opened','Inicio de turno abierto','Démarrage du quart ouvert'),message:chatLang('Enter operator name, product, S-Wrap and language, then press Start Shift.','Ingresa nombre del operador, producto, S-Wrap e idioma y presiona Empezar turno.','Saisissez les informations du quart puis démarrez-le.')};
+  }
+  if(/\b(end shift|end the shift|finish shift|fin de turno|terminar turno|cerrar turno)\b/.test(q)){
+    if(!state.activeShift)return {kind:'info',message:chatLang('There is no active shift to end.','No hay un turno activo para terminar.','Aucun quart actif à terminer.')};
+    const ok=confirm(chatLang(`End the active shift on Line ${ACTIVE_LINE}?`,`¿Terminar el turno activo de Line ${ACTIVE_LINE}?`,`Terminer le quart actif de Line ${ACTIVE_LINE} ?`));
+    if(!ok)return {kind:'info',message:chatLang('Shift end cancelled.','Fin de turno cancelado.','Fin de quart annulée.')};
+    endShift();
+    return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} shift ended.`,`Turno de Line ${ACTIVE_LINE} terminado.`,`Quart de Line ${ACTIVE_LINE} terminé.`)};
+  }
+  if(/^(changeover|change product|product change|cambio de producto|cambiar producto|cambio)$/i.test(String(text||'').trim())){
+    changeProduct();
+    return {kind:'info',message:chatLang('I opened Changeover. Select the destination product.','Abrí Changeover. Selecciona el producto destino.','Changement de produit ouvert.')};
+  }
+  if(/\b(open|show|go to|abre|muestra|ve a)\b/.test(q)&&/\b(basis weight|bw calculator|calculadora bw)\b/.test(q)){switchView('bw');return {kind:'info',message:chatLang('Basis Weight is open.','Abrí Basis Weight.','Basis Weight ouvert.')};}
+  if(/\b(open|show|go to|abre|muestra|ve a)\b/.test(q)&&/\b(feet|ft calculator|calculadora ft|pies)\b/.test(q)){switchView('ft');return {kind:'info',message:chatLang('Feet calculator is open.','Abrí la calculadora de Feet.','Calculateur Feet ouvert.')};}
+  if(/\b(open|show|go to|abre|muestra|ve a)\b/.test(q)&&/\b(s wrap|swrap|s-wrap)\b/.test(q)){switchView('swrap');return {kind:'info',message:chatLang('S-Wrap calculator is open.','Abrí la calculadora de S-Wrap.','Calculateur S-Wrap ouvert.')};}
+  if(/\b(open|show|set|abre|muestra|configura)\b/.test(q)&&/\b(target lbs|production target|target rate|meta de produccion|target de produccion)\b/.test(q)){openProductionDialog();return {kind:'info',message:chatLang('Production target and shift details are open.','Abrí Target lbs y los detalles de producción.','Objectif de production ouvert.')};}
+  if(/\b(open|show|abre|muestra)\b/.test(q)&&/\b(process record|manual process|registro de proceso|registro manual|corrida manual)\b/.test(q)){openManualProcessDialog();return {kind:'info',message:chatLang('Manual Process Record is open. Enter Primary, Secondary, both roll weights and run time.','Abrí Registro manual de proceso. Ingresa Primary, Secondary, los dos pesos y el tiempo.','Journal manuel du procédé ouvert.')};}
+  if(/\b(open settings|settings|abre settings|abre ajustes|ajustes)\b/.test(q)){openSettings();return {kind:'info',message:chatLang('Settings is protected. Enter the Settings password to continue.','Settings está protegido. Ingresa la contraseña para continuar.','Réglages protégés par mot de passe.')};}
+  const mandrel=requestedMandrel(text);
+  if(mandrel&&/\b(set|use|change|select|pon|usa|cambia|selecciona|mandrel|mandril)\b/.test(q)){
+    selectMandrel('bw',mandrel);selectMandrel('ft',mandrel);saveSession();
+    return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} mandrel set to ${mandrel} inches.`,`Mandrel de Line ${ACTIVE_LINE} cambiado a ${mandrel} pulgadas.`,`Mandrin réglé à ${mandrel} pouces.`)};
+  }
+  if(/\b(apply suggestion|apply preventive|accept suggestion|aplicar sugerencia|aplicar preventivo|aceptar sugerencia)\b/.test(q)){
+    const trend=state.latestTrend||analyzeTrend();
+    if(!trend?.ready||!trend.recommendAdjustment||!positive(trend.suggestedSWrap)||preventiveTrendAlreadyApplied(trend))return {kind:'info',message:chatLang('There is no pending preventive S-Wrap suggestion to apply.','No hay una sugerencia preventiva de S-Wrap pendiente para aplicar.','Aucune suggestion préventive en attente.')};
+    const before=Number(state.currentSWrap),after=Number(trend.suggestedSWrap);acceptPreventiveSWrapChange();
+    return {kind:'result',title:chatLang('Preventive change applied','Cambio preventivo aplicado','Changement préventif appliqué'),message:`S-Wrap ${fmt(before,1)} → ${fmt(after,1)}`};
+  }
+  if(/\b(max(?:imum)? s ?wrap|max s-wrap|limite s ?wrap|límite s ?wrap|s ?wrap max)\b/.test(q))return {kind:'info',message:chatLang(`Maximum plant S-Wrap speed is ${MAX_SWRAP_SPEED} ft/min. Viejito will not recommend or apply a higher value.`,`El máximo S-Wrap de planta es ${MAX_SWRAP_SPEED} ft/min. Viejito no recomendará ni aplicará un valor mayor.`,`Le maximum S-Wrap est ${MAX_SWRAP_SPEED} ft/min.`)};
+  const setSWrapMatch=q.match(/\b(?:set|change|put|pon|cambia|cambiar|ajusta|ajustar)\s+(?:current\s+)?s[ -]?wrap(?:\s+(?:to|a|en))?\s+(\d+(?:\.\d+)?)/);
+  if(setSWrapMatch){
+    const requestedSpeed=Number(setSWrapMatch[1]);
+    if(!positive(requestedSpeed))return {kind:'error',message:t('invalidNumbers')};
+    const applied=clampSWrap(requestedSpeed);syncCurrentSWrap(applied);saveSession();renderShiftPanel();renderTrendPanel(analyzeTrend());
+    return {kind:'result',title:chatLang('Current S-Wrap updated','S-Wrap actual actualizado','S-Wrap mis à jour'),message:requestedSpeed>MAX_SWRAP_SPEED?chatLang(`Requested ${fmt(requestedSpeed,1)}. Plant maximum reached — Current S-Wrap set to ${MAX_SWRAP_SPEED} ft/min.`,`Pediste ${fmt(requestedSpeed,1)}. Se alcanzó el máximo de planta — S-Wrap actual quedó en ${MAX_SWRAP_SPEED} ft/min.`,`Maximum atteint : ${MAX_SWRAP_SPEED} ft/min.`):`S-Wrap ${fmt(applied,1)} ft/min`};
+  }
+  if(/\b(process performance|process learning|performance learning|output learning|primary secondary learning|aprendizaje de proceso|aprendizaje de desempeño|aprendizaje de output)\b/.test(q)){
+    const summary=state.processLearning?.summary?.()||{count:0,last:null};
+    const last=summary.last;
+    const lastText=last?chatLang(` Last sample: Primary ${fmt(last.primaryRPM,1)} + Secondary ${fmt(last.secondaryRPM,1)} → ${fmt(last.outputLbHr,0)} lb/hr.`,` Última muestra: Primary ${fmt(last.primaryRPM,1)} + Secondary ${fmt(last.secondaryRPM,1)} → ${fmt(last.outputLbHr,0)} lb/hr.`,` Dernier échantillon : ${fmt(last.outputLbHr,0)} lb/h.`):'';
+    return {kind:'info',title:chatLang('Process Performance Learning','Aprendizaje de desempeño del proceso','Apprentissage performance'),message:chatLang(`Line ${ACTIVE_LINE} has ${summary.count} real process sample(s). At least 3 comparable samples are required before Primary + Secondary predictions activate.${lastText}`,`Line ${ACTIVE_LINE} tiene ${summary.count} muestra(s) reales de proceso. Se requieren al menos 3 muestras comparables antes de activar predicciones Primary + Secondary.${lastText}`,`Line ${ACTIVE_LINE}: ${summary.count} échantillon(s).${lastText}`)};
+  }
+  if(/\b(machine learning|adaptive learning|learning status|aprendizaje|machine learning status|como esta aprendiendo|cómo está aprendiendo)\b/.test(q)&&/\b(status|learning|aprendizaje|machine)\b/.test(q)){
+    const s=learningSnapshotForChat();
+    return {kind:'info',title:chatLang('Adaptive Machine Learning','Adaptive Machine Learning','Adaptive Machine Learning'),message:chatLang(`Line ${ACTIVE_LINE}: ${s.count} learned result(s) • Average correction ${s.correction>0?'+':''}${s.correction} • Success ${s.success}% • Confidence ${s.confidence}%.`,`Line ${ACTIVE_LINE}: ${s.count} resultado(s) aprendidos • Corrección promedio ${s.correction>0?'+':''}${s.correction} • Éxito ${s.success}% • Confianza ${s.confidence}%.`,`Line ${ACTIVE_LINE}: ${s.count} résultats appris • Confiance ${s.confidence}%.`)};
+  }
+  if(/\b(current rate|target rate|production rate|lbs per hour|lbs\/hr|rate de produccion|libras por hora|produccion por hora)\b/.test(q))return productionStatusForChat();
+  if(/\b(calculate winder 1|calcula winder 1|calcular winder 1)\b/.test(q)){
+    try{calculateSingleWinder(1);return {kind:'result',title:'Winder 1',message:`BW ${fmt(Number(pendingCut.winder1),3)}`};}catch(error){return {kind:'error',message:error.message};}
+  }
+  if(/\b(calculate winder 2|calcula winder 2|calcular winder 2)\b/.test(q)){
+    try{calculateSingleWinder(2);return {kind:'result',title:'Winder 2',message:`BW ${fmt(Number(pendingCut.winder2),3)}`};}catch(error){return {kind:'error',message:error.message};}
+  }
+  if(/\b(complete cut|calculate average|complete the cut|completar corte|calcular promedio|completa el corte)\b/.test(q)){
+    try{completeDualWinderCut();const avg=Number(state.lastCompletedCut?.averageBW);return {kind:'result',title:chatLang('Completed cut','Corte completado','Coupe terminée'),message:positive(avg)?`Average BW ${fmt(avg,3)}`:chatLang('Cut completed.','Corte completado.','Coupe terminée.')};}catch(error){return {kind:'error',message:error.message};}
+  }
+  return null;
+}
+
 function unsupportedChatResponse(){
   return {kind:'info',message:state.language==='es'?'Lo siento, todavía no tengo la capacidad de entender lo que me pides.':state.language==='fr'?`Désolé, je n’ai pas encore la capacité de comprendre cette demande.`:`Sorry, I don’t have the ability to understand that request yet.`};
 }
@@ -1234,11 +2130,29 @@ function localIntelligenceQuery(text){
 }
 
 function interpret(text){
+  // Finish an active guided workflow before generic numeric parsing.
+  if(chatWorkflow?.type==='coordinated-speed-bw'){
+    const speedWorkflow=handleCoordinatedSpeedWorkflow(text); if(speedWorkflow)return speedWorkflow;
+  }
+  if(chatWorkflow?.type==='process-performance'){
+    const processWorkflow=handleProcessPerformanceWorkflow(text); if(processWorkflow)return processWorkflow;
+  }
+  if(chatWorkflow?.type==='output-rate'){
+    const outputWorkflow=handleOutputRateWorkflow(text); if(outputWorkflow)return outputWorkflow;
+  }
+  if(chatWorkflow?.type==='changeover-advice'){
+    const changeoverWorkflow=handleChangeoverChat(text); if(changeoverWorkflow)return changeoverWorkflow;
+  }
+  // Primary/Secondary questions belong to Process Performance Learning, not BW numeric parsing.
+  const processPerformance=processPerformanceChatQuery(text); if(processPerformance)return processPerformance;
+  const outputRate=standaloneOutputChatQuery(text); if(outputRate)return outputRate;
   const conversation=conversationalChat(text); if(conversation)return conversation;
+  const action=chatActionCommand(text); if(action)return action;
   const smartPair=smartChatBWPair(text); if(smartPair)return smartPair;
   const intelligence=localIntelligenceQuery(text); if(intelligence)return intelligence;
   const workflowResponse=handleChangeoverChat(text);
   if(workflowResponse) return workflowResponse;
+  const knowledge=extrusionKnowledgeQuery(text); if(knowledge)return knowledge;
   const mandrel=requestedMandrel(text) || state.context.mandrel || state.mandrel || DEFAULT_MANDREL;
   const smartRequest=parseSmartBWRequest(text);
   if(smartRequest) return handleSmartBW(smartRequest,mandrel);
@@ -1257,7 +2171,7 @@ function interpret(text){
     else if(vals.length===1){
       const n=vals[0];
       if(n<15) intent='bw';
-      else if(n<=230) intent='swrap';
+      else if(n<=MAX_SWRAP_SPEED) intent='swrap';
       else intent='ft';
     }
   }
@@ -1294,10 +2208,11 @@ function interpret(text){
     if(intent==='swrap'){
       if(vals.length>=3){
         const [currentWeight,currentSpeed,targetWeight]=vals;
-        const result=calculateSWrap(currentWeight,currentSpeed,targetWeight);
+        const rawResult=rawSWrapCalculation(currentWeight,currentSpeed,targetWeight);
+        const result=clampSWrap(rawResult);
         state.context={intent:'swrap',currentWeight,currentSpeed,targetWeight,lastCalculation:true}; saveContext();
         addHistory('S-Wrap',`${fmt(result,1)} speed • ${currentWeight} × ${currentSpeed} ÷ ${targetWeight}`);
-        return {kind:'result',title:'S-Wrap Speed',value:fmt(result,1),meta:t('newRecommendedSpeed'),sarcasm:getSarcasmLine()};
+        return {kind:'result',title:'S-Wrap Speed',value:fmt(result,1),meta:rawResult>MAX_SWRAP_SPEED?`${t('newRecommendedSpeed')} • ${swrapLimitCopy()}`:t('newRecommendedSpeed'),sarcasm:getSarcasmLine()};
       }
       const n=vals[0];
       state.context={...state.context,intent:'swrap',currentSpeed:n}; saveContext();
@@ -1362,15 +2277,41 @@ function setChatOpen(open){
   }
 }
 function toggleChat(){setChatOpen(!$('floating-chat').classList.contains('open'));}
+function closeToolMenu(){
+  const menu=$('tool-menu-popover'),toggle=$('tool-menu-toggle');
+  if(menu)menu.classList.add('hidden');
+  if(toggle)toggle.setAttribute('aria-expanded','false');
+}
+function toggleToolMenu(){
+  const menu=$('tool-menu-popover'),toggle=$('tool-menu-toggle');
+  if(!menu||!toggle)return;
+  const open=menu.classList.contains('hidden');
+  menu.classList.toggle('hidden',!open);
+  toggle.setAttribute('aria-expanded',String(open));
+}
 function switchView(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.quick-card').forEach(v=>v.classList.toggle('active',v.dataset.view===view));
   $(`view-${view}`).classList.add('active');
+  const activeButton=document.querySelector(`.quick-card[data-view="${view}"] strong`);
+  if($('active-tool-label')&&activeButton)$('active-tool-label').textContent=activeButton.textContent;
+  closeToolMenu();
+}
+function updateToolMandrelButtons(value){
+  document.querySelectorAll('.tool-mandrel').forEach(button=>button.classList.toggle('active',Number(button.dataset.value)===Number(value)));
 }
 function selectMandrel(target,value){
-  document.querySelectorAll(`.mandrel[data-target="${target}"]`).forEach(b=>b.classList.toggle('active',Number(b.dataset.value)===value));
+  const numeric=Number(value)||DEFAULT_MANDREL;
+  state.mandrel=numeric;
+  lineSet('viejitoMandrel',String(numeric));
+  document.querySelectorAll(`.mandrel[data-target="${target}"]`).forEach(button=>button.classList.toggle('active',Number(button.dataset.value)===numeric));
+  updateToolMandrelButtons(numeric);
+  updateMetaText();
 }
-function currentMandrel(target){return Number(document.querySelector(`.mandrel[data-target="${target}"].active`).dataset.value);}
+function currentMandrel(target){
+  const active=document.querySelector(`.mandrel[data-target="${target}"].active`);
+  return active?Number(active.dataset.value):(Number(state.mandrel)||DEFAULT_MANDREL);
+}
 function updateConnection(){
   const pill=$('connection-pill');
   const online=navigator.onLine;
@@ -1442,12 +2383,27 @@ function applyLanguage(language, announce=false){
   $('save-learning').textContent=ot('saveLearn');
   $('cancel-learning').textContent=ot('cancel');
   $('machine-learning-title').textContent=ot('machineLearning');
-  $('clear-learning').textContent=ot('resetLearning');
+  if($('clear-learning'))$('clear-learning').textContent=state.language==='es'?'Borrar aprendizaje adaptativo':state.language==='fr'?'Effacer l’apprentissage adaptatif':'Reset Adaptive Learning';
   $('dashboard-rolls-label').textContent=ot('rollsLearned');
   $('dashboard-correction-label').textContent=ot('averageCorrection');
   $('dashboard-success-label').textContent=ot('successRate');
   $('dashboard-confidence-label').textContent=ot('confidence');
   $('learning-note').textContent=ot('deviceOnly');
+  if($('clear-trend'))$('clear-trend').textContent=state.language==='es'?'Borrar historial de tendencia':state.language==='fr'?'Effacer l’historique de tendance':'Clear Trend History';
+  if($('clear-process-learning'))$('clear-process-learning').textContent=state.language==='es'?'Borrar aprendizaje de desempeño':state.language==='fr'?'Effacer l’apprentissage de performance':'Clear Process Performance Learning';
+  renderManualProcessLanguage();
+  renderSpeedChangeLanguage();
+  if($('learning-help-popover'))$('learning-help-popover').textContent=state.language==='es'
+    ?'Adaptive Machine Learning — Función: compara cambios de S-Wrap aceptados con el BW real de los cortes siguientes. Aprende por línea y usa contexto comparable de producto, mandrel y cambios de producto para mejorar futuras recomendaciones. Rolls Learned son resultados confirmados; Average Correction es la corrección aprendida sobre la fórmula; Success Rate mide resultados dentro de ±0.17; Confidence aumenta con datos suficientes y consistentes.'
+    :state.language==='fr'
+      ?'Adaptive Machine Learning — Fonction : compare les changements S-Wrap acceptés avec le BW réel des coupes suivantes et apprend par ligne, produit et mandrin pour améliorer les recommandations futures. Rolls Learned = résultats confirmés; Average Correction = correction apprise; Success Rate = résultats dans ±0,17; Confidence augmente avec des données cohérentes.'
+      :'Adaptive Machine Learning — Function: compares accepted S-Wrap changes with the actual BW of following completed cuts, then learns line, product, mandrel and changeover behavior to improve future recommendations. Rolls Learned = confirmed results; Average Correction = learned correction to the formula; Success Rate = results within ±0.17; Confidence grows with enough consistent data.';
+  if($('trend-help-popover'))$('trend-help-popover').textContent=state.language==='es'
+    ?'IA Predictor — Función: analiza los cortes completos comparables más recientes de esta línea, producto y mandrel para proyectar hacia dónde va el próximo BW y detectar si conviene una corrección preventiva de S-Wrap. El resumen de Hoy compara cada corte válido con el target de su producto: verde ±0.17, warning >0.17 y <0.25, rojo ≥0.25.'
+    :state.language==='fr'
+      ?'IA Predictor — Fonction : analyse les coupes comparables les plus récentes de cette ligne, produit et mandrin pour prévoir le prochain BW et détecter si une correction préventive du S-Wrap est utile. Le résumé du jour compare chaque coupe valide à sa cible : vert ±0,17, attention >0,17 et <0,25, rouge ≥0,25.'
+      :'AI Predictor — Function: analyzes the most recent comparable completed cuts from this line, product and mandrel to project where the next BW is heading and detect when a preventive S-Wrap adjustment may help. Today’s summary compares each valid cut with its own product target: green ±0.17, warning >0.17 and <0.25, red ≥0.25.';
+
   $('too-light-label').textContent=ot('tooLight');
   $('too-heavy-label').textContent=ot('tooHeavy');
   renderPendingCut();
@@ -1457,6 +2413,7 @@ function applyLanguage(language, announce=false){
   updateMetaText();
   updateConnection();
   renderHistory();
+  renderTrendPanel(analyzeTrend());
   if(announce){
     // Language is per-line; changing it must not erase this line's chat history.
     showToast(state.language==='es'?'Idioma guardado para esta línea.':state.language==='fr'?'Langue enregistrée pour cette ligne.':'Language saved for this line.');
@@ -1513,9 +2470,9 @@ let productDialogMode='change';
 let selectedExtruder=ACTIVE_LINE;
 function productDialogText(key){
   const copy={
-    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',swrap:'Current S-Wrap',extruder:'Select extruder',operator:'Operator',operatorPrompt:'Select operator',language:'Language',languagePrompt:'Select language',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
-    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',swrap:'S-Wrap actual',extruder:'Selecciona el extruder',operator:'Operador',operatorPrompt:'Selecciona operador',language:'Idioma',languagePrompt:'Selecciona idioma',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
-    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',swrap:'S-Wrap actuel',extruder:'Sélectionnez l’extrudeuse',operator:'Opérateur',operatorPrompt:'Sélectionnez l’opérateur',language:'Langue',languagePrompt:'Choisir la langue',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
+    en:{start:'Start shift',change:'Changeover',title:'Select sheet type',hint:'Type 8.6 to show only 8.6 sheet types.',target:'Target BW updates automatically',swrap:'Current S-Wrap',extruder:'Select extruder',operator:'Operator',operatorPrompt:'Enter operator name',language:'Language',languagePrompt:'Select language',confirmStart:'Start shift',confirmChange:'Start changeover',cancel:'Cancel'},
+    es:{start:'Empezar turno',change:'Cambio de producto',title:'Selecciona el sheet type',hint:'Escribe 8.6 para mostrar solamente los sheet types 8.6.',target:'El Target BW cambia automáticamente',swrap:'S-Wrap actual',extruder:'Selecciona el extruder',operator:'Operador',operatorPrompt:'Escribe el nombre del operador',language:'Idioma',languagePrompt:'Selecciona idioma',confirmStart:'Empezar turno',confirmChange:'Iniciar cambio',cancel:'Cancelar'},
+    fr:{start:'Démarrer le quart',change:'Changement de produit',title:'Sélectionnez le type de feuille',hint:'Tapez 8.6 pour afficher uniquement les types 8.6.',target:'Le BW cible est mis à jour automatiquement',swrap:'S-Wrap actuel',extruder:'Sélectionnez l’extrudeuse',operator:'Opérateur',operatorPrompt:'Saisissez le nom de l’opérateur',language:'Langue',languagePrompt:'Choisir la langue',confirmStart:'Démarrer',confirmChange:'Changer',cancel:'Annuler'}
   };
   return (copy[state.language]||copy.en)[key]||key;
 }
@@ -1540,13 +2497,16 @@ function changeoverHistoryRecommendation(product){
   const actualBW=Number(last?.averageBW);
   const currentSWrap=Number(last?.currentSWrap||state.currentSWrap||$('bw-current-swrap')?.value||170);
   const referenceBW=positive(actualBW)?actualBW:Number(state.targetBW);
-  const formula=positive(referenceBW,currentSWrap,newTarget)?currentSWrap*referenceBW/newTarget:currentSWrap;
+  const rawFormula=positive(referenceBW,currentSWrap,newTarget)?currentSWrap*referenceBW/newTarget:currentSWrap;
+  const formula=clampSWrap(rawFormula);
   let recommendation=formula,weight=0;
   if(profile.count>=5&&positive(profile.recommendedSWrap)){
     weight=Math.min(.65,Math.max(.15,(profile.confidence||0)/140));
     recommendation=formula*(1-weight)+Number(profile.recommendedSWrap)*weight;
   }
-  return {profile,referenceBW,currentSWrap,formula:Math.round(formula),recommendation:Math.round(recommendation),historyWeight:weight};
+  const rawRecommendation=recommendation;
+  recommendation=clampSWrap(recommendation);
+  return {profile,referenceBW,currentSWrap,formula:Math.round(formula),rawFormula:Math.round(rawFormula),recommendation:Math.round(recommendation),rawRecommendation:Math.round(rawRecommendation),limitReached:rawFormula>MAX_SWRAP_SPEED||rawRecommendation>MAX_SWRAP_SPEED,maxSWrap:MAX_SWRAP_SPEED,historyWeight:weight};
 }
 function renderJobHistoryPreview(product){
   const box=$('job-history-preview'); if(!box)return;
@@ -1560,7 +2520,7 @@ function renderJobHistoryPreview(product){
   if(!p.count){box.innerHTML=`<strong>${title}</strong><small>${noData}</small>`;return;}
   const variation=p.bwSpread!=null?`±${fmt(p.bwSpread,3)}`:'—';
   const effect=p.slope!=null?`${p.slope>0?'+':''}${fmt(p.slope,5)} BW / S-Wrap point`:'Learning…';
-  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math ${result.formula} → <b>Recommended start ${result.recommendation}</b></p>`;
+  box.innerHTML=`<strong>${title}</strong><div class="job-history-grid"><span>Rolls <b>${p.count}</b></span><span>Typical S-Wrap <b>${p.typicalSWrap??'—'}</b></span><span>BW variation <b>${variation}</b></span><span>Confidence <b>${p.confidence}%</b></span><span class="job-effect">Learned effect <b>${effect}</b></span></div><p>Math ${result.formula} → <b>Recommended start ${result.recommendation}</b>${result.limitReached?` • MAX ${MAX_SWRAP_SPEED}`:''}</p>`;
 }
 function updateProductDialogPreview(){
   const value=$('product-search')?.value||'';
@@ -1577,9 +2537,12 @@ function updateProductDialogPreview(){
       if($('changeover-last-bw'))$('changeover-last-bw').textContent=fmt(recommendation.referenceBW,3);
       if($('changeover-last-swrap'))$('changeover-last-swrap').textContent=fmt(recommendation.currentSWrap,1);
       if($('changeover-new-swrap'))$('changeover-new-swrap').textContent=fmt(recommendation.recommendation,1);
-      if($('changeover-auto-note'))$('changeover-auto-note').textContent=recommendation.profile.count>=5
-        ? `Formula ${recommendation.formula} + Line ${ACTIVE_LINE} history (${recommendation.profile.count} comparable rolls, ${recommendation.profile.confidence}% confidence).`
-        : `Formula uses last actual BW ${fmt(recommendation.referenceBW,3)} at S-Wrap ${fmt(recommendation.currentSWrap,1)}.`;
+      if($('changeover-auto-note')){
+        const base=recommendation.profile.count>=5
+          ? `Formula ${recommendation.formula} + Line ${ACTIVE_LINE} history (${recommendation.profile.count} comparable rolls, ${recommendation.profile.confidence}% confidence).`
+          : `Formula uses last actual BW ${fmt(recommendation.referenceBW,3)} at S-Wrap ${fmt(recommendation.currentSWrap,1)}.`;
+        $('changeover-auto-note').textContent=base+(recommendation.limitReached?` Maximum S-Wrap ${MAX_SWRAP_SPEED} reached.`:'');
+      }
     }
   }else{
     if($('product-swrap'))$('product-swrap').readOnly=false;
@@ -1599,10 +2562,10 @@ function openProductDialog(mode='change'){
   if(operatorRow){
     operatorRow.classList.toggle('hidden',mode!=='start');
     const label=$('operator-picker-label'); if(label)label.textContent=productDialogText('operator');
-    const select=$('product-operator');
-    if(select){
-      select.options[0].text=productDialogText('operatorPrompt');
-      select.value=state.operator||'';
+    const input=$('product-operator');
+    if(input){
+      input.placeholder=productDialogText('operatorPrompt');
+      input.value=state.operator||'';
     }
   }
   const languageRow=$('shift-language-picker');
@@ -1833,12 +2796,17 @@ function renderShiftPanel(){
   $('running-swrap')?.classList.toggle('stopped',!active);
   $('shift-status-title').innerHTML=active?`<span class="shift-title-prefix">${shiftText('active')}</span><span class="shift-title-line">LINE ${ACTIVE_LINE}</span><span class="shift-title-date">${state.activeShift.name||'—'}</span>`:shiftText('inactive');
   $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
-  $('start-shift').querySelector('strong').textContent=shiftText('start');
+  const shiftButton=$('start-shift');
+  if(shiftButton){
+    shiftButton.querySelector('strong').textContent=active?shiftText('end'):shiftText('start');
+    const icon=shiftButton.querySelector('span'); if(icon)icon.textContent=active?'■':'▶';
+    shiftButton.classList.toggle('start',!active);
+    shiftButton.classList.toggle('end',active);
+    shiftButton.disabled=false;
+  }
   $('change-product').querySelector('strong').textContent=shiftText('change');
-  $('end-shift').querySelector('strong').textContent=shiftText('end');
   $('change-product').disabled=!active;
-  $('end-shift').disabled=!active;
-  $('start-shift').disabled=active;
+  if($('end-shift'))$('end-shift').disabled=!active;
   if($('change-line-button'))$('change-line-button').textContent=scopy('changeLine');
   if($('settings-open')?.querySelector('strong'))$('settings-open').querySelector('strong').textContent=scopy('settings');
   renderProductionDashboard();
@@ -1851,8 +2819,9 @@ function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null,shi
   const name=new Date().toLocaleDateString();
   product=normalizeProduct(product);
   if(!product)return showToast(shiftText('needProduct'));
-  const operator=String($('product-operator')?.value||state.operator||'').trim();
-  if(!OPERATORS.includes(operator))return showToast(state.language==='es'?'Selecciona el operador.':state.language==='fr'?"Sélectionnez l’opérateur.":'Select the operator.');
+  const operatorCheck=validateOperatorName($('product-operator')?.value||state.operator||'');
+  if(!operatorCheck.ok)return showToast(state.language==='es'?'Ingresa un nombre de operador válido.':state.language==='fr'?"Saisissez un nom d’opérateur valide.":'Please enter a valid operator name.');
+  const operator=operatorCheck.name;
   shiftLanguage=String(shiftLanguage||$('product-language')?.value||'').trim();
   if(!['en','es'].includes(shiftLanguage))return showToast(state.language==='es'?'Selecciona el idioma del turno.':'Select the shift language.');
   if(state.language!==shiftLanguage)applyLanguage(shiftLanguage,false);
@@ -1861,8 +2830,10 @@ function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null,shi
   lineSet('viejitoLanguage',shiftLanguage);
   applyAutomaticMandrelForProduct(product,{forceDefault:true});
   const target=syncTargetFromProduct(product);
-  const swrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
-  if(!positive(target,swrap))return showToast(t('invalidNumbers'));
+  const requestedSWrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
+  if(!positive(target,requestedSWrap))return showToast(t('invalidNumbers'));
+  const swrap=clampSWrap(requestedSWrap);
+  if(requestedSWrap>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());
   extruder=ACTIVE_LINE;
   const now=new Date().toISOString();
   state.activeShift={id:newId('shift'),name,operator,language:shiftLanguage,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,operator,language:shiftLanguage,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
@@ -1882,8 +2853,10 @@ function commitProductChange(product,dialogSWrap=null){
   applyAutomaticMandrelForProduct(product,{forceDefault:true});
   const target=syncTargetFromProduct(product);
   if(!target)return showToast(shiftText('needProduct'));
-  const swrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
-  if(!positive(swrap)) return showToast(t('invalidNumbers'));
+  const requestedSWrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
+  if(!positive(requestedSWrap)) return showToast(t('invalidNumbers'));
+  const swrap=clampSWrap(requestedSWrap);
+  if(requestedSWrap>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());
   $('bw-current-swrap').value=fmt(swrap,1); state.currentSWrap=swrap;
   if(product===old){$('bw-product').value=product;saveOptimizerSettings(target,swrap);renderShiftPanel();closeProductDialog();return true;}
   const currentRun=state.activeShift.runs.find(r=>r.id===state.activeShift.runId);if(currentRun)currentRun.endedAt=new Date().toISOString();
@@ -1915,7 +2888,7 @@ function saveSession(){
 }
 function restoreSession(){
   const saved=safeJSON(lineGet(SESSION_KEY),{});
-  Object.entries(saved.fields||{}).forEach(([id,value])=>{const el=$(id);if(el&&value!==undefined)el.value=value;});
+  Object.entries(saved.fields||{}).forEach(([id,value])=>{const el=$(id);if(!el||value===undefined)return;const safeValue=(id==='bw-current-swrap'||id==='sw-speed')&&positive(Number(value))?clampSWrap(value):value;el.value=safeValue;});
   if(saved.pendingCut&&typeof saved.pendingCut==='object') pendingCut=saved.pendingCut;
   renderPendingCut();
 }
@@ -1926,9 +2899,9 @@ function winderButtonText(index){
   return `Calculate Winder ${index}`;
 }
 function completeCutText(){
-  if(state.language==='es') return 'Completar corte / Calcular promedio';
-  if(state.language==='fr') return 'Terminer la coupe / Calculer la moyenne';
-  return 'Complete cut / Calculate average';
+  if(state.language==='es') return 'Completar corte / BW';
+  if(state.language==='fr') return 'Terminer coupe / BW';
+  return 'Complete cut / BW';
 }
 function waitingSecondMessage(){
   if(state.language==='es') return 'Winder guardado. Esperando el otro winder; todavía no se registra tendencia ni se da sugerencia.';
@@ -1999,7 +2972,12 @@ function calculateSingleWinder(index){
   $('bw-result').textContent=fmt(result);
   $('bw-meta').textContent=`${t(index===1?'winder1':'winder2')} • ${mandrel}” • ${state.language==='es'?'resultado provisional':state.language==='fr'?'résultat provisoire':'provisional result'}`;
   $('optimizer-panel').classList.add('hidden');
-  renderPendingCut(); saveSession(); showToast(waitingSecondMessage());
+  $('process-setpoint-panel')?.classList.add('hidden');
+  renderPendingCut(); saveSession();
+  const bothReady=Number.isFinite(pendingCut.winder1)&&Number.isFinite(pendingCut.winder2);
+  showToast(bothReady
+    ?chatLang('Both winders are saved. Press “Complete cut / BW” to calculate the average and S-Wrap guidance.','Los dos winders están guardados. Presiona “Completar corte / BW” para calcular el promedio y la recomendación de S-Wrap.','Les deux winders sont enregistrés. Terminez la coupe pour calculer la moyenne et le S-Wrap.')
+    :waitingSecondMessage());
 }
 
 function analyzeDieBalance(w1,w2){
@@ -2049,8 +3027,11 @@ function completeDualWinderCut(){
   renderOptimizerPanel(optimizer); renderTrendPanel(trend);
   addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
   const processContext=currentProcessContext();
-  state.lastCompletedCut={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString()};
+  const cutDraft={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString(),winder1Weight:Number(pendingCut.winder1Input?.weight)||null,winder2Weight:Number(pendingCut.winder2Input?.weight)||null,winder1Length:Number(pendingCut.winder1Input?.length)||null,winder2Length:Number(pendingCut.winder2Input?.length)||null};
+  const linkedProcessRecord=bindProcessRecordToCompletedCut(cutDraft);
+  state.lastCompletedCut={...cutDraft,processRecordId:linkedProcessRecord?.id||null};
   renderLastWinderBW();
+  $('process-setpoint-panel')?.classList.add('hidden');
   // Last BW is operational line state and must persist even in Demo Mode.
   // Learning/production records remain disabled in Demo Mode below.
   lineSet(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
@@ -2065,8 +3046,13 @@ function completeDualWinderCut(){
 
 
 function syncCurrentSWrap(value,{save=true}={}){
-  const swrap=Number(value);
-  if(!positive(swrap)) return false;
+  const requested=Number(value);
+  if(!positive(requested)) return false;
+  const swrap=clampSWrap(requested);
+  if(requested>MAX_SWRAP_SPEED){
+    if($('bw-current-swrap'))$('bw-current-swrap').value=fmt(swrap,1);
+    showToast(swrapLimitCopy());
+  }
   state.currentSWrap=swrap;
   if(state.activeShift){
     state.activeShift.currentSWrap=swrap;
@@ -2102,9 +3088,9 @@ const SETTINGS_DRAFT_KEY='viejitoSettingsDraftV1';
 let settingsDraft=null;
 
 const settingsCopy={
-  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line',demoK:'DEMO / TRAINING',demo:'Demo Mode — Do Not Learn',demoHelp:'Use fake values without adding them to production history, trends, learning, or production totals.',learningK:'LEARNING DATA',learning:'Learning Data Manager',learningHelp:'Review recent learning records for this line and remove incorrect test data.'},
-  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea',demoK:'DEMO / ENTRENAMIENTO',demo:'Modo Demo — No aprender',demoHelp:'Usa valores falsos sin agregarlos al historial, tendencias, aprendizaje ni totales reales de producción.',learningK:'DATOS DE APRENDIZAJE',learning:'Administrador de aprendizaje',learningHelp:'Revisa los registros recientes de esta línea y elimina datos de prueba incorrectos.'},
-  fr:{settings:'Réglages',languageK:'LANGUE',language:"Langue de l’application",appearanceK:'APPARENCE',appearance:"Mode d’affichage",personalityK:'PERSONNALITÉ DU CHAT',personality:'Sarcasme',bwK:'BASIS WEIGHT',bw:'Facteur de calcul BW',bwHelp:'450 correspond au système actuel de l’usine. 453.59237 utilise la conversion exacte livre-gramme. BW et Feet utilisent automatiquement le facteur sélectionné.',save:'Enregistrer',saveNote:'Les modifications sont appliquées uniquement après Enregistrer.',saved:'Réglages enregistrés.',changeLine:'Changer de ligne',demoK:'DÉMO / FORMATION',demo:'Mode Démo — Ne pas apprendre',demoHelp:'Utilisez des valeurs fictives sans les ajouter à l’historique, aux tendances, à l’apprentissage ou aux totaux de production.',learningK:'DONNÉES D’APPRENTISSAGE',learning:'Gestion des données d’apprentissage',learningHelp:'Consultez les données récentes de cette ligne et supprimez les données de test incorrectes.'}
+  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line',demoK:'DEMO / TRAINING',demo:'Demo Mode — Do Not Learn',demoHelp:'Use fake values without adding them to production history, trends, learning, or production totals.',learningK:'LEARNING DATA',learning:'Learning Data Manager',learningHelp:'Review recent learning records for this line and remove incorrect test data.',resetHelp:'Protected maintenance actions. Use only when you intentionally want to erase Adaptive Learning, Trend history, or Process Performance Learning for the selected line.'},
+  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea',demoK:'DEMO / ENTRENAMIENTO',demo:'Modo Demo — No aprender',demoHelp:'Usa valores falsos sin agregarlos al historial, tendencias, aprendizaje ni totales reales de producción.',learningK:'DATOS DE APRENDIZAJE',learning:'Administrador de aprendizaje',learningHelp:'Revisa los registros recientes de esta línea y elimina datos de prueba incorrectos.',resetHelp:'Acciones de mantenimiento protegidas. Úsalas solo cuando realmente quieras borrar Adaptive Learning, el historial de tendencia o Process Performance Learning de la línea seleccionada.'},
+  fr:{settings:'Réglages',languageK:'LANGUE',language:"Langue de l’application",appearanceK:'APPARENCE',appearance:"Mode d’affichage",personalityK:'PERSONNALITÉ DU CHAT',personality:'Sarcasme',bwK:'BASIS WEIGHT',bw:'Facteur de calcul BW',bwHelp:'450 correspond au système actuel de l’usine. 453.59237 utilise la conversion exacte livre-gramme. BW et Feet utilisent automatiquement le facteur sélectionné.',save:'Enregistrer',saveNote:'Les modifications sont appliquées uniquement après Enregistrer.',saved:'Réglages enregistrés.',changeLine:'Changer de ligne',demoK:'DÉMO / FORMATION',demo:'Mode Démo — Ne pas apprendre',demoHelp:'Utilisez des valeurs fictives sans les ajouter à l’historique, aux tendances, à l’apprentissage ou aux totaux de production.',learningK:'DONNÉES D’APPRENTISSAGE',learning:'Gestion des données d’apprentissage',learningHelp:'Consultez les données récentes de cette ligne et supprimez les données de test incorrectes.',resetHelp:'Actions de maintenance protégées. Utilisez-les uniquement pour effacer volontairement les données d’apprentissage de la ligne sélectionnée.'}
 };
 function scopy(key,lang=state.language){return (settingsCopy[lang]||settingsCopy.en)[key]||key;}
 
@@ -2138,6 +3124,7 @@ function renderSettingsDraft(){
   if($('settings-learning-kicker'))$('settings-learning-kicker').textContent=scopy('learningK',lang);
   if($('settings-learning-title'))$('settings-learning-title').textContent=scopy('learning',lang);
   if($('settings-learning-help'))$('settings-learning-help').textContent=scopy('learningHelp',lang);
+  if($('settings-reset-help'))$('settings-reset-help').textContent=scopy('resetHelp',lang);
   document.querySelectorAll('[data-draft-demo]').forEach(b=>b.classList.toggle('selected',b.dataset.draftDemo===settingsDraft.demo));
   if($('settings-language-select'))$('settings-language-select').value=settingsDraft.language;
   document.querySelectorAll('[data-draft-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.draftTheme===settingsDraft.theme));
@@ -2262,7 +3249,7 @@ function hydrateLineState(){
   state.context=safeJSON(lineGet('viejitoContext','{}'),{});
   state.history=safeJSON(lineGet('viejitoHistory','[]'),[]);
   state.targetBW=Number(lineGet('viejitoTargetBW'))||DEFAULT_TARGET_BW;
-  state.currentSWrap=Number(lineGet('viejitoCurrentSWrap'))||DEFAULT_CURRENT_SWRAP;
+  state.currentSWrap=clampSWrap(Number(lineGet('viejitoCurrentSWrap'))||DEFAULT_CURRENT_SWRAP);
   state.product=lineGet('viejitoProduct','')||'';
   state.activeShift=safeJSON(lineGet(SHIFT_KEY,'null'),null);
   state.shiftArchive=safeJSON(lineGet(SHIFT_ARCHIVE_KEY,'[]'),[]);
@@ -2273,6 +3260,7 @@ function hydrateLineState(){
   state.lastCompletedCut=safeJSON(lineGet(LAST_COMPLETED_CUT_KEY,'null'),null);
   state.selectedLine=ACTIVE_LINE;
   state.learningEngine=new AdaptiveLearningEngine(window.localStorage,lineKey('viejitoMachineLearningV3'));
+  state.processLearning=new ProcessPerformanceLearning(window.localStorage,lineKey(PROCESS_PERFORMANCE_KEY));
   chatWorkflow=safeJSON(lineGet(CHAT_WORKFLOW_KEY,'null'),null);
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
 }
@@ -2314,6 +3302,7 @@ function renderSelectedLineResult(){
     if(resultBox){ resultBox.classList.remove('green','yellow','red'); }
     if(optimizerPanel){ optimizerPanel.classList.add('hidden'); optimizerPanel.classList.remove('green','yellow','red'); }
     if(priority){ priority.classList.add('hidden'); priority.classList.remove('green','yellow','red'); }
+    $('process-setpoint-panel')?.classList.add('hidden');
     if(statusBox){
       statusBox.classList.remove('green','yellow','red','status-pop');
       statusBox.classList.add('idle');
@@ -2336,6 +3325,7 @@ function renderSelectedLineResult(){
   }
   if($('bw-meta'))$('bw-meta').textContent=`${mandrel}” • ${t('averageBW')}`;
   renderOptimizerPanel(result);
+  $('process-setpoint-panel')?.classList.add('hidden');
 }
 
 function renderSelectedLineState(){
@@ -2351,7 +3341,7 @@ function renderSelectedLineState(){
     const activeRun=state.activeShift.runs?.find(r=>r.id===state.activeShift.runId);
     const restoredSWrap=Number(state.activeShift.currentSWrap||activeRun?.swrap||state.currentSWrap);
     const restoredTarget=Number(activeRun?.targetBW||targetFromProduct(state.activeShift.product)||state.targetBW);
-    if(positive(restoredSWrap))state.currentSWrap=restoredSWrap;
+    if(positive(restoredSWrap))state.currentSWrap=clampSWrap(restoredSWrap);
     if(positive(restoredTarget))state.targetBW=restoredTarget;
     applyAutomaticMandrelForProduct(state.product,{forceDefault:false});
     $('bw-product').value=state.product;
@@ -2501,12 +3491,38 @@ $('chat-form').addEventListener('submit',event=>{
   },120);
 });
 document.querySelectorAll('.example').forEach(button=>button.addEventListener('click',()=>{$('chat-input').value=button.dataset.example;$('chat-form').requestSubmit();}));
+let aiMatrixTimer=null;
+function activateAIMatrix(duration=950){
+  document.querySelectorAll('.ai-matrix-badge').forEach(badge=>badge.classList.add('thinking'));
+  if(aiMatrixTimer)clearTimeout(aiMatrixTimer);
+  aiMatrixTimer=setTimeout(()=>{document.querySelectorAll('.ai-matrix-badge').forEach(badge=>badge.classList.remove('thinking'));aiMatrixTimer=null;},Math.max(350,Number(duration)||950));
+}
+function setupInfoHelp(buttonId,popoverId){
+  const button=$(buttonId),popover=$(popoverId);if(!button||!popover)return;
+  const close=()=>{button.setAttribute('aria-expanded','false');button.closest('.help-wrap')?.classList.remove('open');};
+  button.addEventListener('click',event=>{event.stopPropagation();const wrap=button.closest('.help-wrap');const open=!wrap?.classList.contains('open');document.querySelectorAll('.help-wrap.open').forEach(el=>el.classList.remove('open'));wrap?.classList.toggle('open',open);button.setAttribute('aria-expanded',open?'true':'false');});
+  button.addEventListener('keydown',event=>{if(event.key==='Escape')close();});
+}
+setupInfoHelp('learning-help','learning-help-popover');
+setupInfoHelp('trend-help','trend-help-popover');
+document.addEventListener('click',event=>{if(!event.target.closest('.help-wrap'))document.querySelectorAll('.help-wrap.open').forEach(el=>{el.classList.remove('open');el.querySelector('.info-help')?.setAttribute('aria-expanded','false');});});
+document.addEventListener('input',event=>{
+  const el=event.target;
+  if(!(el instanceof HTMLInputElement)&&!(el instanceof HTMLTextAreaElement))return;
+  const numeric=el.type==='number'||el.inputMode==='decimal'||/\d/.test(el.value||'');
+  if(numeric&&/\d/.test(el.value||''))activateAIMatrix(900);
+},true);
+document.addEventListener('click',event=>{if(event.target.closest('#winder1-calc,#winder2-calc,#bw-calc,#ft-calc,#sw-calc,#product-dialog-confirm,#apply-preventive-swrap'))activateAIMatrix(1500);},true);
 document.querySelectorAll('.quick-card').forEach(button=>button.addEventListener('click',()=>switchView(button.dataset.view)));
+$('tool-menu-toggle')?.addEventListener('click',event=>{event.stopPropagation();toggleToolMenu();});
+$('tool-menu-popover')?.addEventListener('click',event=>event.stopPropagation());
+document.addEventListener('click',closeToolMenu);
 $('chat-fab').addEventListener('click',toggleChat);
 $('chat-close').addEventListener('click',()=>setChatOpen(false));
 $('chat-backdrop').addEventListener('click',()=>setChatOpen(false));
-document.addEventListener('keydown',event=>{if(event.key==='Escape')setChatOpen(false);});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){setChatOpen(false);closeToolMenu();closeManualProcessDialog();}});
 document.querySelectorAll('.mandrel').forEach(button=>button.addEventListener('click',()=>selectMandrel(button.dataset.target,Number(button.dataset.value))));
+document.querySelectorAll('.tool-mandrel').forEach(button=>button.addEventListener('click',()=>{const value=Number(button.dataset.value);selectMandrel('bw',value);selectMandrel('ft',value);showToast(`${value}” mandrel`);}));
 $('language-select').addEventListener('change',event=>applyLanguage(event.target.value,true));
 $('settings-open')?.addEventListener('click',openSettings);
 $('settings-password-confirm')?.addEventListener('click',confirmSettingsPassword);
@@ -2535,16 +3551,42 @@ $('winder1-calc').addEventListener('click',()=>{try{calculateSingleWinder(1);}ca
 $('winder2-calc').addEventListener('click',()=>{try{calculateSingleWinder(2);}catch(e){showToast(e.message);}});
 $('bw-calc').addEventListener('click',()=>{try{completeDualWinderCut();}catch(e){showToast(e.message);}});
 $('ft-calc').addEventListener('click',()=>{try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
-$('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),r=calculateSWrap(a,s,target);$('sw-result').textContent=fmt(r,1);addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}`);}catch(e){showToast(e.message);}});
+$('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),raw=rawSWrapCalculation(a,s,target),r=clampSWrap(raw);$('sw-result').textContent=fmt(r,1);if(raw>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}${raw>MAX_SWRAP_SPEED?' • MAX 228':''}`);}catch(e){showToast(e.message);}});
 
 $('record-result-toggle').addEventListener('click',()=>{$('learning-form').classList.toggle('hidden');});
 $('cancel-learning').addEventListener('click',()=>{$('learning-form').classList.add('hidden');});
 $('save-learning').addEventListener('click',saveLearningResult);
-$('clear-learning').addEventListener('click',()=>{state.learningEngine.clear();renderLearningDashboard();showToast(ot('resetDone'));});
-$('clear-trend').addEventListener('click',()=>{state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);saveAcceptedPreventiveTrend(null);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));});
+$('clear-learning')?.addEventListener('click',()=>{
+  const ok=confirm(state.language==='es'?`¿Borrar TODO el aprendizaje adaptativo guardado de Line ${ACTIVE_LINE}? Esta acción no se puede deshacer.`:state.language==='fr'?`Effacer TOUT l’apprentissage adaptatif enregistré de Line ${ACTIVE_LINE} ? Cette action est irréversible.`:`Erase ALL saved adaptive learning for Line ${ACTIVE_LINE}? This cannot be undone.`);
+  if(!ok)return;
+  state.learningEngine.clear();renderLearningDashboard();showToast(ot('resetDone'));
+});
+$('clear-trend')?.addEventListener('click',()=>{
+  const ok=confirm(state.language==='es'?`¿Borrar TODO el historial de tendencia de Line ${ACTIVE_LINE}? Esta acción no se puede deshacer.`:state.language==='fr'?`Effacer TOUT l’historique de tendance de Line ${ACTIVE_LINE} ? Cette action est irréversible.`:`Erase ALL trend history for Line ${ACTIVE_LINE}? This cannot be undone.`);
+  if(!ok)return;
+  state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);saveAcceptedPreventiveTrend(null);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));
+});
+$('clear-process-learning')?.addEventListener('click',()=>{
+  const ok=confirm(state.language==='es'?`¿Borrar TODO el aprendizaje de Primary/Secondary/output de Line ${ACTIVE_LINE}? Esta acción no se puede deshacer.`:state.language==='fr'?`Effacer TOUT l’apprentissage process de Line ${ACTIVE_LINE} ? Cette action est irréversible.`:`Erase ALL Primary/Secondary/output process learning for Line ${ACTIVE_LINE}? This cannot be undone.`);
+  if(!ok)return;
+  state.processLearning.clear();
+  showToast(state.language==='es'?'Aprendizaje de desempeño del proceso borrado.':'Process Performance Learning cleared.');
+});
 $('apply-preventive-swrap')?.addEventListener('click',acceptPreventiveSWrapChange);
 $('clear-history').addEventListener('click',()=>{state.history=[];lineRemove('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
 $('production-target')?.addEventListener('click',openProductionDialog);
+$('manual-process-open')?.addEventListener('click',openManualProcessDialog);
+$('manual-process-close')?.addEventListener('click',closeManualProcessDialog);
+$('manual-process-cancel')?.addEventListener('click',closeManualProcessDialog);
+$('manual-process-dialog')?.addEventListener('click',event=>{if(event.target===$('manual-process-dialog'))closeManualProcessDialog();});
+['manual-primary','manual-secondary','manual-w1','manual-w2','manual-minutes'].forEach(id=>$(id)?.addEventListener('input',updateManualProcessPreview));
+$('manual-process-save')?.addEventListener('click',saveManualProcessRecord);
+$('speed-change-open')?.addEventListener('click',openSpeedChangeDialog);
+$('speed-change-close')?.addEventListener('click',closeSpeedChangeDialog);
+$('speed-change-cancel')?.addEventListener('click',closeSpeedChangeDialog);
+$('speed-change-dialog')?.addEventListener('click',event=>{if(event.target===$('speed-change-dialog'))closeSpeedChangeDialog();});
+['speed-current-primary','speed-current-secondary','speed-w1','speed-w2','speed-minutes','speed-target-speed','speed-target-bw'].forEach(id=>$(id)?.addEventListener('input',updateSpeedChangePreview));
+$('speed-change-suggest')?.addEventListener('click',runSpeedChangeSuggestion);
 $('production-summary-toggle')?.addEventListener('click',openProductionDialog);
 $('production-dialog-close')?.addEventListener('click',closeProductionDialog);
 $('production-dialog')?.addEventListener('click',event=>{if(event.target===$('production-dialog'))closeProductionDialog();});
@@ -2552,9 +3594,9 @@ $('target-lbs-hour')?.addEventListener('input',updateProductionTargetPreview);
 $('target-shift-hours')?.addEventListener('input',updateProductionTargetPreview);
 $('save-production-target')?.addEventListener('click',saveCurrentProductionTarget);
 setInterval(()=>{if(state.activeShift)renderProductionDashboard();},30000);
-$('start-shift').addEventListener('click',startShift);
+$('start-shift').addEventListener('click',()=>{if(state.activeShift)endShift();else startShift();});
 $('change-product').addEventListener('click',()=>changeProduct());
-$('end-shift').addEventListener('click',endShift);
+$('end-shift')?.addEventListener('click',endShift);
 let confirmedProduct=String(state.activeShift?.product||state.product||'').toUpperCase();
 $('bw-product').addEventListener('focus',()=>{confirmedProduct=String(state.activeShift?.product||$('bw-product').value||'').toUpperCase();});
 $('bw-product').addEventListener('blur',()=>{
@@ -2612,7 +3654,7 @@ if(state.activeShift?.product){
   const activeRun=state.activeShift.runs?.find(r=>r.id===state.activeShift.runId);
   const restoredSWrap=Number(state.activeShift.currentSWrap||activeRun?.swrap||state.currentSWrap);
   const restoredTarget=Number(activeRun?.targetBW||targetFromProduct(state.activeShift.product)||state.targetBW);
-  if(positive(restoredSWrap))state.currentSWrap=restoredSWrap;
+  if(positive(restoredSWrap))state.currentSWrap=clampSWrap(restoredSWrap);
   if(positive(restoredTarget))state.targetBW=restoredTarget;
   $('bw-product').value=state.product;
   $('bw-target').value=fmt(state.targetBW);
@@ -2633,7 +3675,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.22',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.32.2',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

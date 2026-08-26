@@ -5,92 +5,118 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#101820" name="theme-color"/>
-<meta content="Industrial IA: offline BW, FT and S-Wrap calculations." id="meta-description" name="description"/>
+<meta content="Industrial IA: dual-brain Davis-Standard extrusion knowledge, operational BW/S-Wrap intelligence, trend prediction and process-performance learning." id="meta-description" name="description"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.22" rel="stylesheet"/>
+<link href="styles.css?v=5.32.2" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
-<body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — LEARNING & PRODUCTION DATA DISABLED</div>
+<body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — LEARNING &amp; PRODUCTION DATA DISABLED</div>
 <div class="app-shell">
 <header class="topbar">
 <div class="brand industrial-brand">
-  <div class="broken-robot" aria-hidden="true">
-    <span class="robot-antenna"></span><span class="robot-spark">✦</span>
-    <span class="robot-head"><i class="robot-eye left"></i><i class="robot-eye right"></i><i class="robot-mouth"></i></span>
-    <span class="robot-body"><i></i><b></b></span>
-    <span class="robot-arm left"></span><span class="robot-arm right"></span>
-  </div>
-  <div>
-    <h1>INDUSTRIAL IA <span aria-hidden="true">🤖</span></h1>
-    <p>Industrial Assistant</p>
-  </div>
+<div aria-hidden="true" class="broken-robot">
+<span class="robot-antenna"></span><span class="robot-spark">✦</span>
+<span class="robot-head"><i class="robot-eye left"></i><i class="robot-eye right"></i><i class="robot-mouth"></i></span>
+<span class="robot-body"><i></i><b></b></span>
+<span class="robot-arm left"></span><span class="robot-arm right"></span>
+</div>
+<div>
+<h1>INDUSTRIAL IA <span aria-hidden="true">🤖</span></h1>
+<p>Industrial Assistant</p>
+</div>
 </div>
 <div class="status-area">
-
-<button class="settings-button" id="settings-open" type="button" aria-label="Open settings"><span>⚙️</span><strong>Settings</strong></button>
+<button aria-label="Open settings" class="settings-button" id="settings-open" type="button"><span>⚙️</span><strong>Settings</strong></button>
 <span class="pill online" id="connection-pill">Online</span>
-<div class="legacy-settings-controls" aria-hidden="true">
-  <select id="language-select" tabindex="-1">
-    <option value="en">English</option><option value="es">Español</option><option value="fr">Français</option>
-  </select>
-  <select id="personality-select" tabindex="-1">
-    <option value="professional">Professional</option><option value="light">Light sarcasm</option><option value="heavy">Heavy sarcasm</option><option value="off">Off</option>
-  </select>
-  <button id="theme-toggle" type="button" tabindex="-1">Theme</button>
-  <span id="language-label">Language</span><span id="personality-label">Personality</span>
+<div aria-hidden="true" class="legacy-settings-controls">
+<select id="language-select" tabindex="-1">
+<option value="en">English</option><option value="es">Español</option><option value="fr">Français</option>
+</select>
+<select id="personality-select" tabindex="-1">
+<option value="professional">Professional</option><option value="light">Light sarcasm</option><option value="heavy">Heavy sarcasm</option><option value="off">Off</option>
+</select>
+<button id="theme-toggle" tabindex="-1" type="button">Theme</button>
+<span id="language-label">Language</span><span id="personality-label">Personality</span>
 </div>
 </div>
 </header>
-<nav class="line-quick-bar" id="line-quick-bar" aria-label="Extrusion line selector">
-    <button type="button" data-line-quick="1" aria-pressed="false">Line 1</button>
-    <button type="button" data-line-quick="2" aria-pressed="false">Line 2</button>
-    <button type="button" data-line-quick="3" aria-pressed="false">Line 3</button>
-    <button type="button" data-line-quick="4" aria-pressed="false">Line 4</button>
-  </nav>
+<nav aria-label="Extrusion line selector" class="line-quick-bar" id="line-quick-bar">
+<button aria-pressed="false" data-line-quick="1" type="button">Line 1</button>
+<button aria-pressed="false" data-line-quick="2" type="button">Line 2</button>
+<button aria-pressed="false" data-line-quick="3" type="button">Line 3</button>
+<button aria-pressed="false" data-line-quick="4" type="button">Line 4</button>
+</nav>
 <main>
 <section class="hero compact-hero">
 <div class="shift-control-panel" id="shift-control-panel">
-  <div class="shift-status-copy">
-    <span class="running-swrap" id="running-swrap" aria-hidden="true"><i></i><b></b></span>
-    <span class="shift-dot" id="shift-dot"></span>
-    <div><strong id="shift-status-title">No active shift</strong><small id="operator-greeting" class="operator-greeting hidden"></small><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
-  </div>
-  
-  <button class="production-summary-bar" id="production-summary-toggle" type="button" aria-label="Open production details">
-    <span class="production-summary-icon">📊</span>
-    <span class="production-summary-item"><small id="prod-current-label">Actual</small><strong id="prod-current-rate">—</strong><em>lbs/hr</em></span>
-    <span class="production-summary-separator"></span>
-    <span class="production-summary-item"><small id="prod-total-label">Target</small><strong id="prod-current-material">—</strong><em>lbs/hr</em></span>
-    <span class="production-summary-separator"></span>
-    <span class="production-summary-item production-summary-project"><small id="prod-project-label">Projected</small><strong id="prod-projected-end">—</strong><em>lbs</em></span>
-    <span class="production-summary-chevron">›</span>
-    <span class="production-hidden-values" aria-hidden="true"><strong id="prod-produced-material">0</strong><strong id="prod-shift-target">—</strong><span id="prod-target-label">Shift target</span><span id="production-forecast">Start a shift to begin production tracking.</span></span>
-  </button>
+<div class="shift-status-copy">
+<span aria-hidden="true" class="running-swrap" id="running-swrap"><i></i><b></b></span>
+<span class="shift-dot" id="shift-dot"></span>
+<div><strong id="shift-status-title">No active shift</strong><small class="operator-greeting hidden" id="operator-greeting"></small><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
 </div>
-<div class="process-priority-summary hidden" id="process-priority-summary" aria-live="assertive">
-  <span class="process-priority-dot"></span>
-  <div class="process-priority-bw"><small>AVERAGE BW</small><strong id="priority-average-bw">—</strong></div>
-  <div class="process-priority-metric"><small>TARGET</small><strong id="priority-target-bw">—</strong></div>
-  <div class="process-priority-metric"><small>Δ BW</small><strong id="priority-difference">—</strong></div>
-  <div class="process-priority-status"><strong id="priority-status">READY</strong><small id="priority-message">Calculate both winders</small></div>
-  <div class="process-priority-swrap"><small>S-WRAP</small><strong><span id="priority-current-swrap">—</span><span class="priority-arrow">→</span><span id="priority-suggested-swrap">—</span></strong></div>
-
-  <div class="priority-range-wrap">
-    <div class="priority-range-labels"><span>Too light</span><span>Too heavy</span></div>
-    <div class="priority-range-track">
-      <span class="priority-range-yellow left"></span><span class="priority-range-green"></span><span class="priority-range-yellow right"></span>
-      <span class="priority-range-marker" id="priority-range-marker"></span>
-    </div>
-    <div class="priority-range-numbers"><span id="priority-range-low">—</span><span id="priority-range-target">—</span><span id="priority-range-high">—</span></div>
-  </div>
+<section aria-live="polite" class="smart-trend-summary waiting" id="trend-panel">
+<span aria-hidden="true" class="smart-trend-icon">📈</span>
+<span class="smart-trend-item smart-trend-main">
+<small id="trend-title">Trend Predictor</small>
+<strong id="trend-status">BUILDING</strong>
+<em id="trend-day-summary">Today —</em>
+</span>
+<span class="smart-trend-separator"></span>
+<span class="smart-trend-item">
+<small id="trend-direction-label">Direction</small>
+<strong id="trend-direction">—</strong>
+<em id="trend-consistency">—</em>
+</span>
+<span class="smart-trend-separator"></span>
+<span class="smart-trend-item">
+<small id="trend-projected-label">Next BW</small>
+<strong id="trend-projected">—</strong>
+<em id="trend-rolls">0/5</em>
+</span>
+<span class="smart-trend-separator"></span>
+<span class="smart-trend-item smart-trend-action">
+<small id="trend-action-label">Preventive Action</small>
+<strong id="trend-action">Waiting</strong>
+<button class="trend-apply-mini hidden" id="apply-preventive-swrap" type="button">Apply</button>
+</span>
+<span class="help-wrap trend-help-wrap">
+<button aria-expanded="false" aria-label="How AI Predictor works" class="info-help" id="trend-help" type="button">?</button>
+<span class="info-popover" id="trend-help-popover" role="tooltip">AI Predictor — Function: analyzes recent comparable completed cuts from this line and product to estimate where BW is going next and identify when a preventive S-Wrap adjustment may be useful. The Today summary shows how consistently this line has stayed near target.</span>
+</span>
+<span class="hidden" id="trend-message"></span>
+<span class="hidden" id="trend-consistency-label">Consistency</span>
+<span class="hidden" id="trend-rolls-label">Last rolls</span>
+</section>
+</div>
+<div aria-live="assertive" class="process-priority-summary hidden" id="process-priority-summary">
+<span class="process-priority-dot"></span>
+<div class="process-priority-bw"><small>AVERAGE BW</small><strong id="priority-average-bw">—</strong></div>
+<div class="process-priority-metric"><small>TARGET</small><strong id="priority-target-bw">—</strong></div>
+<div class="process-priority-metric"><small>Δ BW</small><strong id="priority-difference">—</strong></div>
+<div class="process-priority-status"><strong id="priority-status">READY</strong><small id="priority-message">Calculate both winders</small></div>
+<div class="process-priority-swrap"><small>S-WRAP</small><strong><span id="priority-current-swrap">—</span><span class="priority-arrow">→</span><span id="priority-suggested-swrap">—</span></strong></div>
+<div class="priority-range-wrap">
+<div class="priority-range-labels"><span>Too light</span><span>Too heavy</span></div>
+<div class="priority-range-track">
+<span class="priority-range-yellow left"></span><span class="priority-range-green"></span><span class="priority-range-yellow right"></span>
+<span class="priority-range-marker" id="priority-range-marker"></span>
+</div>
+<div class="priority-range-numbers"><span id="priority-range-low">—</span><span id="priority-range-target">—</span><span id="priority-range-high">—</span></div>
+</div>
 </div>
 </section>
 <div class="tool-workspace"><div class="calculator-column"><section class="view active" id="view-bw">
 <div class="panel calculator-card">
-<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><span class="offline-ready">Offline</span></div>
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Basis Weight</h3></div><div aria-label="AI active" class="ai-matrix-badge"><div aria-hidden="true" class="ai-matrix-grid"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><i class="ai-matrix-scan"></i></div><div class="ai-matrix-copy"><strong>AI ACTIVE</strong></div></div></div>
+<div class="process-context-strip field-grid three">
+<label><span id="product-label">Product</span><input autocomplete="off" id="bw-product" list="sheet-type-list" placeholder="6.35/43" type="text"/></label>
+<label><span id="target-bw-label">Target BW</span><input id="bw-target" inputmode="decimal" min="0" placeholder="6.35" step="0.01" type="number"/></label>
+<label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" inputmode="decimal" max="228" min="0" placeholder="170" step="1" type="number"/></label>
+</div>
+<div class="winder-pair-grid">
 <div class="winder-block">
 <div class="winder-heading"><div class="winder-title-row"><strong id="winder1-title">Winder 1</strong><span class="last-bw-inline" id="winder1-last-bw">Last BW: —</span></div><div class="winder-save-display" id="winder1-save-display"><span id="winder1-required">Required</span><strong id="winder1-saved-bw">—</strong><small id="winder1-state"></small></div></div>
 <div class="field-grid">
@@ -107,26 +133,22 @@
 </div>
 <button class="secondary winder-calc" id="winder2-calc" type="button">Calculate Winder 2</button>
 </div>
-<div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48">48”</button><button class="mandrel" data-target="bw" data-value="51">51”</button></div>
-<div class="field-grid optimizer-inputs process-context-inputs">
-<label><span id="product-label">Product</span><input id="bw-product" autocomplete="off" list="sheet-type-list" placeholder="6.35/43" type="text"/></label>
-<label><span id="target-bw-label">Target BW</span><input id="bw-target" inputmode="decimal" min="0" placeholder="6.35" step="0.01" type="number"/></label>
-<label><span id="current-swrap-label">Current S-Wrap</span><input id="bw-current-swrap" inputmode="decimal" min="0" placeholder="170" step="1" type="number"/></label>
 </div>
+<div aria-hidden="true" class="mandrel-row hidden-mandrel-storage"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="bw" data-value="48" tabindex="-1">48”</button><button class="mandrel" data-target="bw" data-value="51" tabindex="-1">51”</button></div>
 <datalist id="sheet-type-list">
 <option value="5.3/36"></option><option value="5.3/43"></option><option value="6.1/36"></option><option value="6.1/43"></option><option value="6.1/60"></option><option value="6.35/36"></option><option value="6.35/43"></option><option value="6.4/55"></option><option value="6.5/36"></option><option value="6.5/43"></option><option value="6.5/70"></option><option value="7.1/36"></option><option value="7.1/45"></option><option value="8.0/60"></option><option value="8.5/50 LAM"></option><option value="8.6/60"></option><option value="8.6/80"></option><option value="9.0/80"></option><option value="9.1/55"></option><option value="9.3/50"></option><option value="9.3/90"></option><option value="9.75/50 LAM"></option><option value="9.75/75"></option><option value="9.75/80"></option><option value="9.8/80"></option><option value="10.25/90"></option><option value="10.8/65"></option><option value="10.9/55"></option>
 </datalist>
 <div class="result-box industrial-result" id="bw-result-box">
-  <div class="result-copy"><span id="average-bw-label">Average Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small>
-<div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div><div class="die-move-alert hidden" id="die-move-alert" aria-live="assertive">
-  <div><small id="die-move-kicker">SHEET BALANCE</small><strong id="die-move-title">—</strong></div>
-  <p id="die-move-message">—</p>
+<div class="result-copy"><span id="average-bw-label">Average Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small>
+<div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div><div aria-live="assertive" class="die-move-alert hidden" id="die-move-alert">
+<div><small id="die-move-kicker">SHEET BALANCE</small><strong id="die-move-title">—</strong></div>
+<p id="die-move-message">—</p>
 </div>
 </div>
-  <div class="result-status idle" id="result-status" aria-live="polite" aria-label="Waiting for calculation">
-    <span class="result-status-dot"></span>
-    <div><strong id="result-status-title">READY</strong><small id="result-status-message">Calculate BW</small></div>
-  </div>
+<div aria-label="Waiting for calculation" aria-live="polite" class="result-status idle" id="result-status">
+<span class="result-status-dot"></span>
+<div><strong id="result-status-title">READY</strong><small id="result-status-message">Calculate BW</small></div>
+</div>
 </div>
 <section aria-live="polite" class="optimizer-panel hidden" id="optimizer-panel">
 <div class="optimizer-status-row">
@@ -151,25 +173,23 @@
 <div><span id="confidence-label">Confidence</span><strong id="learning-confidence">0%</strong></div>
 <div><span id="rolls-label">Rolls learned</span><strong id="learning-count">0</strong></div>
 </div>
-
 <div class="recommendation-decision hidden" id="recommendation-decision">
-  <div class="recommendation-prediction">
-    <span>Viejito recommendation</span>
-    <strong>S-Wrap <b id="decision-swrap">—</b></strong>
-    <small>Predicted next BW: <b id="decision-predicted-bw">—</b> • Confidence: <b id="decision-confidence">0%</b></small>
-  </div>
-  <div class="recommendation-actions">
-    <button class="primary" id="accept-swrap-recommendation" type="button">✓ Apply recommendation</button>
-    <button class="text-button" id="reject-swrap-recommendation" type="button">Keep current</button>
-  </div>
-  <p class="recommendation-note" id="recommendation-note">If applied, Viejito will compare its predicted BW with the next actual cut and learn from the error.</p>
+<div class="recommendation-prediction">
+<span>Viejito recommendation</span>
+<strong>S-Wrap <b id="decision-swrap">—</b></strong>
+<small>Predicted next BW: <b id="decision-predicted-bw">—</b> • Confidence: <b id="decision-confidence">0%</b></small>
 </div>
-
-<button class="secondary hidden" id="record-result-toggle" type="button" aria-hidden="true" tabindex="-1">Record actual result</button>
+<div class="recommendation-actions">
+<button class="primary" id="accept-swrap-recommendation" type="button">✓ Apply recommendation</button>
+<button class="text-button" id="reject-swrap-recommendation" type="button">Keep current</button>
+</div>
+<p class="recommendation-note" id="recommendation-note">If applied, Viejito will compare its predicted BW with the next actual cut and learn from the error.</p>
+</div>
+<button aria-hidden="true" class="secondary hidden" id="record-result-toggle" tabindex="-1" type="button">Record actual result</button>
 <div class="learning-form hidden" id="learning-form">
 <p id="learning-question">After making the change, enter the S-Wrap you used and the final BW.</p>
 <div class="field-grid">
-<label><span id="applied-swrap-label">Applied S-Wrap</span><input id="applied-swrap" inputmode="decimal" min="0" step="1" type="number"/></label>
+<label><span id="applied-swrap-label">Applied S-Wrap</span><input id="applied-swrap" inputmode="decimal" max="228" min="0" step="1" type="number"/></label>
 <label><span id="final-bw-label">Final BW</span><input id="final-bw" inputmode="decimal" min="0" step="0.01" type="number"/></label>
 </div>
 <div class="learning-actions">
@@ -178,62 +198,72 @@
 </div>
 </div>
 </section>
-<button class="primary" id="bw-calc" type="button">Complete cut / Calculate average</button>
+<section aria-live="polite" class="process-setpoint-panel hidden" id="process-setpoint-panel">
+<div class="process-setpoint-heading">
+<div><p class="eyebrow">PROCESS CONTROL</p><h4 id="process-setpoint-title">Primary + Secondary Setpoint</h4></div>
+<span class="process-setpoint-badge" id="process-setpoint-badge">—</span>
+</div>
+<p class="process-setpoint-instruction" id="process-setpoint-instruction">—</p>
+<div class="process-setpoint-grid">
+<div><small>CURRENT PRIMARY</small><strong id="process-current-primary">—</strong><span>RPM</span></div>
+<div><small>CURRENT SECONDARY</small><strong id="process-current-secondary">—</strong><span>RPM</span></div>
+<div class="recommended"><small>SET PRIMARY</small><strong id="process-set-primary">—</strong><span>RPM</span></div>
+<div class="recommended"><small>SET SECONDARY</small><strong id="process-set-secondary">—</strong><span>RPM</span></div>
+<div><small>SECONDARY HEAT START</small><strong id="process-set-heat">—</strong><span>°F</span></div>
+<div><small>TARGET OUTPUT</small><strong id="process-target-output">—</strong><span>lb/hr</span></div>
+</div>
+<p class="process-pressure-note" id="process-pressure-note">—</p>
+<small class="process-setpoint-source" id="process-setpoint-source"></small>
+</section>
+<button class="primary" id="bw-calc" type="button">Complete cut / BW</button>
 </div>
 </section><section class="view" id="view-ft">
 <div class="panel calculator-card">
-<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Feet</h3></div><span class="offline-ready">Offline</span></div>
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>Feet</h3></div><div aria-label="AI active" class="ai-matrix-badge compact"><div aria-hidden="true" class="ai-matrix-grid"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><i class="ai-matrix-scan"></i></div><div class="ai-matrix-copy"><strong>AI ACTIVE</strong></div></div></div>
 <div class="field-grid">
 <label>Basis Weight<input id="ft-bw" inputmode="decimal" min="0" placeholder="10" step="any" type="number"/></label>
 <label><span data-i18n="weightLb">Weight (lb)</span><input id="ft-weight" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
 </div>
-<div class="mandrel-row"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="ft" data-value="48">48”</button><button class="mandrel" data-target="ft" data-value="51">51”</button></div>
+<div aria-hidden="true" class="mandrel-row hidden-mandrel-storage"><span data-i18n="mandrel">Mandrel</span><button class="mandrel active" data-target="ft" data-value="48" tabindex="-1">48”</button><button class="mandrel" data-target="ft" data-value="51" tabindex="-1">51”</button></div>
 <div class="result-box"><span data-i18n="length">Length</span><strong id="ft-result">—</strong><small id="ft-meta">48” mandrel (default)</small></div>
 <button class="primary" id="ft-calc" type="button">Calculate FT</button>
 </div>
 </section><section class="view" id="view-swrap">
 <div class="panel calculator-card">
-<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>S-Wrap Speed</h3></div><span class="offline-ready">Offline</span></div>
+<div class="panel-heading"><div><p class="eyebrow" data-i18n="calculator">CALCULATOR</p><h3>S-Wrap Speed</h3></div><div aria-label="AI active" class="ai-matrix-badge compact"><div aria-hidden="true" class="ai-matrix-grid"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><i class="ai-matrix-scan"></i></div><div class="ai-matrix-copy"><strong>AI ACTIVE</strong></div></div></div>
 <div class="field-grid three">
 <label><span data-i18n="currentWeight">Current weight</span><input id="sw-current" inputmode="decimal" min="0" placeholder="10" step="any" type="number"/></label>
-<label><span data-i18n="currentSpeed">Current speed</span><input id="sw-speed" inputmode="decimal" min="0" placeholder="180" step="any" type="number"/></label>
+<label><span data-i18n="currentSpeed">Current speed</span><input id="sw-speed" inputmode="decimal" max="228" min="0" placeholder="180" step="any" type="number"/></label>
 <label><span data-i18n="targetWeight">Target weight</span><input id="sw-target" inputmode="decimal" min="0" placeholder="12" step="any" type="number"/></label>
 </div>
 <div class="result-box"><span data-i18n="newSpeed">New speed</span><strong id="sw-result">—</strong><small id="sw-formula">Current weight × speed ÷ target weight</small></div>
 <button class="primary" id="sw-calc" type="button">Calculate S-Wrap</button>
 </div>
-</section></div><nav aria-label="Quick tools" class="quick-grid" id="quick-grid">
-<button class="quick-card active" data-view="bw"><span>📐</span><strong>Basis Weight</strong><small data-i18n="bwSubtitle">48” or 51” mandrel</small></button>
-<button class="quick-card" data-view="ft"><span>📏</span><strong>Feet</strong><small data-i18n="ftSubtitle">Calculate length</small></button>
-<button class="quick-card" data-view="swrap"><span>⚙️</span><strong>S-Wrap</strong><small data-i18n="swrapSubtitle">Adjust speed</small></button>
-<div class="shift-rail-actions" aria-label="Shift controls">
-  <button class="shift-rail-button start" id="start-shift" type="button"><span>▶</span><strong>Start shift</strong></button>
-  <button class="shift-rail-button change" id="change-product" type="button" disabled><span>↻</span><strong>Changeover</strong></button>
-  <button class="shift-rail-button end" id="end-shift" type="button" disabled><span>■</span><strong>End of shift</strong></button>
-  <button class="shift-rail-button target" id="production-target" type="button"><span>🎯</span><strong>Target lbs</strong></button>
+</section></div><nav aria-label="Operator controls" class="quick-grid compact-operator-rail" id="quick-grid">
+<div class="tool-menu-shell">
+<button aria-controls="tool-menu-popover" aria-expanded="false" class="tool-menu-toggle" id="tool-menu-toggle" type="button"><span>☰</span><strong id="tool-menu-title">Tools</strong><small id="active-tool-label">Basis Weight</small></button>
+<div class="tool-menu-popover hidden" id="tool-menu-popover" role="menu">
+<button class="quick-card active" data-view="bw" role="menuitem"><span>📐</span><strong>Basis Weight</strong></button>
+<button class="quick-card" data-view="ft" role="menuitem"><span>📏</span><strong>Feet</strong></button>
+<button class="quick-card" data-view="swrap" role="menuitem"><span>⚙️</span><strong>S-Wrap</strong></button>
+<button class="tool-menu-item target" id="production-target" role="menuitem" type="button"><span>🎯</span><strong>Target lbs</strong></button>
+<button class="tool-menu-item" id="manual-process-open" role="menuitem" type="button"><span>🧾</span><strong id="manual-process-tool-label">Process Record</strong></button>
+<button class="tool-menu-item" id="speed-change-open" role="menuitem" type="button"><span>⚡</span><strong id="speed-change-tool-label">Speed Change Advisor</strong></button>
+<div aria-label="Mandrel selector" class="tool-menu-mandrel" role="group">
+<span class="tool-menu-mandrel-label">Mandrel</span>
+<div class="tool-menu-mandrel-buttons">
+<button class="tool-mandrel active" data-value="48" type="button">48”</button>
+<button class="tool-mandrel" data-value="51" type="button">51”</button>
 </div>
-</nav></div><section aria-live="polite" class="panel trend-panel waiting" id="trend-panel">
-<div class="panel-heading">
-<div><p class="eyebrow">SPRINT 2.2</p><h3 id="trend-title">Trend Predictor</h3></div>
-<button class="text-button" id="clear-trend" type="button">Clear trend</button>
 </div>
-<p class="trend-message" id="trend-message">Add 5 BW rolls to activate the prediction.</p>
-<div class="trend-grid">
-<div><span id="trend-projected-label">Projected next BW</span><strong id="trend-projected">—</strong></div>
-<div><span id="trend-direction-label">Direction</span><strong id="trend-direction">—</strong></div>
-<div><span id="trend-consistency-label">Consistency</span><strong id="trend-consistency">—</strong></div>
-<div><span id="trend-rolls-label">Last rolls</span><strong id="trend-rolls">—</strong></div>
 </div>
-<div class="trend-apply-row">
-<button class="primary trend-apply-button hidden" id="apply-preventive-swrap" type="button">Apply S-Wrap</button>
 </div>
-</section>
-
-
-
-
-<section class="panel learning-dashboard">
-<div class="panel-heading"><div><p class="eyebrow">ADAPTIVE</p><h3 id="machine-learning-title">Machine learning</h3></div><button class="text-button" id="clear-learning" type="button">Reset learning</button></div>
+<div aria-label="Shift controls" class="shift-rail-actions">
+<button class="shift-rail-button start" id="start-shift" type="button"><span>▶</span><strong>Start shift</strong></button>
+<button class="shift-rail-button change" disabled="" id="change-product" type="button"><span>↻</span><strong>Changeover</strong></button>
+</div>
+<section class="panel learning-dashboard rail-learning-card">
+<div class="panel-heading"><div><p class="eyebrow">ADAPTIVE</p><h3 id="machine-learning-title">Machine learning</h3></div><span class="help-wrap learning-help-wrap"><button aria-expanded="false" aria-label="How Adaptive Machine Learning works" class="info-help" id="learning-help" type="button">?</button><span class="info-popover" id="learning-help-popover" role="tooltip">Adaptive Machine Learning — Function: compares accepted S-Wrap recommendations with the actual BW that follows, then learns line, product, mandrel and changeover behavior so future S-Wrap recommendations improve as valid results accumulate.</span></span></div>
 <div class="learning-dashboard-grid">
 <div><span id="dashboard-rolls-label">Rolls learned</span><strong id="dashboard-rolls">0</strong></div>
 <div><span id="dashboard-correction-label">Average correction</span><strong id="dashboard-correction">0</strong></div>
@@ -242,26 +272,37 @@
 </div>
 <small id="learning-note">Learning is stored only on this device.</small>
 </section>
+<button aria-hidden="true" class="hidden" id="end-shift" tabindex="-1" type="button">End shift</button>
+</nav></div>
 <section class="panel history-panel">
 <div class="panel-heading"><div><p class="eyebrow" data-i18n="local">LOCAL</p><h3 data-i18n="recentHistory">Recent history</h3></div><button class="text-button" id="clear-history" type="button">Clear</button></div>
 <div class="history-list" id="history-list"></div>
 </section>
-</main>
-<footer id="footer-text">Industrial IA 5.22 • BW Tolerance Fix</footer>
+<button aria-label="Open production details" class="production-summary-bar production-summary-bottom" id="production-summary-toggle" type="button">
+<span class="production-summary-icon">📊</span>
+<span class="production-summary-item"><small id="prod-current-label">Actual</small><strong id="prod-current-rate">—</strong><em>lbs/hr</em></span>
+<span class="production-summary-separator"></span>
+<span class="production-summary-item"><small id="prod-total-label">Target</small><strong id="prod-current-material">—</strong><em>lbs/hr</em></span>
+<span class="production-summary-separator"></span>
+<span class="production-summary-item production-summary-project"><small id="prod-project-label">Projected</small><strong id="prod-projected-end">—</strong><em>lbs</em></span>
+<span class="production-summary-chevron">›</span>
+<span aria-hidden="true" class="production-hidden-values"><strong id="prod-produced-material">0</strong><strong id="prod-shift-target">—</strong><span id="prod-target-label">Shift target</span><span id="production-forecast">Start a shift to begin production tracking.</span></span>
+</button></main>
+<footer id="footer-text">Industrial IA 5.32.2 • Natural Chat Follow-up Fix</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
 <div class="floating-chat-header">
 <div>
 <strong>💬 Industrial IA</strong>
-<small id="floating-chat-status">Online assistant</small><label class="chat-memory-control" hidden><span>Memory</span><select id="chat-memory-select" aria-label="Chat memory"><option value="separate" selected>Per line</option></select></label>
+<small id="floating-chat-status">Online assistant</small><label class="chat-memory-control" hidden=""><span>Memory</span><select aria-label="Chat memory" id="chat-memory-select"><option selected="" value="separate">Per line</option></select></label>
 </div>
 <button aria-label="Close chat" class="chat-close" id="chat-close" type="button">×</button>
 </div>
 <div class="chat-panel">
 <div aria-live="polite" class="chat-log" id="chat-log"></div>
 <form class="chat-form" id="chat-form">
-<input aria-label="Message for Industrial IA" autocapitalize="none" autocomplete="off" autocorrect="off" enterkeyhint="send" id="chat-input" inputmode="text" placeholder="Example: 520 6578, 180, FT 10 520..." spellcheck="false" type="text"/>
+<input aria-label="Message for Industrial IA" autocapitalize="none" autocomplete="off" autocorrect="off" enterkeyhint="send" id="chat-input" inputmode="text" placeholder="Example: 520 6578, Primary 110 Secondary 10..." spellcheck="false" type="text"/>
 <button id="send-button" type="submit">Send</button>
 </form>
 <div class="hint-row">
@@ -276,176 +317,241 @@
 <span class="chat-fab-icon">💬</span>
 <span class="chat-fab-label">Chat</span>
 </button>
-
-<div class="product-dialog line-picker-dialog hidden" id="line-picker-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="line-picker-title">
-  <div class="product-dialog-card line-picker-card">
-    <div class="product-dialog-heading"><div><p class="eyebrow">VIEJITO LINE MEMORY</p><h3 id="line-picker-title">Select Extrusion Line</h3></div><button class="dialog-close" id="line-picker-close" type="button" aria-label="Close">×</button></div>
-    <p class="product-dialog-hint">Each line has its own shifts, products, BW trends, S-Wrap learning and production history.</p>
-    <div class="line-choice-grid">
-      <button type="button" data-line-select="1"><span>1</span><small>LINE 1</small></button>
-      <button type="button" data-line-select="2"><span>2</span><small>LINE 2</small></button>
-      <button type="button" data-line-select="3"><span>3</span><small>LINE 3</small></button>
-      <button type="button" data-line-select="4"><span>4</span><small>LINE 4</small></button>
-    </div>
-  </div>
+<div aria-hidden="true" aria-labelledby="line-picker-title" aria-modal="true" class="product-dialog line-picker-dialog hidden" id="line-picker-dialog" role="dialog">
+<div class="product-dialog-card line-picker-card">
+<div class="product-dialog-heading"><div><p class="eyebrow">VIEJITO LINE MEMORY</p><h3 id="line-picker-title">Select Extrusion Line</h3></div><button aria-label="Close" class="dialog-close" id="line-picker-close" type="button">×</button></div>
+<p class="product-dialog-hint">Each line has its own shifts, products, BW trends, S-Wrap learning and production history.</p>
+<div class="line-choice-grid">
+<button data-line-select="1" type="button"><span>1</span><small>LINE 1</small></button>
+<button data-line-select="2" type="button"><span>2</span><small>LINE 2</small></button>
+<button data-line-select="3" type="button"><span>3</span><small>LINE 3</small></button>
+<button data-line-select="4" type="button"><span>4</span><small>LINE 4</small></button>
 </div>
-
-
-<div class="product-dialog hidden" id="settings-password-dialog" aria-hidden="true" role="dialog" aria-modal="true">
-  <div class="product-dialog-card compact-dialog">
-    <div class="product-dialog-heading"><div><p class="eyebrow">ADMIN</p><h3 id="settings-password-title">Settings protected</h3></div><button class="dialog-close" id="settings-password-close" type="button">×</button></div>
-    <p id="settings-password-help">Enter the Settings password.</p>
-    <input id="settings-password-input" type="password" autocomplete="current-password" inputmode="text" placeholder="Password"/>
-    <button class="primary" id="settings-password-confirm" type="button">Unlock Settings</button>
-  </div>
 </div>
-<div class="product-dialog hidden" id="learning-manager-dialog" aria-hidden="true" role="dialog" aria-modal="true">
-  <div class="product-dialog-card">
-    <div class="product-dialog-heading"><div><p class="eyebrow">LEARNING DATA</p><h3 id="learning-manager-title">Line learning records</h3></div><button class="dialog-close" id="learning-manager-close" type="button">×</button></div>
-    <p class="settings-help" id="learning-manager-help">Delete only records you know are test or incorrect data.</p>
-    <div id="learning-manager-list" class="learning-manager-list"></div>
-  </div>
 </div>
-<div class="product-dialog hidden" id="settings-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
-  <div class="product-dialog-card settings-dialog-card">
-    <div class="product-dialog-heading">
-      <div><p class="eyebrow">INDUSTRIAL IA</p><h3 id="settings-dialog-title">Settings</h3></div>
-      <button class="dialog-close" id="settings-close" type="button" aria-label="Close">×</button>
-    </div>
-
-    <section class="settings-section">
-      <label class="settings-select-label" for="settings-language-select">
-        <small id="settings-language-kicker">LANGUAGE</small>
-        <strong id="settings-language-title">Application language</strong>
-        <select id="settings-language-select">
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-        </select>
-      </label>
-    </section>
-
-    <section class="settings-section">
-      <small id="settings-appearance-kicker">APPEARANCE</small>
-      <strong id="settings-appearance-title">Display mode</strong>
-      <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice" data-draft-theme="dark">Dark</button>
-        <button type="button" class="settings-choice" data-draft-theme="light">Light</button>
-      </div>
-    </section>
-
-    <section class="settings-section">
-      <small id="settings-personality-kicker">CHAT PERSONALITY</small>
-      <strong id="settings-personality-title">Sarcasm</strong>
-      <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice" data-draft-personality="professional">Professional</button>
-        <button type="button" class="settings-choice" data-draft-personality="light">Light sarcasm</button>
-        <button type="button" class="settings-choice" data-draft-personality="heavy">Heavy sarcasm</button>
-        <button type="button" class="settings-choice" data-draft-personality="off">Off</button>
-      </div>
-    </section>
-
-    <section class="settings-section">
-      <small id="settings-bw-kicker">BASIS WEIGHT</small>
-      <strong id="settings-bw-title">BW calculation factor</strong>
-      <p class="settings-help" id="settings-bw-help">450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.</p>
-      <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice bw-factor-choice" data-draft-bw-factor="450">450<br><small>Plant system</small></button>
-        <button type="button" class="settings-choice bw-factor-choice" data-draft-bw-factor="453.59237">453.59237<br><small>Exact conversion</small></button>
-      </div>
-    </section>
-
-    <section class="settings-section">
-      <small id="settings-demo-kicker">DEMO / TRAINING</small>
-      <strong id="settings-demo-title">Demo Mode — Do Not Learn</strong>
-      <p class="settings-help" id="settings-demo-help">Use fake values to demonstrate Viejito without adding them to production history, trends, learning, or production totals.</p>
-      <div class="settings-choice-grid two">
-        <button type="button" class="settings-choice" data-draft-demo="off">Production</button>
-        <button type="button" class="settings-choice" data-draft-demo="on">Demo Mode</button>
-      </div>
-    </section>
-    <section class="settings-section">
-      <small id="settings-learning-kicker">LEARNING DATA</small>
-      <strong id="settings-learning-title">Learning Data Manager</strong>
-      <p class="settings-help" id="settings-learning-help">Review recent learning records for the selected line and remove an incorrect record if necessary.</p>
-      <button type="button" class="settings-choice learning-manager-open" id="learning-manager-open">Manage Learning Data</button>
-    </section>
-    <div class="settings-save-row">
-      <button class="primary settings-save-button" id="settings-save" type="button">Save Changes</button>
-      <small id="settings-save-note">Changes are applied only after Save Changes.</small>
-    </div>
-  </div>
+<div aria-hidden="true" aria-labelledby="manual-process-title" aria-modal="true" class="product-dialog hidden" id="manual-process-dialog" role="dialog">
+<div class="product-dialog-card manual-process-card">
+<div class="product-dialog-heading"><div><p class="eyebrow" id="manual-process-eyebrow">PROCESS PERFORMANCE</p><h3 id="manual-process-title">Manual Process Record</h3></div><button aria-label="Close" class="dialog-close" id="manual-process-close" type="button">×</button></div>
+<p class="product-dialog-hint" id="manual-process-hint">Save a real two-roll run so Viejito can learn it and answer questions about it later in chat.</p>
+<div class="manual-process-context" id="manual-process-context">Line — • Product — • S-Wrap —</div>
+<div class="manual-process-grid">
+<label><span id="manual-primary-label">Primary RPM</span><input id="manual-primary" inputmode="decimal" min="0" placeholder="110" step="any" type="number"/></label>
+<label><span id="manual-secondary-label">Secondary RPM</span><input id="manual-secondary" inputmode="decimal" min="0" placeholder="11.5" step="any" type="number"/></label>
+<label><span id="manual-w1-label">Roll 1 weight (lb)</span><input id="manual-w1" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
+<label><span id="manual-w2-label">Roll 2 weight (lb)</span><input id="manual-w2" inputmode="decimal" min="0" placeholder="518" step="any" type="number"/></label>
+<label class="manual-time-field"><span id="manual-minutes-label">Run time (minutes)</span><input id="manual-minutes" inputmode="decimal" min="0" placeholder="51" step="any" type="number"/></label>
 </div>
-<div class="product-dialog hidden" id="product-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="product-dialog-title">
-  <div class="product-dialog-card">
-    <div class="product-dialog-heading"><div><p class="eyebrow">SMART CHANGEOVER</p><h3 id="product-dialog-title">Select sheet type</h3></div><button class="dialog-close" id="product-dialog-cancel" type="button" aria-label="Close">×</button></div>
-    <p class="product-dialog-hint" id="product-dialog-hint">Type 8.6 to show only 8.6 sheet types.</p>
-    <div class="extruder-picker" id="extruder-picker">
-      <span id="extruder-picker-label">Select extruder</span>
-      <div class="extruder-options" role="radiogroup" aria-label="Extruder">
-        <button type="button" class="extruder-option selected" data-extruder="1">Extruder 1</button>
-        <button type="button" class="extruder-option" data-extruder="2">Extruder 2</button>
-        <button type="button" class="extruder-option" data-extruder="3">Extruder 3</button>
-        <button type="button" class="extruder-option" data-extruder="4">Extruder 4</button>
-      </div>
-    </div>
-    <label class="product-search-label operator-picker" id="operator-picker"><span id="operator-picker-label">Operator</span><select id="product-operator"><option value="">Select operator</option><option value="Terry Davis">Terry Davis</option><option value="José Esquivel">José Esquivel</option><option value="Luis Rosario">Luis Rosario</option><option value="Mateo Pascual">Mateo Pascual</option></select></label>
-    <label class="product-search-label operator-picker" id="shift-language-picker"><span id="shift-language-picker-label">Language / Idioma</span><select id="product-language"><option value="">Select language / Selecciona idioma</option><option value="en">English</option><option value="es">Español</option></select></label>
-    <label class="product-search-label"><span>Sheet type</span><input id="product-search" list="sheet-type-list" autocomplete="off" placeholder="Example: 8.6" type="text"/></label>
-    <div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
-    <label class="product-swrap-label"><span id="product-swrap-copy">Current S-Wrap</span><input id="product-swrap" inputmode="decimal" min="1" placeholder="180" step="1" type="number"/></label>
-    <div class="changeover-auto-box hidden" id="changeover-auto-box">
-      <div><small>LAST AVERAGE BW</small><strong id="changeover-last-bw">—</strong></div>
-      <div><small>LAST S-WRAP</small><strong id="changeover-last-swrap">—</strong></div>
-      <div><small>NEW S-WRAP</small><strong id="changeover-new-swrap">—</strong></div>
-      <p id="changeover-auto-note">Calculated automatically from the last completed cut.</p>
-    </div>
-
-    <div class="job-history-preview hidden" id="job-history-preview"></div>
-    <div class="product-choice-list" id="product-choice-list"></div>
-    <button class="primary" id="product-dialog-confirm" type="button">Start changeover</button>
-  </div>
+<div aria-live="polite" class="manual-process-preview">
+<div><small id="manual-total-label">Total weight</small><strong id="manual-total">—</strong><span>lb</span></div>
+<div><small id="manual-output-label">Calculated output</small><strong id="manual-output">—</strong><span>lb/hr</span></div>
 </div>
-
-<div class="product-dialog hidden" id="production-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="production-dialog-title">
-  <div class="product-dialog-card production-dialog-card">
-    <div class="product-dialog-heading"><div><p class="eyebrow">PRODUCTION TRACKING</p><h3 id="production-dialog-title">Production details & history</h3></div><button class="dialog-close" id="production-dialog-close" type="button" aria-label="Close">×</button></div>
-    <div class="production-detail-grid">
-      <div><small>Actual rate</small><strong id="detail-current-rate">—</strong><span>lbs/hr</span></div>
-      <div><small>Target rate</small><strong id="detail-target-rate">—</strong><span>lbs/hr</span></div>
-      <div><small>Produced</small><strong id="detail-produced">0</strong><span>lbs</span></div>
-      <div><small>Projected end</small><strong id="detail-projected">—</strong><span>lbs</span></div>
-      <div><small>Shift target</small><strong id="detail-shift-target">—</strong><span>lbs</span></div>
-    </div>
-    <div class="production-detail-forecast" id="detail-production-forecast">Start a shift to begin production tracking.</div>
-    <section class="production-trend-card" aria-labelledby="production-trend-title">
-      <div class="production-trend-heading"><div><small>SHIFT TREND</small><strong id="production-trend-title">Actual vs target lbs/hr</strong></div><span id="production-trend-points">0 cuts</span></div>
-      <div class="production-chart-wrap">
-        <svg id="production-trend-chart" viewBox="0 0 600 190" role="img" aria-label="Production rate trend">
-          <line class="production-chart-grid" x1="34" y1="20" x2="34" y2="162"></line>
-          <line class="production-chart-grid" x1="34" y1="162" x2="582" y2="162"></line>
-          <line class="production-chart-target" id="production-chart-target" x1="34" y1="95" x2="582" y2="95"></line>
-          <polyline class="production-chart-line" id="production-chart-line" points=""></polyline>
-          <g id="production-chart-dots"></g>
-          <text class="production-chart-label" id="production-chart-high" x="4" y="26">—</text>
-          <text class="production-chart-label" id="production-chart-low" x="4" y="164">0</text>
-          <text class="production-chart-target-label" id="production-chart-target-label" x="580" y="89" text-anchor="end">Target —</text>
-        </svg>
-        <p class="production-chart-empty" id="production-chart-empty">Complete cuts to build the trend chart.</p>
-      </div>
-    </section>
-    <div class="production-target-form">
-      <label><span id="target-hour-label">Target lbs per hour</span><input id="target-lbs-hour" inputmode="decimal" min="1" step="1" type="number" placeholder="1200"></label>
-      <label><span id="shift-hours-label">Shift hours</span><input id="target-shift-hours" inputmode="decimal" min="1" max="24" step="0.5" type="number" value="12"></label>
-      <div class="target-shift-preview"><span id="target-total-label">Target per shift</span><strong id="target-shift-total">—</strong><small>lbs</small></div>
-      <button class="primary" id="save-production-target" type="button">Save target</button>
-    </div>
-    <div class="product-history-heading"><h4 id="product-history-title">Products run today</h4><small id="product-history-summary"></small></div>
-    <div class="product-run-history" id="product-run-history"></div>
-  </div>
+<p class="manual-process-note" id="manual-process-note">Line, product, S-Wrap, date/time and operator are saved automatically from the current Viejito context.</p>
+<div class="manual-process-actions">
+<button class="secondary" id="manual-process-cancel" type="button">Cancel</button>
+<button class="primary" id="manual-process-save" type="button">Save Process Record</button>
+</div>
+</div>
+</div>
+<div aria-hidden="true" aria-labelledby="speed-change-title" aria-modal="true" class="product-dialog hidden" id="speed-change-dialog" role="dialog">
+<div class="product-dialog-card speed-change-card">
+<div class="product-dialog-heading"><div><p class="eyebrow" id="speed-change-eyebrow">OCCASIONAL SPEED CHANGE</p><h3 id="speed-change-title">Speed Change Advisor</h3></div><button aria-label="Close" class="dialog-close" id="speed-change-close" type="button">×</button></div>
+<p class="product-dialog-hint" id="speed-change-hint">Use this only when the line speed is intentionally being changed. Viejito uses the current line speed, Last BW and the actual two-roll output to calculate a coordinated Primary + Secondary starting point.</p>
+<div class="manual-process-context" id="speed-change-context">Line — • Current speed — • Last BW —</div>
+<div class="manual-process-grid speed-change-grid">
+<label><span id="speed-current-primary-label">Current Primary RPM</span><input id="speed-current-primary" inputmode="decimal" min="0" placeholder="110" step="any" type="number"/></label>
+<label><span id="speed-current-secondary-label">Current Secondary RPM</span><input id="speed-current-secondary" inputmode="decimal" min="0" placeholder="11.5" step="any" type="number"/></label>
+<label><span id="speed-w1-label">Roll 1 weight (lb)</span><input id="speed-w1" inputmode="decimal" min="0" placeholder="520" step="any" type="number"/></label>
+<label><span id="speed-w2-label">Roll 2 weight (lb)</span><input id="speed-w2" inputmode="decimal" min="0" placeholder="518" step="any" type="number"/></label>
+<label><span id="speed-minutes-label">Run time (minutes)</span><input id="speed-minutes" inputmode="decimal" min="0" placeholder="51" step="any" type="number"/></label>
+<label><span id="speed-target-speed-label">Desired line speed</span><input id="speed-target-speed" inputmode="decimal" min="0" placeholder="150" step="any" type="number"/></label>
+<label class="speed-desired-bw-field"><span id="speed-target-bw-label">Desired BW</span><input id="speed-target-bw" inputmode="decimal" min="0" step="any" type="number"/></label>
+</div>
+<div aria-live="polite" class="manual-process-preview speed-change-preview">
+<div><small id="speed-current-output-label">Current output</small><strong id="speed-current-output">—</strong><span>lb/hr</span></div>
+<div><small id="speed-target-output-label">Required output</small><strong id="speed-target-output">—</strong><span>lb/hr</span></div>
+</div>
+<div aria-live="polite" class="speed-change-result hidden" id="speed-change-result">
+<div class="speed-change-result-heading"><strong id="speed-result-title">Starting point</strong><span id="speed-result-method">—</span></div>
+<div class="speed-quality-alert hidden" id="speed-quality-alert">
+<strong id="speed-quality-title">QUALITY LIMIT</strong>
+<p id="speed-quality-message">—</p>
+<p class="speed-quality-humor hidden" id="speed-quality-humor">—</p>
+</div>
+<div class="speed-theoretical hidden" id="speed-theoretical">
+<small id="speed-theoretical-title">THEORETICAL REQUIREMENT — NOT RECOMMENDED</small>
+<div class="speed-theoretical-grid">
+<div><span id="speed-theoretical-primary-label">Required Primary</span><strong id="speed-theoretical-primary">—</strong><em>RPM</em></div>
+<div><span id="speed-theoretical-secondary-label">Required Secondary</span><strong id="speed-theoretical-secondary">—</strong><em>RPM</em></div>
+<div><span id="speed-theoretical-swrap-label">Requested S-Wrap</span><strong id="speed-theoretical-swrap">—</strong><em>ft/min</em></div>
+</div>
+</div>
+<div class="process-setpoint-grid speed-setpoint-grid">
+<div class="recommended"><small id="speed-set-swrap-label">SET S-WRAP</small><strong id="speed-set-swrap">—</strong><span>ft/min</span></div>
+<div class="recommended"><small id="speed-set-primary-label">SET PRIMARY</small><strong id="speed-set-primary">—</strong><span>RPM</span></div>
+<div class="recommended"><small id="speed-set-secondary-label">SET SECONDARY</small><strong id="speed-set-secondary">—</strong><span>RPM</span></div>
+<div><small id="speed-set-heat-label">SECONDARY HEAT START</small><strong id="speed-set-heat">—</strong><span>°F</span></div>
+</div>
+<p class="speed-heat-guidance" id="speed-heat-guidance">—</p>
+<p class="process-pressure-note" id="speed-pressure-note">—</p>
+<small class="process-setpoint-source" id="speed-result-source"></small>
+</div>
+<p class="manual-process-note" id="speed-change-note">Starting point only. Verify actual Primary Pressure, melt, motor load and the next completed-roll BW after the change.</p>
+<div class="manual-process-actions">
+<button class="secondary" id="speed-change-cancel" type="button">Close</button>
+<button class="primary" id="speed-change-suggest" type="button">Suggestion</button>
+</div>
+</div>
+</div>
+<div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="settings-password-dialog" role="dialog">
+<div class="product-dialog-card compact-dialog">
+<div class="product-dialog-heading"><div><p class="eyebrow">ADMIN</p><h3 id="settings-password-title">Settings protected</h3></div><button class="dialog-close" id="settings-password-close" type="button">×</button></div>
+<p id="settings-password-help">Enter the Settings password.</p>
+<input autocomplete="current-password" id="settings-password-input" inputmode="text" placeholder="Password" type="password"/>
+<button class="primary" id="settings-password-confirm" type="button">Unlock Settings</button>
+</div>
+</div>
+<div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="learning-manager-dialog" role="dialog">
+<div class="product-dialog-card">
+<div class="product-dialog-heading"><div><p class="eyebrow">LEARNING DATA</p><h3 id="learning-manager-title">Line learning records</h3></div><button class="dialog-close" id="learning-manager-close" type="button">×</button></div>
+<p class="settings-help" id="learning-manager-help">Delete only records you know are test or incorrect data.</p>
+<div class="learning-manager-list" id="learning-manager-list"></div>
+</div>
+</div>
+<div aria-hidden="true" aria-labelledby="settings-dialog-title" aria-modal="true" class="product-dialog hidden" id="settings-dialog" role="dialog">
+<div class="product-dialog-card settings-dialog-card">
+<div class="product-dialog-heading">
+<div><p class="eyebrow">INDUSTRIAL IA</p><h3 id="settings-dialog-title">Settings</h3></div>
+<button aria-label="Close" class="dialog-close" id="settings-close" type="button">×</button>
+</div>
+<section class="settings-section">
+<label class="settings-select-label" for="settings-language-select">
+<small id="settings-language-kicker">LANGUAGE</small>
+<strong id="settings-language-title">Application language</strong>
+<select id="settings-language-select">
+<option value="en">English</option>
+<option value="es">Español</option>
+<option value="fr">Français</option>
+</select>
+</label>
+</section>
+<section class="settings-section">
+<small id="settings-appearance-kicker">APPEARANCE</small>
+<strong id="settings-appearance-title">Display mode</strong>
+<div class="settings-choice-grid two">
+<button class="settings-choice" data-draft-theme="dark" type="button">Dark</button>
+<button class="settings-choice" data-draft-theme="light" type="button">Light</button>
+</div>
+</section>
+<section class="settings-section">
+<small id="settings-personality-kicker">CHAT PERSONALITY</small>
+<strong id="settings-personality-title">Sarcasm</strong>
+<div class="settings-choice-grid two">
+<button class="settings-choice" data-draft-personality="professional" type="button">Professional</button>
+<button class="settings-choice" data-draft-personality="light" type="button">Light sarcasm</button>
+<button class="settings-choice" data-draft-personality="heavy" type="button">Heavy sarcasm</button>
+<button class="settings-choice" data-draft-personality="off" type="button">Off</button>
+</div>
+</section>
+<section class="settings-section">
+<small id="settings-bw-kicker">BASIS WEIGHT</small>
+<strong id="settings-bw-title">BW calculation factor</strong>
+<p class="settings-help" id="settings-bw-help">450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.</p>
+<div class="settings-choice-grid two">
+<button class="settings-choice bw-factor-choice" data-draft-bw-factor="450" type="button">450<br/><small>Plant system</small></button>
+<button class="settings-choice bw-factor-choice" data-draft-bw-factor="453.59237" type="button">453.59237<br/><small>Exact conversion</small></button>
+</div>
+</section>
+<section class="settings-section">
+<small id="settings-demo-kicker">DEMO / TRAINING</small>
+<strong id="settings-demo-title">Demo Mode — Do Not Learn</strong>
+<p class="settings-help" id="settings-demo-help">Use fake values to demonstrate Viejito without adding them to production history, trends, learning, or production totals.</p>
+<div class="settings-choice-grid two">
+<button class="settings-choice" data-draft-demo="off" type="button">Production</button>
+<button class="settings-choice" data-draft-demo="on" type="button">Demo Mode</button>
+</div>
+</section>
+<section class="settings-section">
+<small id="settings-learning-kicker">LEARNING DATA</small>
+<strong id="settings-learning-title">Learning Data Manager</strong>
+<p class="settings-help" id="settings-learning-help">Review recent learning records for the selected line and remove an incorrect record if necessary.</p>
+<button class="settings-choice learning-manager-open" id="learning-manager-open" type="button">Manage Learning Data</button>
+<p class="settings-help settings-danger-help" id="settings-reset-help">Protected maintenance actions. Use only when you intentionally want to erase learning or trend history for the selected line.</p><div class="settings-choice-grid two settings-danger-grid"><button class="settings-choice settings-danger-action" id="clear-learning" type="button">Reset Adaptive Learning</button><button class="settings-choice settings-danger-action" id="clear-trend" type="button">Clear Trend History</button><button class="settings-choice settings-danger-action" id="clear-process-learning" type="button">Clear Process Performance Learning</button></div></section>
+<div class="settings-save-row">
+<button class="primary settings-save-button" id="settings-save" type="button">Save Changes</button>
+<small id="settings-save-note">Changes are applied only after Save Changes.</small>
+</div>
+</div>
+</div>
+<div aria-hidden="true" aria-labelledby="product-dialog-title" aria-modal="true" class="product-dialog hidden" id="product-dialog" role="dialog">
+<div class="product-dialog-card">
+<div class="product-dialog-heading"><div><p class="eyebrow">SMART CHANGEOVER</p><h3 id="product-dialog-title">Select sheet type</h3></div><button aria-label="Close" class="dialog-close" id="product-dialog-cancel" type="button">×</button></div>
+<p class="product-dialog-hint" id="product-dialog-hint">Type 8.6 to show only 8.6 sheet types.</p>
+<div class="extruder-picker" id="extruder-picker">
+<span id="extruder-picker-label">Select extruder</span>
+<div aria-label="Extruder" class="extruder-options" role="radiogroup">
+<button class="extruder-option selected" data-extruder="1" type="button">Extruder 1</button>
+<button class="extruder-option" data-extruder="2" type="button">Extruder 2</button>
+<button class="extruder-option" data-extruder="3" type="button">Extruder 3</button>
+<button class="extruder-option" data-extruder="4" type="button">Extruder 4</button>
+</div>
+</div>
+<label class="product-search-label operator-picker" id="operator-picker"><span id="operator-picker-label">Operator</span><input autocomplete="name" id="product-operator" maxlength="50" placeholder="Enter operator name" type="text"/></label>
+<label class="product-search-label operator-picker" id="shift-language-picker"><span id="shift-language-picker-label">Language / Idioma</span><select id="product-language"><option value="">Select language / Selecciona idioma</option><option value="en">English</option><option value="es">Español</option></select></label>
+<label class="product-search-label"><span>Sheet type</span><input autocomplete="off" id="product-search" list="sheet-type-list" placeholder="Example: 8.6" type="text"/></label>
+<div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
+<label class="product-swrap-label"><span id="product-swrap-copy">Current S-Wrap</span><input id="product-swrap" inputmode="decimal" max="228" min="1" placeholder="180" step="1" type="number"/></label>
+<div class="changeover-auto-box hidden" id="changeover-auto-box">
+<div><small>LAST AVERAGE BW</small><strong id="changeover-last-bw">—</strong></div>
+<div><small>LAST S-WRAP</small><strong id="changeover-last-swrap">—</strong></div>
+<div><small>NEW S-WRAP</small><strong id="changeover-new-swrap">—</strong></div>
+<p id="changeover-auto-note">Calculated automatically from the last completed cut.</p>
+</div>
+<div class="job-history-preview hidden" id="job-history-preview"></div>
+<div class="product-choice-list" id="product-choice-list"></div>
+<button class="primary" id="product-dialog-confirm" type="button">Start changeover</button>
+</div>
+</div>
+<div aria-hidden="true" aria-labelledby="production-dialog-title" aria-modal="true" class="product-dialog hidden" id="production-dialog" role="dialog">
+<div class="product-dialog-card production-dialog-card">
+<div class="product-dialog-heading"><div><p class="eyebrow">PRODUCTION TRACKING</p><h3 id="production-dialog-title">Production details &amp; history</h3></div><button aria-label="Close" class="dialog-close" id="production-dialog-close" type="button">×</button></div>
+<div class="production-detail-grid">
+<div><small>Actual rate</small><strong id="detail-current-rate">—</strong><span>lbs/hr</span></div>
+<div><small>Target rate</small><strong id="detail-target-rate">—</strong><span>lbs/hr</span></div>
+<div><small>Produced</small><strong id="detail-produced">0</strong><span>lbs</span></div>
+<div><small>Projected end</small><strong id="detail-projected">—</strong><span>lbs</span></div>
+<div><small>Shift target</small><strong id="detail-shift-target">—</strong><span>lbs</span></div>
+</div>
+<div class="production-detail-forecast" id="detail-production-forecast">Start a shift to begin production tracking.</div>
+<section aria-labelledby="production-trend-title" class="production-trend-card">
+<div class="production-trend-heading"><div><small>SHIFT TREND</small><strong id="production-trend-title">Actual vs target lbs/hr</strong></div><span id="production-trend-points">0 cuts</span></div>
+<div class="production-chart-wrap">
+<svg aria-label="Production rate trend" id="production-trend-chart" role="img" viewbox="0 0 600 190">
+<line class="production-chart-grid" x1="34" x2="34" y1="20" y2="162"></line>
+<line class="production-chart-grid" x1="34" x2="582" y1="162" y2="162"></line>
+<line class="production-chart-target" id="production-chart-target" x1="34" x2="582" y1="95" y2="95"></line>
+<polyline class="production-chart-line" id="production-chart-line" points=""></polyline>
+<g id="production-chart-dots"></g>
+<text class="production-chart-label" id="production-chart-high" x="4" y="26">—</text>
+<text class="production-chart-label" id="production-chart-low" x="4" y="164">0</text>
+<text class="production-chart-target-label" id="production-chart-target-label" text-anchor="end" x="580" y="89">Target —</text>
+</svg>
+<p class="production-chart-empty" id="production-chart-empty">Complete cuts to build the trend chart.</p>
+</div>
+</section>
+<div class="production-target-form">
+<label><span id="target-hour-label">Target lbs per hour</span><input id="target-lbs-hour" inputmode="decimal" min="1" placeholder="1200" step="1" type="number"/></label>
+<label><span id="shift-hours-label">Shift hours</span><input id="target-shift-hours" inputmode="decimal" max="24" min="1" step="0.5" type="number" value="12"/></label>
+<div class="target-shift-preview"><span id="target-total-label">Target per shift</span><strong id="target-shift-total">—</strong><small>lbs</small></div>
+<button class="primary" id="save-production-target" type="button">Save target</button>
+</div>
+<div class="product-history-heading"><h4 id="product-history-title">Products run today</h4><small id="product-history-summary"></small></div>
+<div class="product-run-history" id="product-run-history"></div>
+</div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.17.0"></script>
-<script src="app.js?v=5.22"></script>
+<script src="optimizer.js?v=5.32.2"></script>
+<script src="process-learning.js?v=5.32.2"></script>
+<script src="davis-standard-brain.js?v=5.32.2"></script>
+<script src="app.js?v=5.32.2"></script>
 </body>
 </html>

@@ -18,9 +18,11 @@
   const LEGACY_LEARNING_KEY = 'viejitoMachineLearningV1';
   const MAX_RECORDS = 1000;
   const MIN_CONTEXT_RECORDS = 5;
+  const MAX_SWRAP = 228;
 
   const finitePositive = value => Number.isFinite(Number(value)) && Number(value) > 0;
   const round1 = value => Number(Number(value).toFixed(1));
+  const clampSWrap = value => finitePositive(value) ? Math.min(MAX_SWRAP, Number(value)) : value;
 
   class AdaptiveLearningEngine {
     constructor(storage = window.localStorage, storageKey = LEARNING_KEY) {
@@ -214,7 +216,9 @@
       else learned = Math.round(learned);
       const active = stats.count >= MIN_CONTEXT_RECORDS || profile.count >= MIN_CONTEXT_RECORDS;
       const confidence = Math.max(stats.confidence, profile.confidence || 0);
-      return {...stats, count:Math.max(stats.count, profile.count || 0), confidence, profile, historyWeight:Number(historyWeight.toFixed(2)), learnedSuggestion: learned, active, minimumRequired:MIN_CONTEXT_RECORDS};
+      const rawLearnedSuggestion=learned;
+      learned=clampSWrap(learned);
+      return {...stats, count:Math.max(stats.count, profile.count || 0), confidence, profile, historyWeight:Number(historyWeight.toFixed(2)), learnedSuggestion: learned, rawLearnedSuggestion, maxSWrap:MAX_SWRAP, limitReached:Number(rawLearnedSuggestion)>MAX_SWRAP, active, minimumRequired:MIN_CONTEXT_RECORDS};
     }
   }
 
@@ -232,11 +236,11 @@
         .map(Number)
         .filter(finitePositive)
         .slice(-this.sampleSize);
-      const speed = Number(currentSWrap);
+      const speed = clampSWrap(Number(currentSWrap));
       const empty = {
         ready:false, count:rolls.length, required:this.sampleSize, values:rolls, direction:'stable',
         slope:0, projectedBW:null, consistency:0, level:'waiting', recommendAdjustment:false,
-        adjustment:0, suggestedSWrap:finitePositive(speed) ? speed : null
+        adjustment:0, suggestedSWrap:finitePositive(speed) ? clampSWrap(speed) : null, maxSWrap:MAX_SWRAP, limitReached:false
       };
       if (rolls.length < this.sampleSize) return empty;
 
@@ -265,7 +269,11 @@
       const nearOrOutside = projectedAbsoluteDifference > GREEN_TOLERANCE;
       const recommendAdjustment = finitePositive(speed) && direction !== 'stable' && movingAway && consistent && nearOrOutside;
       const adjustment = recommendAdjustment ? (direction === 'up' ? this.preventiveStep : -this.preventiveStep) : 0;
-      const suggestedSWrap = finitePositive(speed) ? Math.max(1, Math.round(speed + adjustment)) : null;
+      const rawSuggestedSWrap = finitePositive(speed) ? Math.max(1, Math.round(speed + adjustment)) : null;
+      const suggestedSWrap = finitePositive(rawSuggestedSWrap) ? clampSWrap(rawSuggestedSWrap) : null;
+      const limitReached=Number(rawSuggestedSWrap)>MAX_SWRAP;
+      const effectiveAdjustment=finitePositive(suggestedSWrap)?Number((Number(suggestedSWrap)-Number(speed)).toFixed(1)):0;
+      const effectiveRecommendAdjustment=recommendAdjustment&&Math.abs(effectiveAdjustment)>=0.5;
       let level = 'stable';
       if (recommendAdjustment) level = projectedAbsoluteDifference >= this.tolerance ? 'danger' : 'warning';
 
@@ -273,7 +281,7 @@
         ready:true, count:n, required:this.sampleSize, values:rolls, direction,
         slope:Number(slope.toFixed(3)), projectedBW:Number(projectedBW.toFixed(3)),
         projectedDifference:Number(projectedDifference.toFixed(3)), consistency:Math.round(rSquared * 100),
-        level, recommendAdjustment, adjustment, suggestedSWrap, targetBW:this.targetBW,
+        level, recommendAdjustment:effectiveRecommendAdjustment, blockedByMax:recommendAdjustment&&!effectiveRecommendAdjustment&&limitReached, adjustment:effectiveAdjustment, suggestedSWrap, rawSuggestedSWrap, maxSWrap:MAX_SWRAP, limitReached, targetBW:this.targetBW,
         tolerance:this.tolerance
       };
     }
@@ -282,7 +290,7 @@
   class SmartOptimizer {
     constructor({ targetBW = 6.35, currentSWrap = 170, roundMode = 'nearest1', learningEngine = null, context = {} } = {}) {
       this.targetBW = Number(targetBW);
-      this.currentSWrap = Number(currentSWrap);
+      this.currentSWrap = clampSWrap(Number(currentSWrap));
       this.roundMode = roundMode;
       this.learningEngine = learningEngine || new AdaptiveLearningEngine();
       this.context = {...(context || {}), targetBW:Number(targetBW)};
@@ -307,16 +315,19 @@
       else if (absoluteDifference < WARNING_TOLERANCE) level = 'yellow';
 
       const rawSuggested = this.currentSWrap * actual / this.targetBW;
-      const formulaSuggestion = this.roundSpeed(rawSuggested);
+      const rawFormulaSuggestion = this.roundSpeed(rawSuggested);
+      const formulaSuggestion = clampSWrap(rawFormulaSuggestion);
       const learning = this.learningEngine.recommend(formulaSuggestion, this.roundMode, this.context);
-      const suggestedSWrap = learning.active ? learning.learnedSuggestion : formulaSuggestion;
+      const rawFinalSuggestion = learning.active ? Number(learning.rawLearnedSuggestion ?? learning.learnedSuggestion) : Number(rawFormulaSuggestion);
+      const suggestedSWrap = clampSWrap(learning.active ? learning.learnedSuggestion : formulaSuggestion);
+      const limitReached = Number(rawFormulaSuggestion)>MAX_SWRAP || Number(rawFinalSuggestion)>MAX_SWRAP || !!learning.limitReached;
       const adjustment = Number((suggestedSWrap - this.currentSWrap).toFixed(1));
       const direction = adjustment < 0 ? 'decrease' : adjustment > 0 ? 'increase' : 'hold';
 
       return {
         actualBW: actual, targetBW: this.targetBW, difference, absoluteDifference,
         level, suggestAdjustment, currentSWrap: this.currentSWrap,
-        formulaSuggestion, suggestedSWrap, adjustment, direction,
+        formulaSuggestion, rawFormulaSuggestion, suggestedSWrap, rawSuggestedSWrap:rawFinalSuggestion, adjustment, direction, limitReached, maxSWrap:MAX_SWRAP,
         learning, greenTolerance: GREEN_TOLERANCE, warningTolerance: WARNING_TOLERANCE
       };
     }
@@ -326,4 +337,5 @@
   window.SmartOptimizer = SmartOptimizer;
   window.TrendPredictor = TrendPredictor;
   window.VIEJITO_TOLERANCES = Object.freeze({green: GREEN_TOLERANCE, warning: WARNING_TOLERANCE});
+  window.VIEJITO_MAX_SWRAP = MAX_SWRAP;
 })();

@@ -1,7 +1,7 @@
 {
   "name": "Industrial IA",
   "short_name": "Industrial IA",
-  "description": "Offline industrial process assistant with line-specific BW, S-Wrap learning, production tracking and isolated chat history.",
+  "description": "Offline dual-brain industrial assistant with Davis-Standard extrusion troubleshooting, line-specific BW/S-Wrap intelligence, trend prediction and process-performance learning.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",

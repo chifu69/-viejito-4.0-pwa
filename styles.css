@@ -404,3 +404,147 @@ body.chat-open{overflow:hidden}
 
 /* v5.19 operator safety reminder */
 .blade-reminder-modal{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.42);display:grid;place-items:center;padding:24px}.blade-reminder-card{width:min(460px,100%);background:var(--panel,#fff);color:var(--ink,#102b42);border-radius:20px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25);border:1px solid rgba(15,23,42,.12)}.blade-reminder-card strong{display:block;font-size:1.35rem;line-height:1.3;margin-bottom:20px}.blade-reminder-card>div{display:flex;gap:12px;flex-wrap:wrap}.blade-reminder-card button{min-width:120px;min-height:48px}
+
+
+/* V5.23 — Compact operator workspace: menu tools, one Start/End control, side-by-side winders */
+.tool-workspace{grid-template-columns:minmax(0,1fr) 132px;gap:10px}
+.compact-operator-rail{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;position:sticky!important;top:12px!important;margin:0!important;align-self:start}
+.tool-menu-shell{position:relative}
+.tool-menu-toggle{width:100%;min-height:52px;border:1px solid var(--line);border-radius:15px;background:var(--surface);color:var(--text);display:grid;grid-template-columns:auto 1fr;column-gap:7px;align-items:center;text-align:left;padding:8px 9px;font:inherit;box-shadow:var(--shadow)}
+.tool-menu-toggle>span{font-size:1.05rem;grid-row:1/3}.tool-menu-toggle>strong{font-size:.76rem;line-height:1}.tool-menu-toggle>small{font-size:.6rem;color:var(--accent2);font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tool-menu-popover{position:absolute;right:0;top:calc(100% + 7px);z-index:1200;width:190px;padding:7px;border:1px solid var(--line);border-radius:15px;background:var(--surface);box-shadow:0 16px 38px rgba(0,0,0,.22);display:grid;gap:6px}
+.tool-menu-popover.hidden{display:none!important}
+.tool-menu-popover .quick-card,.tool-menu-item{width:100%;min-height:46px!important;padding:8px 10px!important;border:1px solid var(--line);border-radius:11px;background:var(--surface2);color:var(--text);display:grid!important;grid-template-columns:28px 1fr!important;gap:7px!important;align-items:center;text-align:left!important;font:inherit;box-shadow:none}
+.tool-menu-popover .quick-card span,.tool-menu-item span{font-size:1rem!important;grid-row:auto!important}.tool-menu-popover .quick-card strong,.tool-menu-item strong{font-size:.76rem!important}.tool-menu-popover .quick-card small{display:none!important}.tool-menu-popover .quick-card.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface2))}
+.shift-rail-actions{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
+.shift-rail-button{min-height:52px!important;padding:7px 5px!important;border-radius:14px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;text-align:center!important}
+.shift-rail-button span{font-size:1rem!important;line-height:1}.shift-rail-button strong{font-size:.68rem!important;line-height:1.05}
+.shift-rail-button.end{border-color:#d55b60!important;color:#b82731!important;background:color-mix(in srgb,#d55b60 7%,var(--surface))!important}
+.winder-pair-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.winder-pair-grid .winder-block{margin-bottom:0;min-width:0}
+.winder-pair-grid .winder-heading{align-items:flex-start}
+.winder-pair-grid .winder-title-row{gap:7px;flex-wrap:wrap}
+.winder-pair-grid .last-bw-inline{font-size:.72rem}
+.winder-pair-grid .winder-save-display{min-width:86px}
+.winder-pair-grid .winder-save-display>span{font-size:.58rem}.winder-pair-grid .winder-save-display>strong{font-size:1.25rem}
+.winder-pair-grid .field-grid{gap:7px}.winder-pair-grid label{font-size:.68rem}.winder-pair-grid input{padding:9px 10px}
+.winder-pair-grid .winder-calc{margin-top:8px;min-height:40px;font-size:.76rem}
+@media(max-width:620px){
+  .tool-workspace{grid-template-columns:minmax(0,1fr) 86px;gap:6px}
+  .compact-operator-rail{gap:6px!important;top:8px!important}
+  .tool-menu-toggle{min-height:48px;padding:6px;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:2px}.tool-menu-toggle>span{font-size:.95rem}.tool-menu-toggle>strong{font-size:.66rem}.tool-menu-toggle>small{font-size:.54rem;max-width:76px}
+  .tool-menu-popover{width:170px}
+  .shift-rail-button{min-height:48px!important}.shift-rail-button strong{font-size:.62rem!important}
+  .winder-pair-grid{gap:6px}
+  .winder-pair-grid .winder-block{padding:8px;border-radius:13px}
+  .winder-pair-grid .winder-heading{display:block;margin-bottom:6px}
+  .winder-pair-grid .winder-title-row{display:block}.winder-pair-grid .winder-title-row strong{display:block}.winder-pair-grid .last-bw-inline{display:block;margin-top:2px;font-size:.63rem;white-space:normal}
+  .winder-pair-grid .winder-save-display{min-width:0;margin:4px 0 0;display:flex;align-items:center;justify-content:space-between;gap:4px;text-align:left}.winder-pair-grid .winder-save-display>strong.visible{display:inline-block}.winder-pair-grid .winder-save-display>small{margin-top:0}
+  .winder-pair-grid .field-grid{grid-template-columns:1fr!important;gap:5px!important}
+  .winder-pair-grid label{font-size:.61rem}.winder-pair-grid input{padding:8px;font-size:15px}
+  .winder-pair-grid .winder-calc{font-size:.66rem;padding:5px;min-height:38px}
+}
+
+/* V5.24 — AI badge, compact process strip, mandrel in tools, rail learning card */
+.ai-matrix-badge{display:flex;align-items:center;gap:10px;padding:8px 13px;border:1px solid color-mix(in srgb,var(--line) 78%,var(--accent));border-radius:16px;background:color-mix(in srgb,var(--surface2) 78%,var(--surface));min-width:152px;overflow:hidden}
+.ai-matrix-badge.compact{padding:7px 11px;min-width:138px}
+.ai-matrix-grid{width:42px;height:30px;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;position:relative;padding:3px;border-radius:9px;background:color-mix(in srgb,var(--surface) 76%,var(--accent));overflow:hidden;flex:0 0 auto}
+.ai-matrix-grid span{display:block;border-radius:2px;background:var(--accent);opacity:.26;animation:matrixPulse 1.55s infinite alternate}
+.ai-matrix-grid span:nth-child(2n){animation-delay:.35s}
+.ai-matrix-grid span:nth-child(3n){animation-delay:.7s}
+.ai-matrix-scan{position:absolute;left:2px;right:2px;height:2px;background:var(--accent);opacity:.75;animation:matrixScan 2.1s linear infinite}
+.ai-matrix-copy{display:flex;flex-direction:column;line-height:1.05;min-width:0}
+.ai-matrix-copy strong{font-size:.73rem;letter-spacing:.08em;color:var(--text);white-space:nowrap}
+.ai-matrix-copy small{font-size:.58rem;font-weight:850;letter-spacing:.08em;color:var(--accent2);margin-top:4px;white-space:nowrap}
+@keyframes matrixScan{0%{top:3px}50%{top:25px}100%{top:3px}}
+@keyframes matrixPulse{from{opacity:.16}to{opacity:.82}}
+@media (prefers-reduced-motion:reduce){.ai-matrix-grid span,.ai-matrix-scan{animation:none}}
+
+.process-context-strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:2px 0 12px}
+.process-context-strip label{font-size:.71rem;letter-spacing:.06em;text-transform:uppercase}
+.process-context-strip label input{margin-top:6px;font-weight:800}
+.hidden-mandrel-storage{display:none!important}
+
+.tool-menu-mandrel{display:grid;gap:7px;padding:8px 10px;border:1px solid var(--line);border-radius:11px;background:var(--surface2)}
+.tool-menu-mandrel-label{font-size:.72rem;font-weight:850;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.tool-menu-mandrel-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tool-mandrel{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;padding:8px 10px;font-weight:850;font:inherit}
+.tool-mandrel.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,var(--surface));color:var(--accent2)}
+
+.rail-learning-card{padding:10px 10px 12px;margin-top:8px;border-radius:18px}
+.rail-learning-card .panel-heading{align-items:flex-start;margin-bottom:8px}
+.rail-learning-card .panel-heading .eyebrow{font-size:.56rem;letter-spacing:.16em}
+.rail-learning-card .panel-heading h3{font-size:.84rem;line-height:1.05;margin-top:3px}
+.rail-learning-card .text-button{padding:5px 7px;font-size:.55rem;line-height:1.05}
+.rail-learning-card .learning-dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 6px}
+.rail-learning-card .learning-dashboard-grid span{font-size:.56rem;line-height:1.1;color:var(--muted)}
+.rail-learning-card .learning-dashboard-grid strong{font-size:.88rem;line-height:1.05;margin-top:2px}
+.rail-learning-card #learning-note{display:block;margin-top:8px;font-size:.58rem;line-height:1.2;color:var(--muted)}
+
+@media(max-width:720px){
+  .ai-matrix-badge{padding:7px 10px;min-width:126px;gap:7px}
+  .ai-matrix-grid{width:34px;height:24px}
+  .ai-matrix-copy strong{font-size:.61rem}
+  .ai-matrix-copy small{font-size:.5rem}
+  .process-context-strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:10px}
+  .process-context-strip label{font-size:.6rem}
+  .process-context-strip input{padding:8px 9px;font-size:15px}
+  .tool-menu-mandrel{padding:7px 8px}
+  .tool-menu-mandrel-label{font-size:.64rem}
+  .tool-mandrel{padding:7px 4px;font-size:.72rem}
+  .rail-learning-card{padding:8px 7px 10px;border-radius:15px}
+  .rail-learning-card .panel-heading h3{font-size:.73rem}
+  .rail-learning-card .learning-dashboard-grid span{font-size:.5rem}
+  .rail-learning-card .learning-dashboard-grid strong{font-size:.76rem}
+  .rail-learning-card #learning-note{font-size:.5rem}
+}
+@media(max-width:560px){
+  .process-context-strip{grid-template-columns:1fr}
+}
+
+/* V5.25 — Smart operational dashboard */
+.smart-trend-summary{grid-column:1/-1;width:100%;min-height:0;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface2) 82%,transparent);color:var(--text);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,.68fr) auto minmax(0,.68fr) auto minmax(0,1.35fr) auto;gap:9px;align-items:center;padding:9px 11px;text-align:left;position:relative;transition:border-color .18s,background .18s}
+.smart-trend-summary.green{border-color:color-mix(in srgb,var(--good) 45%,var(--line));background:linear-gradient(145deg,color-mix(in srgb,var(--good) 7%,var(--surface2)),var(--surface2))}
+.smart-trend-summary.yellow{border-color:rgba(246,195,68,.72);background:linear-gradient(145deg,rgba(246,195,68,.07),var(--surface2))}
+.smart-trend-summary.red{border-color:rgba(255,82,82,.72);background:linear-gradient(145deg,rgba(255,82,82,.07),var(--surface2))}
+.smart-trend-icon{font-size:1.15rem;line-height:1}.smart-trend-item{display:flex;flex-direction:column;min-width:0}.smart-trend-item small{font-size:.56rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:850;white-space:nowrap}.smart-trend-item strong{font-size:.88rem;line-height:1.08;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.smart-trend-item em{font-style:normal;font-size:.52rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.smart-trend-main strong{font-weight:950}.smart-trend-summary.green .smart-trend-main strong{color:var(--good)}.smart-trend-summary.yellow .smart-trend-main strong{color:#d99d12}.smart-trend-summary.red .smart-trend-main strong{color:#e54e4e}.smart-trend-separator{width:1px;height:27px;background:var(--line)}.smart-trend-action{position:relative}.trend-apply-mini{margin-top:2px;border:1px solid var(--accent);border-radius:8px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent2);font:inherit;font-size:.6rem;font-weight:900;padding:4px 7px;white-space:nowrap;min-height:0}.trend-apply-mini.hidden{display:none!important}.trend-help-wrap{justify-self:end}
+
+/* Help buttons work by mouse hover/focus on PC and tap/click on touch devices. */
+.help-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}.info-help{width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));background:var(--surface2);color:var(--accent2);font-size:.72rem;font-weight:950;display:inline-grid;place-items:center;padding:0;cursor:help}.info-popover{display:none;position:absolute;z-index:1800;right:0;top:calc(100% + 7px);width:min(310px,calc(100vw - 38px));padding:10px 11px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 14px 34px rgba(0,0,0,.25);color:var(--text);font-size:.7rem;line-height:1.38;text-align:left;font-weight:600}.help-wrap.open .info-popover,.help-wrap:focus-within .info-popover{display:block}@media(hover:hover) and (pointer:fine){.help-wrap:hover .info-popover{display:block}}
+.learning-help-wrap{margin-left:auto}.rail-learning-card .panel-heading{gap:6px}.rail-learning-card .info-help{width:22px;height:22px;min-width:22px;font-size:.66rem}.rail-learning-card .info-popover{right:0;width:300px}
+
+/* AI brain is visually quiet while idle; it only wakes up when numeric work is entered/processed. */
+.ai-matrix-copy strong{color:var(--accent2)!important;font-weight:950;letter-spacing:.09em}
+.ai-matrix-grid span{opacity:0!important;animation:none!important}.ai-matrix-scan{opacity:0!important;animation:none!important}.ai-matrix-badge.thinking .ai-matrix-grid span{opacity:.24!important;animation:matrixPulse .72s infinite alternate!important}.ai-matrix-badge.thinking .ai-matrix-grid span:nth-child(2n){animation-delay:.12s!important}.ai-matrix-badge.thinking .ai-matrix-grid span:nth-child(3n){animation-delay:.24s!important}.ai-matrix-badge.thinking .ai-matrix-scan{opacity:.85!important;animation:matrixScan 1s linear infinite!important}.ai-matrix-badge.thinking{border-color:color-mix(in srgb,var(--accent) 72%,var(--line));box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 9%,transparent)}
+
+.production-summary-bottom{margin-top:14px;margin-bottom:2px;box-shadow:var(--shadow)}
+.settings-danger-help{margin-top:4px}.settings-danger-action{border-color:color-mix(in srgb,#e45b5b 55%,var(--line))!important;color:color-mix(in srgb,#e45b5b 82%,var(--text));font-weight:850}.settings-danger-action:hover{background:color-mix(in srgb,#e45b5b 8%,var(--surface2))}
+.operator-picker input{width:100%;min-height:46px;border:1px solid var(--border,#cfd8e3);border-radius:12px;background:var(--surface,#fff);color:inherit;padding:0 12px;font:inherit}
+
+@media(max-width:720px){
+  .smart-trend-summary{grid-template-columns:auto minmax(0,1.15fr) auto minmax(0,.78fr) auto minmax(0,.8fr) auto minmax(0,.82fr) auto;gap:5px;padding:8px 9px}
+  .smart-trend-icon{display:none}.smart-trend-item small{font-size:.48rem}.smart-trend-item strong{font-size:.73rem}.smart-trend-item em{font-size:.44rem}.smart-trend-separator{height:24px}.trend-apply-mini{font-size:.52rem;padding:3px 5px}.trend-help-wrap .info-help{width:21px;height:21px;min-width:21px;font-size:.62rem}
+  .production-summary-bottom{margin-top:10px}
+}
+@media(max-width:520px){
+  .smart-trend-summary{grid-template-columns:minmax(0,1.25fr) auto minmax(0,.8fr) auto minmax(0,.8fr) auto minmax(0,.92fr) auto;gap:4px}
+  .smart-trend-item em{max-width:92px}.smart-trend-main em{max-width:120px}.smart-trend-summary>.smart-trend-icon{display:none}.smart-trend-separator{height:22px}
+}
+@media(prefers-reduced-motion:reduce){.ai-matrix-badge.thinking .ai-matrix-grid span,.ai-matrix-badge.thinking .ai-matrix-scan{animation:none!important;opacity:.55!important}}
+
+/* V5.27 — keep the top preventive action inside the existing dashboard footprint */
+.smart-trend-action{display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:5px;align-items:center}
+.smart-trend-action>small{grid-column:1/-1;grid-row:1}
+.smart-trend-action>strong{grid-column:1;grid-row:2;min-width:0}
+.smart-trend-action>.trend-apply-mini{grid-column:2;grid-row:2;margin:0;max-width:102px;line-height:1;padding:4px 6px;overflow:hidden;text-overflow:ellipsis}
+.settings-danger-grid .settings-danger-action:last-child:nth-child(odd){grid-column:1/-1}
+@media(max-width:720px){.smart-trend-action{column-gap:3px}.smart-trend-action>.trend-apply-mini{max-width:48px;font-size:.48rem;padding:3px 4px}}
+@media(max-width:520px){.smart-trend-action>.trend-apply-mini{max-width:42px;font-size:.47rem}}
+
+/* V5.27 — prevent compact operator rail children from forcing horizontal overflow on phone/PWA */
+.compact-operator-rail{min-width:0!important;grid-template-columns:minmax(0,1fr)!important}
+.compact-operator-rail>*{min-width:0!important;max-width:100%}
+.compact-operator-rail .tool-menu-shell,.compact-operator-rail .shift-rail-actions,.compact-operator-rail .rail-learning-card{width:100%;min-width:0!important}
+.rail-learning-card .learning-dashboard-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;min-width:0!important;width:100%}
+.rail-learning-card .learning-dashboard-grid>div{min-width:0!important;overflow:hidden}
+.rail-learning-card .learning-dashboard-grid span,.rail-learning-card .learning-dashboard-grid strong{min-width:0;max-width:100%;overflow-wrap:anywhere}
