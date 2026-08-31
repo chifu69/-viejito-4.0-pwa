@@ -1,7 +1,7 @@
 {
   "name": "Industrial IA",
   "short_name": "Industrial IA",
-  "description": "Industrial IA 5.33 offline industrial assistant with Viejito Local Brain orchestration, synchronized S-Wrap, corrective-priority BW control, process-performance learning, coordinated speed-change guidance and Davis-Standard troubleshooting.",
+  "description": "Industrial IA 5.33.1 offline industrial assistant with Viejito Local Brain plus printable Daily Quality Reports for BW trend and persistent sheet-balance review across Lines 1-4.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",

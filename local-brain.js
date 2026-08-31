@@ -1,4 +1,4 @@
-/* Industrial IA 5.33 — Viejito Local Brain
+/* Industrial IA 5.33.1 — Viejito Local Brain
    Deterministic offline orchestration layer. No LLM, no network calls.
    It plans which existing Viejito skills to use and ranks findings by operational priority.
 */
@@ -24,7 +24,7 @@
   }
 
   class ViejitoLocalBrain{
-    constructor({version='5.33',name='Viejito Local Brain'}={}){
+    constructor({version='5.33.1',name='Viejito Local Brain'}={}){
       this.version=version;
       this.name=name;
       this.skills=new Map();

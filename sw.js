@@ -1,13 +1,14 @@
-const CACHE='industrial-ia-5.33-local-brain';
+const CACHE='industrial-ia-5.33.1-daily-quality-report';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.33',
-  './optimizer.js?v=5.33',
-  './process-learning.js?v=5.33',
-  './davis-standard-brain.js?v=5.33',
-  './local-brain.js?v=5.33',
-  './app.js?v=5.33',
+  './styles.css?v=5.33.1',
+  './optimizer.js?v=5.33.1',
+  './process-learning.js?v=5.33.1',
+  './davis-standard-brain.js?v=5.33.1',
+  './daily-report.js?v=5.33.1',
+  './local-brain.js?v=5.33.1',
+  './app.js?v=5.33.1',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

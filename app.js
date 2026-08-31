@@ -74,9 +74,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.33',
+    introTitle: 'Industrial IA 5.33.1',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 228 is interpreted as S-Wrap Speed; more than 228 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.33 • Local Brain'
+    footer: 'Industrial IA 5.33.1 • Daily Quality Report'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -102,9 +102,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.33',
+    introTitle: 'Industrial IA 5.33.1',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 228 interpreto S-Wrap Speed; más de 228 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.33 • Brain local'
+    footer: 'Industrial IA 5.33.1 • Reporte diario + Brain local'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -130,9 +130,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.33',
+    introTitle: 'Industrial IA 5.33.1',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 228 est interprété comme la vitesse S-Wrap; plus de 228 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.33 • Cerveau local'
+    footer: 'Industrial IA 5.33.1 • Rapport quotidien + Cerveau local'
   }
 };
 
@@ -1266,10 +1266,14 @@ function lineOperationalSnapshot(line){
   const sw=Number(shift?.currentSWrap ?? last?.currentSWrap ?? getLineText('viejitoCurrentSWrap',line,''));
   const target=Number(last?.targetBW ?? getLineText('viejitoTargetBW',line,''));
   const recentCuts=[];
-  // Trend entries preserve dual-winder values in current versions; learning is fallback.
-  for(const r of [...trend,...records]){
+  // Trend entries are the canonical completed-cut source in current versions.
+  // Adaptive completed_cut records mirror those same cuts, so mixing both sources would
+  // double-count sheet-balance streaks. Use learning records only as a legacy fallback.
+  const trendDual=trend.filter(r=>Number.isFinite(Number(r?.winder1))&&Number.isFinite(Number(r?.winder2)));
+  const sourceRows=trendDual.length?trendDual:records;
+  for(const r of sourceRows){
     const w1=Number(r?.winder1),w2=Number(r?.winder2),avg=Number(r?.averageBW??r?.finalBW??r?.bw);
-    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||''});
+    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId,shiftId:r?.shiftId,targetBW:r?.targetBW,currentSWrap:r?.currentSWrap});
   }
   if(last&&Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2))){
     const sig=`${last.time||''}|${last.winder1}|${last.winder2}`;
@@ -1278,16 +1282,29 @@ function lineOperationalSnapshot(line){
   return {line,shift,last,records,trend,running,product,swrap:sw,target,recentCuts:recentCuts.slice(-20)};
 }
 function sheetBalanceWatch(cuts){
-  const rows=(cuts||[]).map(c=>({...c,balance:analyzeDieBalance(c.winder1,c.winder2)})).filter(c=>c.balance.level!=='balanced');
-  if(!rows.length)return null;
-  const last=rows[rows.length-1],side=last.balance.heavier;
-  let streak=1;
-  for(let i=rows.length-2;i>=0;i--){if(rows[i].balance.heavier===side)streak++;else break;}
-  const prev=rows.length>1?rows[rows.length-2]:null;
-  const flipped=!!(prev&&prev.balance.heavier!==side&&prev.balance.level!=='balanced'&&last.balance.level!=='balanced');
-  const recentSame=rows.slice(-Math.min(streak,20));
-  const improving=recentSame.length>=2 && recentSame[recentSame.length-1].balance.difference < recentSame[0].balance.difference;
-  return {last,side,streak,flipped,improving,previous:prev};
+  // Line-based streak: it intentionally survives product/changeover boundaries.
+  // A balanced cut resets the incident. If the heavy side flips, the old streak ends
+  // and a new streak begins on the opposite side.
+  const rows=(cuts||[])
+    .map(c=>({...c,balance:analyzeDieBalance(c.winder1,c.winder2)}))
+    .filter(c=>Number.isFinite(Number(c.winder1))&&Number.isFinite(Number(c.winder2)))
+    .sort((a,b)=>new Date(a.time||0)-new Date(b.time||0));
+  const last=rows[rows.length-1];
+  if(!last||last.balance.level==='balanced')return null;
+  const side=last.balance.heavier,recentSame=[];
+  let flipped=false,previous=null;
+  for(let i=rows.length-1;i>=0;i--){
+    const row=rows[i];
+    if(row.balance.level==='balanced')break;
+    if(row.balance.heavier!==side){flipped=true;previous=row;break;}
+    recentSame.unshift(row);
+  }
+  const streak=recentSame.length;
+  const firstDiff=Number(recentSame[0]?.balance?.difference)||0;
+  const lastDiff=Number(recentSame[recentSame.length-1]?.balance?.difference)||0;
+  const improving=streak>=2&&lastDiff<firstDiff-0.015;
+  const worsening=streak>=2&&lastDiff>firstDiff+0.015;
+  return {last,side,streak,flipped,improving,worsening,previous,recentSame,leadReview:streak>=4,persistent:streak>=3};
 }
 function lineStatusAnswer(line){
   const s=lineOperationalSnapshot(line),es=state.language==='es',fr=state.language==='fr';
@@ -1316,8 +1333,10 @@ function lineStatusAnswer(line){
     if(watch.flipped){
       const bolt=watch.side==='top'?'top':'bottom';
       parts.push(es?`👀 Posible sobrecorrección: el desbalance cambió de lado. Creo que te pasaste de fuerte 😅. Ahora ${sideName} está más pesado por ${fmt(watch.last.balance.difference,2)} BW; toca cerrar el ${bolt} die bolt.`:`👀 Possible overcorrection: the imbalance flipped sides. Easy there, Hercules 😅. ${sideName} is now heavier by ${fmt(watch.last.balance.difference,2)} BW; close the ${bolt} die bolt.`);
+    }else if(watch.streak>=4){
+      parts.push(es?`🚩 Sheet Balance Escalation: ${sideName} lleva ${watch.streak} cortes consecutivos más pesado. El desbalance sigue sin resolverse, incluso si hubo cambio de producto. Pide apoyo a tu Lead para revisar el ajuste antes de continuar haciendo más cambios.`:`🚩 Sheet Balance Escalation: ${sideName} has been heavier for ${watch.streak} consecutive cuts. The imbalance remains unresolved, even across a product change. Ask your Lead to help review the adjustment before making more changes.`);
     }else if(watch.streak>=3){
-      parts.push(es?`👀 Sheet Balance Watch: ${sideName} ha estado más pesado por ${watch.streak} cortes consecutivos. Puede que todavía no se haya hecho el Die Move, o que la máquina no esté respondiendo al ajuste. Verifica el balance.`:`👀 Sheet Balance Watch: ${sideName} has been heavier for ${watch.streak} consecutive cuts. A Die Move may not have been made yet, or the machine may not be responding to the adjustment. Verify sheet balance.`);
+      parts.push(es?`⚠️ Sheet Balance persistente: ${sideName} lleva ${watch.streak} cortes consecutivos más pesado. Verifica el Die Move y confirma que la máquina esté respondiendo al ajuste.`:`⚠️ Persistent Sheet Balance: ${sideName} has been heavier for ${watch.streak} consecutive cuts. Verify the Die Move and confirm the machine is responding to the adjustment.`);
     }else if(watch.improving){
       parts.push(es?'El desbalance está disminuyendo; el Die Move parece estar respondiendo. Sigue monitoreando.':'The imbalance is decreasing; the Die Move appears to be working. Keep monitoring.');
     }
@@ -2153,6 +2172,10 @@ function chatActionCommand(text){
     const applied=clampSWrap(requestedSpeed);syncCurrentSWrap(applied);saveSession();renderShiftPanel();renderTrendPanel(analyzeTrend());
     return {kind:'result',title:chatLang('Current S-Wrap updated','S-Wrap actual actualizado','S-Wrap mis à jour'),message:requestedSpeed>MAX_SWRAP_SPEED?chatLang(`Requested ${fmt(requestedSpeed,1)}. Plant maximum reached — Current S-Wrap set to ${MAX_SWRAP_SPEED} ft/min.`,`Pediste ${fmt(requestedSpeed,1)}. Se alcanzó el máximo de planta — S-Wrap actual quedó en ${MAX_SWRAP_SPEED} ft/min.`,`Maximum atteint : ${MAX_SWRAP_SPEED} ft/min.`):`S-Wrap ${fmt(applied,1)} ft/min`};
   }
+  if(/\b(daily report|quality report|day report|reporte diario|reporte del dia|reporte del día|reporte de calidad)\b/.test(q)){
+    openDailyReportDialog();
+    return {kind:'info',message:chatLang('Daily Quality Report opened. Choose Current Line or All Lines, then print when ready.','Abrí el Reporte diario de calidad. Elige la línea actual o todas las líneas y luego imprime cuando esté listo.','Rapport quotidien ouvert.')};
+  }
   if(/\b(process performance|process learning|performance learning|output learning|primary secondary learning|aprendizaje de proceso|aprendizaje de desempeño|aprendizaje de output)\b/.test(q)){
     const summary=state.processLearning?.summary?.()||{count:0,last:null};
     const last=summary.last;
@@ -2186,7 +2209,7 @@ function unsupportedChatResponse(){
 // operational state while answering QUERY/SIMULATION requests. Existing calculators,
 // optimizers and learning engines remain the source of truth; Brain decides which ones to combine.
 const BRAIN_LAST_INSIGHT_KEY='viejitoBrainLastInsightV1';
-const viejitoBrain=window.ViejitoLocalBrain?new window.ViejitoLocalBrain({version:'5.33'}):null;
+const viejitoBrain=window.ViejitoLocalBrain?new window.ViejitoLocalBrain({version:'5.33.1'}):null;
 let brainSkillsRegistered=false;
 
 function brainLineSnapshot(line=ACTIVE_LINE){
@@ -2203,9 +2226,11 @@ function brainLineSnapshot(line=ACTIVE_LINE){
   const swrap=Number(state.currentSWrap||shift?.currentSWrap||last?.currentSWrap||stored.swrap);
   const target=Number(state.targetBW||last?.targetBW||stored.target);
   const recentCuts=[];
-  for(const r of [...(trend||[]),...(records||[])]){
+  const trendDual=(trend||[]).filter(r=>Number.isFinite(Number(r?.winder1))&&Number.isFinite(Number(r?.winder2)));
+  const sourceRows=trendDual.length?trendDual:(records||[]);
+  for(const r of sourceRows){
     const w1=Number(r?.winder1),w2=Number(r?.winder2),avg=Number(r?.averageBW??r?.finalBW??r?.bw);
-    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId});
+    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId,shiftId:r?.shiftId,targetBW:r?.targetBW,currentSWrap:r?.currentSWrap});
   }
   if(last&&Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2)))recentCuts.push(last);
   return {...stored,shift,last,records,trend,running,product,swrap,target,recentCuts:recentCuts.slice(-20)};
@@ -2279,8 +2304,9 @@ function brainSheetSkill({line=ACTIVE_LINE}={}){
   if(balance.level==='required')findings.push({level:'balance',score:88,message:chatLang(`${side} is heavier by ${fmt(balance.difference,2)} BW. DIE MOVE REQUIRED.`,` ${side} está más pesado por ${fmt(balance.difference,2)} BW. DIE MOVE OBLIGATORIO.`.trim(),`${side} plus lourd de ${fmt(balance.difference,2)} BW.`),data:balance});
   else if(balance.level==='suggested')findings.push({level:'balance',message:chatLang(`${side} is heavier by ${fmt(balance.difference,2)} BW. Die move suggested.`,`${side} está más pesado por ${fmt(balance.difference,2)} BW. Die move sugerido.`,`${side} plus lourd de ${fmt(balance.difference,2)} BW.`),data:balance});
   else findings.push({level:'info',message:chatLang(`Sheet balance is within 0.25 BW (difference ${fmt(balance.difference,2)}).`,`Sheet Balance está dentro de 0.25 BW (diferencia ${fmt(balance.difference,2)}).`,`Équilibre dans 0,25 BW.`),data:balance});
-  if(watch?.flipped)findings.push({level:'warning',message:chatLang('Sheet imbalance changed sides — possible overcorrection. Verify the next adjustment before chasing it.','El desbalance cambió de lado — posible sobrecorrección. Verifica antes de seguir persiguiéndolo.','Le déséquilibre a changé de côté — possible surcorrection.')});
-  else if(watch?.streak>=3)findings.push({level:'balance',message:chatLang(`${watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet'} has been heavier for ${watch.streak} consecutive cuts. Verify that the die move was made and that the machine is responding.`,`${watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet'} lleva ${watch.streak} cortes consecutivos más pesado. Verifica que se hizo el die move y que la máquina está respondiendo.`,`Déséquilibre persistant pendant ${watch.streak} coupes.`)});
+  if(watch?.flipped)findings.push({level:'warning',message:chatLang('Sheet imbalance changed sides — the previous streak ended and a new streak has started on the opposite side. Verify the next adjustment before chasing it.','El desbalance cambió de lado — la racha anterior terminó y comenzó una nueva del lado opuesto. Verifica antes de seguir persiguiéndolo.','Le déséquilibre a changé de côté — une nouvelle série commence.')});
+  else if(watch?.streak>=4)findings.push({level:'balance',score:96,message:chatLang(`${watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet'} has been heavier for ${watch.streak} consecutive cuts. The imbalance remains unresolved across the line, including product changes. Lead review is recommended now.`,`${watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet'} lleva ${watch.streak} cortes consecutivos más pesado. El desbalance sigue sin resolverse en la línea, incluso con cambios de producto. Se recomienda apoyo del Lead ahora.`,`Déséquilibre persistant pendant ${watch.streak} coupes. Révision du Lead recommandée.`),data:{streak:watch.streak,side:watch.side,leadReview:true}});
+  else if(watch?.streak>=3)findings.push({level:'balance',score:90,message:chatLang(`${watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet'} has been heavier for ${watch.streak} consecutive cuts. Persistent imbalance: verify the die move and confirm the machine is responding.`,`${watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet'} lleva ${watch.streak} cortes consecutivos más pesado. Desbalance persistente: verifica el Die Move y confirma que la máquina esté respondiendo.`,`Déséquilibre persistant pendant ${watch.streak} coupes.`),data:{streak:watch.streak,side:watch.side,persistent:true}});
   else if(watch?.improving)findings.push({level:'info',message:chatLang('The sheet imbalance is decreasing; the last die adjustment appears to be responding.','El desbalance está disminuyendo; el último ajuste parece estar respondiendo.','Le déséquilibre diminue.')});
   return {context:c,balance,watch,findings};
 }
@@ -2366,7 +2392,7 @@ function brainComposeResponse(run,requestedLine=ACTIVE_LINE){
   const lang=state.language,es=lang==='es',fr=lang==='fr',intent=run.plan.intent;
   if(intent==='brain_status'){
     const count=viejitoBrain.skillNames().length,c=brainContext(requestedLine);
-    return {kind:'info',title:es?'VIEJITO LOCAL BRAIN 🧠':fr?'CERVEAU LOCAL VIEJITO 🧠':'VIEJITO LOCAL BRAIN 🧠',message:es?`Brain 5.33 activo y 100% local. ${count} skills conectados. No usa LLM ni internet. Contexto actual: Line ${c.line}, ${c.running?`corriendo ${c.product} a S-Wrap ${fmt(c.currentSWrap,1)}`:'sin turno activo'}.`:fr?`Brain 5.33 local actif. ${count} skills connectés.`:`Brain 5.33 is active and fully local. ${count} connected skills. No LLM or internet. Current context: Line ${c.line}, ${c.running?`running ${c.product} at S-Wrap ${fmt(c.currentSWrap,1)}`:'no active shift'}.`,brain:{plan:run.plan}};
+    return {kind:'info',title:es?'VIEJITO LOCAL BRAIN 🧠':fr?'CERVEAU LOCAL VIEJITO 🧠':'VIEJITO LOCAL BRAIN 🧠',message:es?`Brain 5.33.1 activo y 100% local. ${count} skills conectados. No usa LLM ni internet. Contexto actual: Line ${c.line}, ${c.running?`corriendo ${c.product} a S-Wrap ${fmt(c.currentSWrap,1)}`:'sin turno activo'}.`:fr?`Brain 5.33.1 local actif. ${count} skills connectés.`:`Brain 5.33.1 is active and fully local. ${count} connected skills. No LLM or internet. Current context: Line ${c.line}, ${c.running?`running ${c.product} at S-Wrap ${fmt(c.currentSWrap,1)}`:'no active shift'}.`,brain:{plan:run.plan}};
   }
   if(intent==='compare_lines'){
     const v=brainResultValue(run,'line.compare');return {kind:'result',title:es?'BRAIN — COMPARACIÓN DE LÍNEAS':'BRAIN — LINE COMPARISON',message:v?.findings?.[0]?.message||v?.summary||'',brain:{plan:run.plan}};
@@ -2410,6 +2436,157 @@ function refreshBrainInsightAfterCut(){
   }catch(error){console.warn('Brain insight refresh failed',error);}
 }
 
+
+
+// V5.33.1 — Daily Quality Report (real completed cuts only).
+let lastDailyReport=null;
+function dailyReportCopy(){
+  const es=state.language==='es',fr=state.language==='fr';
+  return {
+    tool:es?'Reporte diario':fr?'Rapport quotidien':'Daily Quality Report',
+    kicker:es?'REVISIÓN DE CALIDAD':fr?'REVUE QUALITÉ':'QUALITY REVIEW',
+    title:es?'Reporte diario de calidad':fr?'Rapport quotidien de qualité':'Daily Quality Report',
+    help:es?'Revisa cortes reales completos para ver tendencia de BW y desbalance de sheet. Puedes imprimir la línea seleccionada o las cuatro líneas.':fr?'Analyse des coupes réelles pour la tendance BW et le déséquilibre des sheets.':'Review real completed cuts for BW trend and sheet balance. Print the selected line or all four lines.',
+    period:es?'Período':fr?'Période':'Period',last24:es?'Últimas 24 horas':fr?'Dernières 24 heures':'Last 24 hours',calendar:es?'Día calendario':fr?'Jour calendrier':'Calendar day',
+    date:es?'Fecha':fr?'Date':'Date',lines:es?'Líneas':fr?'Lignes':'Lines',current:es?`Line ${ACTIVE_LINE}`:`Line ${ACTIVE_LINE}`,all:es?'Todas las líneas':fr?'Toutes les lignes':'All lines',
+    generate:es?'Generar reporte':fr?'Générer':'Generate report',print:es?'Imprimir reporte':fr?'Imprimer':'Print report',
+    noData:es?'No hay cortes reales completos guardados para este período.':fr?'Aucune coupe réelle enregistrée pour cette période.':'No real completed cuts are stored for this period.',
+    generated:es?'Generado':fr?'Généré':'Generated',cuts:es?'Cortes':fr?'Coupes':'Cuts',products:es?'Productos':fr?'Produits':'Products',
+    bwTrend:es?'Tendencia de BW vs target':fr?'Tendance BW vs cible':'BW trend vs target',balanceTrend:es?'Tendencia de desbalance':fr?'Tendance du déséquilibre':'Sheet-balance trend',
+    inTarget:es?'Promedio en target':fr?'Moyenne sur cible':'Average on target',outRange:es?'Promedio fuera':fr?'Moyenne hors plage':'Average out of range',imbalance:es?'Cortes desbalanceados':fr?'Coupes déséquilibrées':'Imbalanced cuts',maxImbalance:es?'Máx. desbalance':fr?'Déséquilibre max':'Max imbalance',lead:es?'Revisión del Lead':fr?'Révision du Lead':'Lead review',
+    incident:es?'Incidentes de Sheet Balance':fr?'Incidents Sheet Balance':'Sheet Balance incidents',detail:es?'Detalle de cortes':fr?'Détail des coupes':'Cut detail',productTrend:es?'Tendencia por producto':fr?'Tendance par produit':'Trend by product'
+  };
+}
+function renderDailyReportLabels(){
+  const c=dailyReportCopy();
+  if($('daily-report-tool-label'))$('daily-report-tool-label').textContent=c.tool;
+  if($('daily-report-kicker'))$('daily-report-kicker').textContent=c.kicker;
+  if($('daily-report-title'))$('daily-report-title').textContent=c.title;
+  if($('daily-report-help'))$('daily-report-help').textContent=c.help;
+  if($('daily-report-period-label'))$('daily-report-period-label').textContent=c.period;
+  if($('daily-report-date-label'))$('daily-report-date-label').textContent=c.date;
+  if($('daily-report-scope-label'))$('daily-report-scope-label').textContent=c.lines;
+  const period=$('daily-report-period'); if(period){period.options[0].text=c.last24;period.options[1].text=c.calendar;}
+  const scope=$('daily-report-scope'); if(scope){scope.options[0].text=c.current;scope.options[1].text=c.all;}
+  if($('daily-report-refresh'))$('daily-report-refresh').textContent=c.generate;
+  if($('daily-report-print'))$('daily-report-print').textContent=c.print;
+}
+function dailyReportCutsForLine(line){
+  const n=Number(line);
+  const rows=n===ACTIVE_LINE?(Array.isArray(state.bwTrendHistory)?state.bwTrendHistory:[]):(getLineJSON(TREND_HISTORY_KEY,n,[])||[]);
+  return rows.filter(r=>Number.isFinite(Number(r?.winder1))&&Number.isFinite(Number(r?.winder2))&&Number.isFinite(Number(r?.bw??r?.averageBW)));
+}
+function dailyReportPeriod(){
+  const type=$('daily-report-period')?.value||'last24';
+  if(type==='calendar')return {type:'calendar',date:$('daily-report-date')?.value||window.ViejitoDailyReport?.localDayKey?.(new Date())};
+  return {type:'last24',end:new Date().toISOString()};
+}
+function dailyReportScopeLines(){return $('daily-report-scope')?.value==='all'?[1,2,3,4]:[ACTIVE_LINE];}
+function formatReportDateTime(v){
+  const d=new Date(v);if(Number.isNaN(d.getTime()))return '—';
+  return d.toLocaleString(state.language==='es'?'es-US':state.language==='fr'?'fr-FR':'en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function formatReportPeriod(period,generatedAt){
+  const es=state.language==='es';
+  if(period?.type==='calendar')return `${es?'Día':'Day'} ${period.date}`;
+  const end=new Date(period?.end||generatedAt),start=new Date(end.getTime()-24*3600000);
+  return `${formatReportDateTime(start)} → ${formatReportDateTime(end)}`;
+}
+function reportDirectionLabel(direction){
+  const es=state.language==='es';
+  if(direction==='rising')return es?'Subiendo':'Rising';
+  if(direction==='falling')return es?'Bajando':'Falling';
+  return es?'Estable':'Stable';
+}
+function reportSideLabel(side){return side==='top'?'Winder 2 / Top Sheet':side==='bottom'?'Winder 1 / Bottom Sheet':(state.language==='es'?'Balanceado':'Balanced');}
+function reportChartSvg(values,{zero=0,thresholds=[],kind='delta'}={}){
+  const pts=(values||[]).map(Number).filter(Number.isFinite),w=620,h=150,pad=18;
+  if(!pts.length)return `<div class="report-empty">—</div>`;
+  const refs=[...pts,zero,...thresholds.flatMap(t=>[Number(t),-Number(t)])].filter(Number.isFinite);
+  let min=Math.min(...refs),max=Math.max(...refs);if(min===max){min-=1;max+=1;}const extra=(max-min)*.12;min-=extra;max+=extra;
+  const x=i=>pad+(pts.length===1?(w-2*pad)/2:i*(w-2*pad)/(pts.length-1));
+  const y=v=>h-pad-(v-min)*(h-2*pad)/(max-min);
+  const poly=pts.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const lines=[];
+  if(zero>=min&&zero<=max)lines.push(`<line x1="${pad}" y1="${y(zero).toFixed(1)}" x2="${w-pad}" y2="${y(zero).toFixed(1)}" class="report-zero"/>`);
+  for(const t of thresholds){const n=Number(t);if(n>=min&&n<=max)lines.push(`<line x1="${pad}" y1="${y(n).toFixed(1)}" x2="${w-pad}" y2="${y(n).toFixed(1)}" class="report-threshold"/>`);if(kind==='delta'&&-n>=min&&-n<=max)lines.push(`<line x1="${pad}" y1="${y(-n).toFixed(1)}" x2="${w-pad}" y2="${y(-n).toFixed(1)}" class="report-threshold"/>`);}
+  return `<svg viewBox="0 0 ${w} ${h}" role="img">${lines.join('')}<polyline points="${poly}" class="report-polyline"/>${pts.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.2" class="report-dot"/>`).join('')}</svg>`;
+}
+function dailyReportAssessment(line){
+  const es=state.language==='es',streak=line.balance.activeStreak;
+  if(streak?.leadReview){
+    const products=streak.products?.length?` (${streak.products.join(' → ')})`:'';
+    return {cls:'lead',title:es?'🚩 REVISIÓN DEL LEAD RECOMENDADA':'🚩 LEAD REVIEW RECOMMENDED',text:es?`${reportSideLabel(streak.side)} lleva ${streak.count} cortes consecutivos más pesado${products}. La racha continúa a través de cambios de producto hasta que el balance vuelva dentro de 0.25 BW o cambie el lado pesado.`:`${reportSideLabel(streak.side)} has been heavier for ${streak.count} consecutive cuts${products}. The line-based streak continues across product changes until balance returns within 0.25 BW or the heavy side flips.`};
+  }
+  if(streak?.persistent)return {cls:'persistent',title:es?'⚠️ DESBALANCE PERSISTENTE':'⚠️ PERSISTENT IMBALANCE',text:es?`${reportSideLabel(streak.side)} lleva ${streak.count} cortes consecutivos más pesado. Revisar Die Move y respuesta de la máquina.`:`${reportSideLabel(streak.side)} has been heavier for ${streak.count} consecutive cuts. Verify the Die Move and machine response.`};
+  if(streak)return {cls:'persistent',title:es?'Sheet Balance activo':'Active Sheet Balance issue',text:es?`${reportSideLabel(streak.side)} está más pesado por ${fmt(streak.lastDifference,2)} BW. Racha actual: ${streak.count}.`:`${reportSideLabel(streak.side)} is heavier by ${fmt(streak.lastDifference,2)} BW. Current streak: ${streak.count}.`};
+  return {cls:'good',title:es?'✓ Sin desbalance persistente activo':'✓ No active persistent imbalance',text:es?'El último corte guardado no mantiene una racha activa fuera del límite de 0.25 BW.':'The latest stored cut does not maintain an active streak outside the 0.25 BW balance limit.'};
+}
+function renderDailyReportLine(line){
+  const c=dailyReportCopy(),es=state.language==='es';
+  if(!line.totalCuts)return `<section class="report-sheet"><div class="report-sheet-head"><div><small>LINE</small><h4>Line ${line.line}</h4></div></div><div class="report-empty">${escapeHTML(c.noData)}</div></section>`;
+  const assess=dailyReportAssessment(line),bwRows=line.cuts.filter(x=>Number.isFinite(x.delta)),bwVals=bwRows.map(x=>x.delta),balVals=line.cuts.map(x=>x.balanceDifference);
+  const inPct=line.bw.withTarget?Math.round(line.bw.green*100/line.bw.withTarget):0;
+  const productRows=line.productTrends.map(p=>`<tr><td>${escapeHTML(p.product)}</td><td>${p.count}</td><td>${Number.isFinite(p.targetBW)?fmt(p.targetBW,2):'—'}</td><td>${Number.isFinite(p.firstBW)?fmt(p.firstBW,3):'—'} → ${Number.isFinite(p.lastBW)?fmt(p.lastBW,3):'—'}</td><td>${escapeHTML(reportDirectionLabel(p.direction))}</td></tr>`).join('');
+  const incidentRows=line.balance.incidents.slice(-12).map(i=>`<tr><td>${formatReportDateTime(i.startTime)}</td><td>${escapeHTML(reportSideLabel(i.side))}</td><td>${i.count}</td><td>${escapeHTML((i.products||[]).join(' → '))}</td><td>${fmt(i.firstDifference,2)} → ${fmt(i.lastDifference,2)}</td><td class="${i.leadReview?'bad':''}">${i.leadReview?(es?'LEAD':'LEAD REVIEW'):i.persistent?(es?'PERSISTENTE':'PERSISTENT'):i.maxLevel==='required'?(es?'OBLIGATORIO':'REQUIRED'):(es?'SUGERIDO':'SUGGESTED')}</td></tr>`).join('');
+  const detailRows=line.cuts.slice(-30).reverse().map(x=>`<tr><td>${formatReportDateTime(x.time)}</td><td>${escapeHTML(x.product)}</td><td>${fmt(x.winder1,3)}</td><td>${fmt(x.winder2,3)}</td><td>${fmt(x.averageBW,3)}</td><td>${Number.isFinite(x.targetBW)?fmt(x.targetBW,2):'—'}</td><td>${Number.isFinite(x.delta)?`${x.delta>=0?'+':''}${fmt(x.delta,3)}`:'—'}</td><td class="${x.balanceLevel!=='balanced'?'bad':''}">${fmt(x.balanceDifference,2)}</td><td>${escapeHTML(reportSideLabel(x.heavySide))}</td></tr>`).join('');
+  return `<section class="report-sheet">
+    <div class="report-sheet-head"><div><small>INDUSTRIAL IA • QUALITY</small><h4>Line ${line.line}</h4></div><div><small>${escapeHTML(c.products)}</small><br><strong>${escapeHTML(line.products.join(' • ')||'—')}</strong></div></div>
+    <div class="report-summary-grid">
+      <div class="report-stat"><span>${escapeHTML(c.cuts)}</span><strong>${line.totalCuts}</strong></div>
+      <div class="report-stat"><span>${escapeHTML(c.inTarget)}</span><strong>${line.bw.green}/${line.bw.withTarget} (${inPct}%)</strong></div>
+      <div class="report-stat"><span>${escapeHTML(c.outRange)}</span><strong>${line.bw.out}</strong></div>
+      <div class="report-stat"><span>${escapeHTML(c.imbalance)}</span><strong>${line.balance.imbalanceCuts}</strong></div>
+      <div class="report-stat"><span>${escapeHTML(c.maxImbalance)}</span><strong>${fmt(line.balance.maxDifference,2)} BW</strong></div>
+    </div>
+    <div class="report-alert ${assess.cls}"><strong>${escapeHTML(assess.title)}</strong><p>${escapeHTML(assess.text)}</p></div>
+    <div class="report-chart-grid">
+      <div class="report-chart-card"><h5>${escapeHTML(c.bwTrend)}</h5>${reportChartSvg(bwVals,{zero:0,thresholds:[0.17,0.25],kind:'delta'})}<div class="report-chart-caption"><span>${es?'Primero':'First'} ${Number.isFinite(line.bw.firstDelta)?`${line.bw.firstDelta>=0?'+':''}${fmt(line.bw.firstDelta,3)}`:'—'}</span><strong>${escapeHTML(reportDirectionLabel(line.bw.direction))}</strong><span>${es?'Último':'Last'} ${Number.isFinite(line.bw.lastDelta)?`${line.bw.lastDelta>=0?'+':''}${fmt(line.bw.lastDelta,3)}`:'—'}</span></div></div>
+      <div class="report-chart-card"><h5>${escapeHTML(c.balanceTrend)}</h5>${reportChartSvg(balVals,{zero:0,thresholds:[0.25,1.0],kind:'balance'})}<div class="report-chart-caption"><span>0.25 ${es?'Die Move sugerido':'suggested'}</span><strong>${line.balance.requiredCuts} ≥ 1.00</strong><span>1.00 ${es?'obligatorio':'required'}</span></div></div>
+    </div>
+    <div><div class="report-subtitle"><h5>${escapeHTML(c.productTrend)}</h5><small>${line.productTrends.length}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>${es?'Producto':'Product'}</th><th>${c.cuts}</th><th>Target</th><th>Average BW</th><th>Trend</th></tr></thead><tbody>${productRows||`<tr><td colspan="5">—</td></tr>`}</tbody></table></div></div>
+    <div><div class="report-subtitle"><h5>${escapeHTML(c.incident)}</h5><small>${line.balance.incidents.length}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>${es?'Inicio':'Start'}</th><th>${es?'Lado pesado':'Heavy side'}</th><th>${c.cuts}</th><th>${c.products}</th><th>${es?'Diferencia':'Difference'}</th><th>${es?'Nivel':'Level'}</th></tr></thead><tbody>${incidentRows||`<tr><td colspan="6">${es?'Sin incidentes en el período.':'No incidents in period.'}</td></tr>`}</tbody></table></div></div>
+    <div><div class="report-subtitle"><h5>${escapeHTML(c.detail)}</h5><small>${es?'Últimos 30 del período':'Last 30 in period'}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>${es?'Hora':'Time'}</th><th>${es?'Producto':'Product'}</th><th>W1</th><th>W2</th><th>Avg</th><th>Target</th><th>Δ BW</th><th>Balance Δ</th><th>${es?'Lado pesado':'Heavy side'}</th></tr></thead><tbody>${detailRows}</tbody></table></div></div>
+  </section>`;
+}
+function buildDailyReportFromControls(){
+  if(!window.ViejitoDailyReport)return null;
+  const lines=dailyReportScopeLines().map(line=>({line,cuts:dailyReportCutsForLine(line)}));
+  return window.ViejitoDailyReport.buildReport(lines,dailyReportPeriod(),new Date());
+}
+function renderDailyReportPreview(){
+  const report=buildDailyReportFromControls(),box=$('daily-report-preview'),c=dailyReportCopy();
+  if(!report||!box)return null;
+  lastDailyReport=report;
+  const header=`<section class="report-sheet"><div class="report-sheet-head"><div><small>INDUSTRIAL IA 5.33.1</small><h4>${escapeHTML(c.title)}</h4></div><div><small>${escapeHTML(c.generated)}</small><br><strong>${formatReportDateTime(report.generatedAt)}</strong></div></div><div class="report-alert ${report.leadReviewLines.length?'lead':'good'}"><strong>${escapeHTML(formatReportPeriod(report.period,report.generatedAt))}</strong><p>${report.totalCuts} ${escapeHTML(c.cuts.toLowerCase())}${report.leadReviewLines.length?` • ${escapeHTML(c.lead)}: Line ${report.leadReviewLines.join(', ')}`:''}</p></div></section>`;
+  box.innerHTML=header+report.lines.map(renderDailyReportLine).join('');
+  return report;
+}
+function openDailyReportDialog(){
+  const d=$('daily-report-dialog');if(!d)return;
+  renderDailyReportLabels();
+  const date=$('daily-report-date');if(date&&!date.value)date.value=window.ViejitoDailyReport?.localDayKey?.(new Date())||'';
+  if($('daily-report-scope'))$('daily-report-scope').value='current';
+  if($('daily-report-period'))$('daily-report-period').value='last24';
+  updateDailyReportPeriodUI();renderDailyReportPreview();
+  d.classList.remove('hidden');d.setAttribute('aria-hidden','false');closeToolMenu();
+}
+function closeDailyReportDialog(){const d=$('daily-report-dialog');if(d){d.classList.add('hidden');d.setAttribute('aria-hidden','true');}}
+function updateDailyReportPeriodUI(){const calendar=$('daily-report-period')?.value==='calendar';if($('daily-report-date-wrap'))$('daily-report-date-wrap').classList.toggle('hidden',!calendar);}
+function dailyReportPrintableDocument(report){
+  const c=dailyReportCopy();
+  const body=`<header class="print-head"><div><strong>INDUSTRIAL IA 5.33.1</strong><h1>${escapeHTML(c.title)}</h1><p>${escapeHTML(formatReportPeriod(report.period,report.generatedAt))}</p></div><div><small>${escapeHTML(c.generated)}</small><br>${formatReportDateTime(report.generatedAt)}</div></header>${report.lines.map(renderDailyReportLine).join('')}`;
+  return `<!doctype html><html lang="${escapeHTML(state.language)}"><head><meta charset="utf-8"><title>${escapeHTML(c.title)}</title><style>
+  *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:22px;background:#fff}.print-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px}.print-head h1{margin:4px 0;font-size:24px}.print-head p{margin:0}.report-sheet{page-break-inside:avoid;border:1px solid #bbb;border-radius:10px;padding:14px;margin:0 0 16px}.report-sheet-head{display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:10px}.report-sheet-head h4{margin:3px 0;font-size:20px}.report-summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0}.report-stat{border:1px solid #ccc;border-radius:7px;padding:7px}.report-stat span{display:block;font-size:9px;text-transform:uppercase}.report-stat strong{font-size:14px}.report-alert{border:1px solid #aaa;border-left:5px solid #555;padding:9px;margin:10px 0}.report-alert.lead{border-left-color:#b00020}.report-alert.persistent{border-left-color:#a46600}.report-alert.good{border-left-color:#087a45}.report-alert p{margin:3px 0 0;font-size:11px}.report-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.report-chart-card{border:1px solid #ccc;border-radius:7px;padding:8px}.report-chart-card h5{margin:0 0 5px}.report-chart-card svg{width:100%;height:120px}.report-zero{stroke:#333;stroke-width:1}.report-threshold{stroke:#999;stroke-width:1;stroke-dasharray:4 4}.report-polyline{fill:none;stroke:#111;stroke-width:2}.report-dot{fill:#111}.report-chart-caption{display:flex;justify-content:space-between;font-size:9px}.report-subtitle{display:flex;justify-content:space-between;margin-top:12px}.report-subtitle h5{margin:0 0 5px}.report-table-wrap{overflow:visible}.report-table{width:100%;border-collapse:collapse;font-size:9px}.report-table th,.report-table td{border:1px solid #ccc;padding:4px;text-align:left}.report-table th{background:#eee}.bad{font-weight:bold}.report-empty{padding:15px;border:1px dashed #aaa;text-align:center}@media print{body{padding:0}.report-sheet{break-inside:avoid}.report-chart-grid{break-inside:avoid}.report-table{font-size:8px}@page{margin:.4in}}
+  </style></head><body>${body}</body></html>`;
+}
+function printDailyReport(){
+  const report=renderDailyReportPreview()||lastDailyReport;if(!report)return;
+  const win=window.open('','_blank');
+  if(!win){showToast(state.language==='es'?'El navegador bloqueó la ventana de impresión.':'The browser blocked the print window.');return;}
+  win.document.open();win.document.write(dailyReportPrintableDocument(report));win.document.close();
+  setTimeout(()=>{try{win.focus();win.print();}catch(_){}},250);
+}
 
 function localIntelligenceQuery(text){
   const brainResponse=brainLocalQuery(text); if(brainResponse)return brainResponse;
@@ -2702,6 +2879,7 @@ function applyLanguage(language, announce=false){
 
   $('too-light-label').textContent=ot('tooLight');
   $('too-heavy-label').textContent=ot('tooHeavy');
+  renderDailyReportLabels();
   renderPendingCut();
   renderDemoModeBanner();
   if(state.latestOptimization)renderRecommendationDecision(state.latestOptimization);
@@ -3830,7 +4008,7 @@ document.addEventListener('click',closeToolMenu);
 $('chat-fab').addEventListener('click',toggleChat);
 $('chat-close').addEventListener('click',()=>setChatOpen(false));
 $('chat-backdrop').addEventListener('click',()=>setChatOpen(false));
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){setChatOpen(false);closeToolMenu();closeManualProcessDialog();}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){setChatOpen(false);closeToolMenu();closeManualProcessDialog();closeDailyReportDialog();}});
 document.querySelectorAll('.mandrel').forEach(button=>button.addEventListener('click',()=>selectMandrel(button.dataset.target,Number(button.dataset.value))));
 document.querySelectorAll('.tool-mandrel').forEach(button=>button.addEventListener('click',()=>{const value=Number(button.dataset.value);selectMandrel('bw',value);selectMandrel('ft',value);showToast(`${value}” mandrel`);}));
 $('language-select').addEventListener('change',event=>applyLanguage(event.target.value,true));
@@ -3897,6 +4075,14 @@ $('speed-change-cancel')?.addEventListener('click',closeSpeedChangeDialog);
 $('speed-change-dialog')?.addEventListener('click',event=>{if(event.target===$('speed-change-dialog'))closeSpeedChangeDialog();});
 ['speed-current-primary','speed-current-secondary','speed-w1','speed-w2','speed-minutes','speed-target-speed','speed-target-bw'].forEach(id=>$(id)?.addEventListener('input',updateSpeedChangePreview));
 $('speed-change-suggest')?.addEventListener('click',runSpeedChangeSuggestion);
+$('daily-report-open')?.addEventListener('click',openDailyReportDialog);
+$('daily-report-close')?.addEventListener('click',closeDailyReportDialog);
+$('daily-report-dialog')?.addEventListener('click',event=>{if(event.target===$('daily-report-dialog'))closeDailyReportDialog();});
+$('daily-report-period')?.addEventListener('change',()=>{updateDailyReportPeriodUI();renderDailyReportPreview();});
+$('daily-report-date')?.addEventListener('change',renderDailyReportPreview);
+$('daily-report-scope')?.addEventListener('change',renderDailyReportPreview);
+$('daily-report-refresh')?.addEventListener('click',renderDailyReportPreview);
+$('daily-report-print')?.addEventListener('click',printDailyReport);
 $('production-summary-toggle')?.addEventListener('click',openProductionDialog);
 $('production-dialog-close')?.addEventListener('click',closeProductionDialog);
 $('production-dialog')?.addEventListener('click',event=>{if(event.target===$('production-dialog'))closeProductionDialog();});
@@ -4000,7 +4186,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.33',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.33.1',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.33" rel="stylesheet"/>
+<link href="styles.css?v=5.33.1" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — LEARNING &amp; PRODUCTION DATA DISABLED</div>
@@ -249,6 +249,7 @@
 <button class="tool-menu-item target" id="production-target" role="menuitem" type="button"><span>🎯</span><strong>Target lbs</strong></button>
 <button class="tool-menu-item" id="manual-process-open" role="menuitem" type="button"><span>🧾</span><strong id="manual-process-tool-label">Process Record</strong></button>
 <button class="tool-menu-item" id="speed-change-open" role="menuitem" type="button"><span>⚡</span><strong id="speed-change-tool-label">Speed Change Advisor</strong></button>
+<button class="tool-menu-item" id="daily-report-open" role="menuitem" type="button"><span>📊</span><strong id="daily-report-tool-label">Daily Quality Report</strong></button>
 <div aria-label="Mandrel selector" class="tool-menu-mandrel" role="group">
 <span class="tool-menu-mandrel-label">Mandrel</span>
 <div class="tool-menu-mandrel-buttons">
@@ -288,7 +289,7 @@
 <span class="production-summary-chevron">›</span>
 <span aria-hidden="true" class="production-hidden-values"><strong id="prod-produced-material">0</strong><strong id="prod-shift-target">—</strong><span id="prod-target-label">Shift target</span><span id="production-forecast">Start a shift to begin production tracking.</span></span>
 </button></main>
-<footer id="footer-text">Industrial IA 5.33 • Local Brain</footer>
+<footer id="footer-text">Industrial IA 5.33.1 • Daily Quality Report</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -400,6 +401,20 @@
 <button class="secondary" id="speed-change-cancel" type="button">Close</button>
 <button class="primary" id="speed-change-suggest" type="button">Suggestion</button>
 </div>
+</div>
+</div>
+
+<div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="daily-report-dialog" role="dialog">
+<div class="product-dialog-card daily-report-dialog-card">
+<div class="product-dialog-heading"><div><p class="eyebrow" id="daily-report-kicker">QUALITY REVIEW</p><h3 id="daily-report-title">Daily Quality Report</h3></div><button aria-label="Close" class="dialog-close" id="daily-report-close" type="button">×</button></div>
+<p class="settings-help" id="daily-report-help">Review real completed cuts for BW trend and sheet balance. Print the selected line or all four lines.</p>
+<div class="daily-report-controls">
+<label><span id="daily-report-period-label">Period</span><select id="daily-report-period"><option value="last24">Last 24 hours</option><option value="calendar">Calendar day</option></select></label>
+<label id="daily-report-date-wrap"><span id="daily-report-date-label">Date</span><input id="daily-report-date" type="date"/></label>
+<label><span id="daily-report-scope-label">Lines</span><select id="daily-report-scope"><option value="current">Current line</option><option value="all">All lines</option></select></label>
+</div>
+<div class="daily-report-actions"><button class="secondary" id="daily-report-refresh" type="button">Generate report</button><button class="primary" id="daily-report-print" type="button">Print report</button></div>
+<div class="daily-report-preview" id="daily-report-preview"></div>
 </div>
 </div>
 <div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="settings-password-dialog" role="dialog">
@@ -549,10 +564,11 @@
 </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.33"></script>
-<script src="process-learning.js?v=5.33"></script>
-<script src="davis-standard-brain.js?v=5.33"></script>
-<script src="local-brain.js?v=5.33"></script>
-<script src="app.js?v=5.33"></script>
+<script src="optimizer.js?v=5.33.1"></script>
+<script src="process-learning.js?v=5.33.1"></script>
+<script src="davis-standard-brain.js?v=5.33.1"></script>
+<script src="daily-report.js?v=5.33.1"></script>
+<script src="local-brain.js?v=5.33.1"></script>
+<script src="app.js?v=5.33.1"></script>
 </body>
 </html>
