@@ -548,3 +548,68 @@ body.chat-open{overflow:hidden}
 .rail-learning-card .learning-dashboard-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;min-width:0!important;width:100%}
 .rail-learning-card .learning-dashboard-grid>div{min-width:0!important;overflow:hidden}
 .rail-learning-card .learning-dashboard-grid span,.rail-learning-card .learning-dashboard-grid strong{min-width:0;max-width:100%;overflow-wrap:anywhere}
+
+/* Industrial IA 5.29 — Manual Process Log */
+.manual-process-card{max-width:620px}
+.manual-process-context{margin:12px 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--muted);font-size:.84rem;font-weight:700}
+.manual-process-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.manual-process-grid label{display:grid;gap:7px;color:var(--muted);font-size:.82rem;font-weight:800}
+.manual-process-grid input{width:100%;box-sizing:border-box;min-height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--text);font:inherit}
+.manual-time-field{grid-column:1/-1}
+.manual-process-preview{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 10px}
+.manual-process-preview>div{display:grid;grid-template-columns:1fr auto;align-items:end;gap:2px 8px;padding:13px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--accent) 5%,var(--surface2))}
+.manual-process-preview small{grid-column:1/-1;color:var(--muted);font-weight:700}.manual-process-preview strong{font-size:1.65rem;line-height:1}.manual-process-preview span{color:var(--muted);font-size:.78rem;font-weight:800}
+.manual-process-note{color:var(--muted);font-size:.78rem;line-height:1.45;margin:8px 0 14px}
+.manual-process-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:10px}
+.manual-process-actions button{min-height:48px;margin:0;border-radius:12px;font:inherit;font-weight:800}
+.manual-process-actions .secondary{border:1px solid var(--line);background:var(--surface2);color:var(--text)}
+@media(max-width:520px){.manual-process-grid,.manual-process-preview,.manual-process-actions{grid-template-columns:1fr}.manual-time-field{grid-column:auto}}
+
+
+/* Industrial IA 5.31 — Speed Change Advisor */
+.process-setpoint-panel{margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--surface2);box-shadow:var(--shadow)}
+.process-setpoint-panel.hold{border-color:color-mix(in srgb,var(--good) 55%,var(--line));background:linear-gradient(145deg,color-mix(in srgb,var(--good) 7%,var(--surface2)),var(--surface2))}
+.process-setpoint-panel.adjust{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 7%,var(--surface2)),var(--surface2))}
+.process-setpoint-panel.missing{border-style:dashed}
+.process-setpoint-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.process-setpoint-heading h4{margin:2px 0 0;font-size:1.08rem}
+.process-setpoint-badge{flex:0 0 auto;padding:6px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:.68rem;font-weight:950;letter-spacing:.04em}
+.process-setpoint-panel.hold .process-setpoint-badge{color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,var(--line))}
+.process-setpoint-panel.adjust .process-setpoint-badge{color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.process-setpoint-instruction{margin:11px 0 13px;font-weight:850;line-height:1.42}
+.process-setpoint-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.process-setpoint-grid>div{min-width:0;padding:10px 11px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.process-setpoint-grid>div.recommended{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.process-setpoint-grid small{display:block;color:var(--muted);font-size:.6rem;font-weight:900;letter-spacing:.05em;white-space:normal}
+.process-setpoint-grid strong{display:inline-block;margin-top:4px;font-size:1.3rem;line-height:1}
+.process-setpoint-grid span{margin-left:4px;color:var(--muted);font-size:.7rem;font-weight:800}
+.process-pressure-note{margin:12px 0 5px;padding:9px 10px;border-radius:10px;background:color-mix(in srgb,var(--surface) 80%,transparent);font-size:.78rem;font-weight:750;line-height:1.38}
+.process-setpoint-source{display:block;color:var(--muted);font-size:.7rem;line-height:1.4}
+@media(max-width:620px){.process-setpoint-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:390px){.process-setpoint-grid{grid-template-columns:1fr}.process-setpoint-heading{align-items:stretch;flex-direction:column}.process-setpoint-badge{align-self:flex-start}}
+
+/* Industrial IA 5.31 — occasional Speed Change Advisor */
+.speed-change-card{max-width:680px}
+.speed-desired-bw-field{grid-column:1/-1}
+.speed-change-result{margin:14px 0;padding:14px;border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));border-radius:16px;background:color-mix(in srgb,var(--accent) 5%,var(--surface2))}
+.speed-change-result-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.speed-change-result-heading strong{font-size:1.03rem}.speed-change-result-heading span{font-size:.68rem;font-weight:950;letter-spacing:.05em;color:var(--accent2)}
+.speed-heat-guidance,.process-pressure-note{margin:11px 0 8px;line-height:1.45;font-size:.82rem;font-weight:700}
+.speed-heat-guidance{color:var(--text)}.process-pressure-note{color:var(--muted)}
+@media(max-width:520px){.speed-desired-bw-field{grid-column:auto}}
+
+/* 5.32 — quality-limited speed change advisor */
+.speed-quality-alert{margin:0 0 12px;padding:12px 13px;border:1px solid color-mix(in srgb,#d97706 58%,var(--line));border-radius:13px;background:color-mix(in srgb,#d97706 9%,var(--surface))}
+.speed-quality-alert strong{display:block;font-size:.73rem;letter-spacing:.07em;font-weight:950;color:#b45309}
+.speed-quality-alert p{margin:6px 0 0;font-size:.82rem;line-height:1.43;font-weight:750}
+.speed-quality-humor{font-style:italic;color:var(--muted)}
+.speed-theoretical{margin:0 0 12px;padding:11px 12px;border:1px dashed color-mix(in srgb,#dc2626 55%,var(--line));border-radius:13px;background:color-mix(in srgb,#dc2626 5%,var(--surface))}
+.speed-theoretical>small{display:block;margin-bottom:8px;color:#b91c1c;font-size:.65rem;font-weight:950;letter-spacing:.055em}
+.speed-theoretical-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.speed-theoretical-grid>div{min-width:0;padding:8px 9px;border-radius:10px;background:var(--surface2)}
+.speed-theoretical-grid span{display:block;color:var(--muted);font-size:.62rem;font-weight:850;line-height:1.25}
+.speed-theoretical-grid strong{display:inline-block;margin-top:4px;font-size:1.08rem}
+.speed-theoretical-grid em{margin-left:3px;color:var(--muted);font-size:.64rem;font-style:normal;font-weight:800}
+.speed-setpoint-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){.speed-setpoint-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.speed-theoretical-grid{grid-template-columns:1fr}.speed-setpoint-grid{grid-template-columns:1fr}}

@@ -1,12 +1,13 @@
-const CACHE='industrial-ia-5.32.2-natural-chat-followup-fix';
+const CACHE='industrial-ia-5.33-local-brain';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.32.2',
-  './optimizer.js?v=5.32.2',
-  './process-learning.js?v=5.32.2',
-  './davis-standard-brain.js?v=5.32.2',
-  './app.js?v=5.32.2',
+  './styles.css?v=5.33',
+  './optimizer.js?v=5.33',
+  './process-learning.js?v=5.33',
+  './davis-standard-brain.js?v=5.33',
+  './local-brain.js?v=5.33',
+  './app.js?v=5.33',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

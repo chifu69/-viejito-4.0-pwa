@@ -1,36 +1,24 @@
-Industrial IA 5.32.2 — Natural Chat Follow-up Fix
+Industrial IA 5.33 — Local Brain
 
-GitHub Pages build.
+Viejito now has a deterministic local orchestration brain. No LLM and no internet are required.
 
-LATEST FEATURES
-- Speed Change Advisor is a separate occasional-use tool for intentional line-speed changes.
-- Uses current line S-Wrap/Last BW plus Primary RPM, Secondary RPM, both roll weights, and elapsed minutes.
-- Calculates real output lb/hr from both rolls and run time.
-- Desired BW defaults to Last BW and can be changed for simultaneous speed + BW changes.
-- Shows theoretical Primary/Secondary requirements and a separate quality/machine-limited recommended starting point.
-- Secondary 13.0 RPM is the quality cap; higher theoretical values are shown as NOT RECOMMENDED because of friction/shear heat / roll-quality risk.
-- Primary 128 RPM is the machine-enforced maximum; higher theoretical values are shown as NOT POSSIBLE.
-- The first limiting component caps the coordinated Primary + Secondary + S-Wrap increase.
-- Secondary Heat guidance follows the Secondary RPM change and learned line data when available.
-- Primary Pressure prediction/margin to 5,500 is shown only after enough learned samples exist.
+NEW IN 5.33
+- Viejito Local Brain coordinates existing skills instead of replacing their deterministic math.
+- Read-only Context Snapshot for current or requested line.
+- Mode Gate separates QUERY / SIMULATION / ACTION / TRAINING so what-if questions stay read-only.
+- Skill Registry connects BW status, Trend, Sheet Balance, Production, Adaptive Learning, Process Learning, recent history and cross-line comparison.
+- Priority Engine ranks corrective BW first, then sheet balance, warnings/preventive actions, production and informational learning data.
+- Local Planner can combine multiple skills for questions such as “como vamos”, “revisa todo”, “que debo vigilar”, “como va la tendencia”, and “cual linea necesita mas atencion”.
+- Cross-line comparison evaluates Lines 1-4 from their saved per-line operational state.
+- Completed real cuts refresh a local Brain insight silently; Chat what-if and Demo Mode never create Brain operational learning/history.
+- Existing Changeover, Speed Change Advisor, Process Record, calculators, knowledge brain, reminders, settings and safe updater behavior are preserved.
 
-NORMAL BW CONTROL
-- Routine BW corrections remain S-Wrap-first to avoid chasing the process with Primary/Secondary changes.
-- Primary/Secondary recommendations are reserved for intentional speed changes or when normal S-Wrap control is outside the practical range.
+PRESERVED FROM 5.32.4
+- Complete Process Performance Learning methods used by Speed Change Advisor.
+- Manual Process Record entrySource/history integrity.
+- Demo Mode excluded from real Trend history.
+- Product draft protection until confirmed changeover.
+- Corrupted JSON storage recovery.
+- 5.32.3 live S-Wrap synchronization and corrective-priority behavior.
 
-AI HELP / CHAT
-- Main dashboard label remains Trend Predictor.
-- In English, the ? help describes it as “AI Predictor — Function…”. Spanish/French help uses IA.
-- Natural short follow-up replies such as “not bad”, “pretty good”, “busy”, “tired”, and Spanish/French equivalents are recognized without intercepting technical phrases.
-
-PROCESS PERFORMANCE LEARNING
-- Independent per-line learning store: Primary RPM + Secondary RPM -> real output lb/hr.
-- Real output = (Winder 1 lb + Winder 2 lb) × 60 / elapsed minutes.
-- Manual Process Record supports Primary, Secondary, both roll weights, and run time.
-- Samples can preserve S-Wrap, product, mandrel, Primary Pressure, melt, Secondary Heat, motor load, target BW, and measured BW.
-- At least 3 comparable samples are required before learned predictions activate.
-
-PRESERVED
-- BW status bands: green |ΔBW| <= 0.17; warning > 0.17 and < 0.25; red >= 0.25.
-- Displayed BW range: Target ±0.25.
-- Preventive S-Wrap workflow, per-line state, per-line learning, chat isolation, changeover behavior, and persistent data architecture.
+VERSION: 5.33

@@ -1,5 +1,5 @@
 /*
-  Industrial IA 5.27 — Davis-Standard Knowledge Brain
+  Industrial IA 5.28 — Davis-Standard Knowledge Brain
   Curated from broadly applicable plastics-extrusion references (Dynisco and Davis-Standard).
   Purpose: give the local chat practical extrusion-process knowledge without requiring internet access.
   Guardrail: generic process education only. Plant-specific setpoints, hazardous maintenance,
@@ -7,7 +7,7 @@
   must follow the site's approved SOP, equipment manual, and trained-personnel requirements.
 */
 window.EXTRUSION_KNOWLEDGE_META = Object.freeze({
-  version:'2.0',
+  version:'2.1',
   updated:'2026-08-24',
   sources:['Davis-Standard PS Foam Sheet Systems','Davis-Standard Basic Extruder Control Functionality Parts I-II','Fundamentals of Foam Sheet Extrusion Using a Tandem Extrusion Line','Dynisco Extrusion Processors Handbook']
 });
@@ -267,6 +267,20 @@ window.PLANT_PROCESS_KNOWLEDGE = Object.freeze([
     keys:['primary secondary','primary barrel secondary barrel','primary extruder secondary extruder','primario secundario','barrel primario','barrel secundario','que hace el primary','que hace el secondary'],
     en:'This is a tandem foam process. The Primary is the plasticating/mixing extruder: it feeds, melts, mixes and pumps the polymer toward the transfer section. The Secondary is the larger, slow cooling extruder: it homogenizes the melt and removes heat before the die. The same production flow passes through both extruders; their lb/hr values are not added together.',
     es:'Este es un proceso tandem de foam. El Primary es el extruder que plastifica y mezcla: alimenta, funde, mezcla y bombea el polímero hacia la transferencia. El Secondary es el extruder grande y lento de enfriamiento: homogeniza el melt y le quita calor antes del die. El mismo flujo de producción pasa por los dos extruders; las lb/hr de Primary y Secondary no se suman.'
+  },
+  {
+    id:'primary-secondary-pressure-coupling',source:'plant',
+    title:{en:'Primary/Secondary pressure coupling',es:'Acoplamiento de presión Primary/Secondary'},
+    keys:['lower secondary pressure','raise secondary pressure','secondary unchanged primary','primary pressure 5500','high pressure shutdown','bajar secondary presion','subir secondary presion','secondary sin primary','presion 5500','shutdown 5500','coordinar primary secondary'],
+    en:'Plant operating rule: Primary and Secondary must be treated as a coordinated flow pair. Lowering Secondary while leaving Primary unchanged can back up flow and drive Primary Pressure upward; the plant high-pressure shutdown is 5,500. Raising Secondary while leaving Primary unchanged can pull material faster and drive Primary Pressure downward. Therefore Viejito must not issue a Secondary-only speed recommendation: a line-speed/BW recommendation must include coordinated Primary RPM + Secondary RPM and should use learned Primary Pressure when enough real samples exist.',
+    es:'Regla operativa de planta: Primary y Secondary se deben tratar como un par de flujo coordinado. Bajar Secondary dejando Primary igual puede acumular flujo y subir la Primary Pressure; el high-pressure shutdown de planta es 5,500. Subir Secondary dejando Primary igual puede jalar material más rápido y bajar la Primary Pressure. Por eso Viejito no debe dar una recomendación de velocidad solo para Secondary: una recomendación de velocidad/BW debe incluir Primary RPM + Secondary RPM coordinados y usar la Primary Pressure aprendida cuando ya existan suficientes muestras reales.'
+  },
+  {
+    id:'coordinated-speed-heat-rule',source:'plant',
+    title:{en:'Coordinated speed change with Secondary Heat',es:'Cambio de velocidad coordinado con Secondary Heat'},
+    keys:['maintain bw speed','same bw lower speed','same bw increase speed','bajar velocidad mismo bw','subir velocidad mismo bw','secondary heat recommendation','heat with speed change','friction heat recommendation'],
+    en:'When line speed changes and the goal is to keep the same BW, Viejito should coordinate three process setpoints as one recommendation: Primary RPM, Secondary RPM and a Secondary Heat starting value. The starting Heat follows learned line data when available; otherwise the plant examples near 6 RPM / Heat ~230 and 12.5 RPM / Heat ~160 provide an interpolation guide. Actual melt (target 300–305 on the plant display), motor load and pressure remain authoritative after the change.',
+    es:'Cuando cambia la velocidad de línea y la meta es conservar el mismo BW, Viejito debe coordinar tres setpoints como una sola recomendación: Primary RPM, Secondary RPM y un Secondary Heat inicial. El Heat inicial debe usar datos aprendidos de la línea cuando existan; si todavía no hay suficientes, los ejemplos de planta cerca de 6 RPM / Heat ~230 y 12.5 RPM / Heat ~160 sirven como guía de interpolación. Después del cambio mandan el melt real (target 300–305 en el display), motor load y presión.'
   },
   {
     id:'primary-rpm-plant',source:'plant',
