@@ -402,8 +402,6 @@ body.chat-open{overflow:hidden}
 /* v5.18 operator + per-line Last BW */
 .winder-title-row{display:flex;align-items:center;gap:14px;min-width:0}.last-bw-inline{font-size:.86rem;font-weight:850;color:var(--accent,#2f75b5);white-space:nowrap}.operator-greeting{display:block;margin-top:2px;font-weight:850;color:var(--accent,#2f75b5)}.operator-picker select{width:100%;min-height:46px;border:1px solid var(--border,#cfd8e3);border-radius:12px;background:var(--surface,#fff);color:inherit;padding:0 12px;font:inherit}.operator-picker.hidden{display:none!important}@media(max-width:700px){.winder-title-row{gap:8px}.last-bw-inline{font-size:.76rem}}
 
-/* v5.19 operator safety reminder */
-.blade-reminder-modal{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.42);display:grid;place-items:center;padding:24px}.blade-reminder-card{width:min(460px,100%);background:var(--panel,#fff);color:var(--ink,#102b42);border-radius:20px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25);border:1px solid rgba(15,23,42,.12)}.blade-reminder-card strong{display:block;font-size:1.35rem;line-height:1.3;margin-bottom:20px}.blade-reminder-card>div{display:flex;gap:12px;flex-wrap:wrap}.blade-reminder-card button{min-width:120px;min-height:48px}
 
 
 /* V5.23 — Compact operator workspace: menu tools, one Start/End control, side-by-side winders */
@@ -614,7 +612,7 @@ body.chat-open{overflow:hidden}
 @media(max-width:700px){.speed-setpoint-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.speed-theoretical-grid{grid-template-columns:1fr}.speed-setpoint-grid{grid-template-columns:1fr}}
 
-/* V5.33.1 — Daily Quality Report */
+/* V5.34.6 — Shift Intelligence + Daily Quality Report */
 .daily-report-dialog-card{width:min(1120px,96vw);max-height:92vh;overflow:auto}
 .daily-report-controls{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;margin:14px 0}
 .daily-report-controls label{display:flex;flex-direction:column;gap:7px;font-size:.82rem;color:var(--muted)}
@@ -635,3 +633,141 @@ body.chat-open{overflow:hidden}
 .report-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}.report-table{width:100%;border-collapse:collapse;min-width:720px;font-size:.78rem}.report-table th,.report-table td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.report-table th{background:var(--surface2);color:var(--muted);font-size:.69rem;text-transform:uppercase;letter-spacing:.04em}.report-table tr:last-child td{border-bottom:0}.report-table .bad{font-weight:800}.report-subtitle{display:flex;align-items:center;justify-content:space-between;gap:10px}.report-subtitle h5{margin:0;font-size:1rem}.report-subtitle small{color:var(--muted)}
 @media(max-width:800px){.daily-report-controls{grid-template-columns:1fr}.report-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-chart-grid{grid-template-columns:1fr}.daily-report-dialog-card{width:96vw}}
 .report-zero{stroke:var(--muted);stroke-width:1.2}.report-threshold{stroke:var(--accent2);stroke-width:1;stroke-dasharray:5 5;opacity:.7}.report-polyline{fill:none;stroke:var(--text);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}.report-dot{fill:var(--accent)}
+
+/* 5.34.6 — Fixed shift + escalation/report additions */
+.scheduled-shift-preview{display:grid;gap:4px;border:1px solid var(--line);border-radius:14px;background:var(--surface2);padding:12px 14px;margin:10px 0}
+.scheduled-shift-preview small{font-size:.72rem;letter-spacing:.13em;color:var(--muted);font-weight:800}
+.scheduled-shift-preview strong{font-size:1.05rem;color:var(--text)}
+.scheduled-shift-preview span{font-size:.78rem;color:var(--muted)}
+.lead-confirm-card{display:grid;gap:14px}
+.lead-confirm-card>p{margin:0;line-height:1.5}
+.lead-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lead-confirm-card>small{color:var(--muted);line-height:1.4}
+.daily-report-controls{grid-template-columns:1.15fr 1fr 1fr 1fr}
+.report-actions-table td,.report-actions-table th{white-space:nowrap}
+@media(max-width:800px){.lead-confirm-actions{grid-template-columns:1fr}.daily-report-controls{grid-template-columns:1fr}}
+
+
+/* Industrial IA 5.34.6 — Dual Winder Quality + near-limit preventive guidance */
+.individual-quality-summary{margin-top:12px;padding:13px 14px;border-radius:15px;border:1px solid var(--line);background:var(--surface2);display:grid;gap:10px}
+.individual-quality-summary.hidden{display:none}
+.individual-quality-head{display:grid;gap:4px}
+.individual-quality-head small{font-size:.64rem;letter-spacing:.12em;color:var(--muted);font-weight:850}
+.individual-quality-head strong{font-size:.82rem!important;line-height:1.25;color:var(--text)!important}
+.individual-quality-summary.pass{border-color:rgba(53,201,111,.55);background:rgba(53,201,111,.07)}
+.individual-quality-summary.warning{border-color:rgba(246,195,68,.78);background:rgba(246,195,68,.08)}
+.individual-quality-summary.fail{border:2px solid #ff3030;background:rgba(255,48,48,.08);box-shadow:0 0 0 3px rgba(255,48,48,.08)}
+.individual-quality-summary.warning .individual-quality-head strong{color:#d99c00!important}
+.individual-quality-summary.fail .individual-quality-head strong{color:#ff3f3f!important}
+.individual-quality-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.individual-quality-card{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:4px;min-width:0;background:color-mix(in srgb,var(--surface) 75%,transparent)}
+.individual-quality-card span{font-size:.7rem;color:var(--muted);font-weight:800}
+.individual-quality-card strong{font-size:.9rem!important;line-height:1.15;color:var(--text)!important}
+.individual-quality-card small{font-size:.67rem;line-height:1.3;color:var(--muted)}
+.individual-quality-card.green{border-color:rgba(53,201,111,.55)}
+.individual-quality-card.green strong{color:#35c96f!important}
+.individual-quality-card.yellow{border-color:rgba(246,195,68,.82);background:rgba(246,195,68,.08)}
+.individual-quality-card.yellow strong{color:#d99c00!important}
+.individual-quality-card.red{border-color:#ff3030;background:rgba(255,48,48,.10)}
+.individual-quality-card.red strong{color:#ff3f3f!important}
+@media(max-width:560px){.individual-quality-grid{grid-template-columns:1fr}}
+
+.die-move-alert.required{border:2px solid #ff3030!important;background:rgba(255,48,48,.10)!important;box-shadow:0 0 0 3px rgba(255,48,48,.10),0 0 22px rgba(255,48,48,.16)!important}
+.die-move-alert.required #die-move-kicker,.die-move-alert.required #die-move-title{color:#ff3f3f!important}
+.die-move-alert.required #die-move-title{font-weight:950}
+.die-move-alert.required #die-move-message{color:var(--text)!important}
+.die-move-alert.suggested #die-move-kicker,.die-move-alert.suggested #die-move-title{color:#d99c00!important}
+
+.result-status.edge-preventive,.optimizer-panel.edge-preventive,.process-priority-summary.edge-preventive{
+  border-color:rgba(246,195,68,.82)!important;
+  box-shadow:0 0 0 2px rgba(246,195,68,.10)!important;
+}
+.result-status.edge-preventive strong,.optimizer-panel.edge-preventive #optimizer-status{color:#d99c00!important}
+.result-box.edge-preventive{border-color:rgba(246,195,68,.7)}
+
+/* Industrial IA 5.34.6 — top line quality strip + live BW marker */
+
+.line-quality-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:340px;max-width:560px;align-self:stretch}
+.line-quality-strip.hidden{display:none!important}
+.line-quality-card{min-width:0;border:1px solid var(--line);border-radius:13px;background:color-mix(in srgb,var(--surface2) 88%,transparent);padding:8px 10px;display:grid;gap:3px;align-content:center;box-shadow:none}
+.line-quality-card small{font-size:.56rem;line-height:1;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-quality-card strong{font-size:.72rem!important;line-height:1.15;color:var(--text)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-quality-card span{font-size:.57rem;line-height:1.2;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-quality-card.green{border-color:color-mix(in srgb,#31b85c 60%,var(--line));background:color-mix(in srgb,#31b85c 8%,var(--surface))}
+.line-quality-card.green strong{color:#238b43!important}
+.line-quality-card.yellow{border-color:color-mix(in srgb,#e7a400 70%,var(--line));background:color-mix(in srgb,#e7a400 8%,var(--surface))}
+.line-quality-card.yellow strong{color:#9a6a00!important}
+.line-quality-card.red{border-color:color-mix(in srgb,#ff3030 75%,var(--line));background:color-mix(in srgb,#ff3030 9%,var(--surface))}
+.line-quality-card.red strong{color:#d82323!important}
+:root:not(.light) .line-quality-card.green strong{color:#59db7d!important}
+:root:not(.light) .line-quality-card.yellow strong{color:#ffc23d!important}
+:root:not(.light) .line-quality-card.red strong{color:#ff6262!important}
+:root:not(.light) .line-quality-card.green span{color:#b8ddc4}
+:root:not(.light) .line-quality-card.yellow span{color:#ecd9a5}
+:root:not(.light) .line-quality-card.red span{color:#f0b1b1}
+@media(max-width:920px){.shift-control-panel{grid-template-columns:minmax(0,1fr)!important}.line-quality-strip{grid-column:1/-1;max-width:none;min-width:0}}
+@media(max-width:560px){.line-quality-strip{grid-template-columns:1fr}}
+.last-bw-inline.green{color:#238b43!important}.last-bw-inline.yellow{color:#b27b00!important}.last-bw-inline.red{color:#d92d2d!important}
+:root:not(.light) .last-bw-inline.green{color:#59db7d!important}:root:not(.light) .last-bw-inline.yellow{color:#ffc23d!important}:root:not(.light) .last-bw-inline.red{color:#ff6262!important}
+.trend-quality-compact{display:none!important}
+.trend-quality-compact.hidden{display:none!important}.trend-quality-compact span{display:inline-flex;align-items:center;min-height:20px;padding:3px 6px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font-size:.49rem;font-weight:950;line-height:1.1;white-space:nowrap;letter-spacing:.01em}
+.trend-quality-compact span.green{border-color:color-mix(in srgb,#31b85c 65%,var(--line));color:#238b43;background:color-mix(in srgb,#31b85c 8%,var(--surface))}
+.trend-quality-compact span.yellow{border-color:color-mix(in srgb,#e7a400 70%,var(--line));color:#9a6a00;background:color-mix(in srgb,#e7a400 9%,var(--surface))}
+.trend-quality-compact span.red{border-color:color-mix(in srgb,#ff3030 72%,var(--line));color:#d82323;background:color-mix(in srgb,#ff3030 8%,var(--surface))}
+:root:not(.light) .trend-quality-compact span.green{color:#59db7d}:root:not(.light) .trend-quality-compact span.yellow{color:#ffc23d}:root:not(.light) .trend-quality-compact span.red{color:#ff6262}
+.smart-trend-action{grid-template-rows:auto auto!important}.smart-trend-action>small{grid-row:1!important}.smart-trend-action>strong{grid-row:2!important}.smart-trend-action>.trend-apply-mini{grid-row:2!important}
+.priority-range-track,.range-track{isolation:isolate}.priority-range-marker-label,.range-marker-label{position:absolute;top:-28px;transform:translateX(-50%);z-index:4;padding:2px 5px;border-radius:6px;background:var(--surface);border:1px solid var(--line);font-size:.67rem;font-weight:950;line-height:1.1;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.12)}
+.priority-range-marker-label.green,.range-marker-label.green{color:#238b43;border-color:color-mix(in srgb,#31b85c 60%,var(--line))}.priority-range-marker-label.yellow,.range-marker-label.yellow{color:#a66f00;border-color:color-mix(in srgb,#e7a400 65%,var(--line))}.priority-range-marker-label.red,.range-marker-label.red{color:#d82323;border-color:color-mix(in srgb,#ff3030 65%,var(--line))}
+.priority-range-wrap{padding-top:18px}
+@media(max-width:720px){.trend-quality-compact{gap:3px}.trend-quality-compact span{font-size:.43rem;padding:2px 4px}.priority-range-marker-label{font-size:.58rem;top:-25px}}
+
+
+/* Industrial IA 5.34.6 — Header Quality + Operator Rail Hotfix */
+.shift-control-panel{
+  display:grid!important;
+  grid-template-columns:minmax(245px,.78fr) minmax(0,1.22fr)!important;
+  grid-template-areas:"shift quality" "trend trend"!important;
+  column-gap:10px!important;
+  row-gap:8px!important;
+  align-items:center!important;
+}
+.shift-status-copy{grid-area:shift!important;min-width:0!important;align-self:center!important}
+.line-quality-strip{
+  grid-area:quality!important;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  width:100%;
+  max-width:none!important;
+  min-width:0!important;
+  align-self:center!important;
+}
+.line-quality-strip.hidden{display:none!important}
+.line-quality-card{min-width:0!important;height:52px!important;padding:5px 7px!important;border-radius:11px!important;align-content:center!important;gap:2px!important}
+.line-quality-card small{font-size:.50rem!important;letter-spacing:.06em!important}
+.line-quality-card strong{font-size:.64rem!important;line-height:1.06!important;white-space:normal!important;overflow:hidden!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.line-quality-card span{font-size:.50rem!important;line-height:1.05!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.smart-trend-summary{grid-area:trend!important}
+.tool-workspace{display:grid!important;grid-template-columns:minmax(0,1fr) 132px!important;gap:10px!important;align-items:start!important}
+.calculator-column{grid-column:1!important;min-width:0!important}
+.compact-operator-rail{grid-column:2!important;display:grid!important;visibility:visible!important;opacity:1!important;position:sticky!important;top:12px!important;align-self:start!important;width:132px!important;min-width:132px!important;max-width:132px!important;margin:0!important}
+@media(max-width:720px){
+  .shift-control-panel{grid-template-columns:minmax(128px,.68fr) minmax(0,1.32fr)!important;grid-template-areas:"shift quality" "trend trend"!important;column-gap:6px!important}
+  .line-quality-strip{display:flex!important;overflow-x:auto!important;gap:5px!important;scrollbar-width:none}
+  .line-quality-strip::-webkit-scrollbar{display:none}
+  .line-quality-card{flex:0 0 108px!important;height:48px!important;padding:4px 6px!important}
+  .line-quality-card small{font-size:.44rem!important}.line-quality-card strong{font-size:.54rem!important}.line-quality-card span{font-size:.43rem!important}
+  .tool-workspace{grid-template-columns:minmax(0,1fr) 86px!important;gap:6px!important}
+  .compact-operator-rail{width:86px!important;min-width:86px!important;max-width:86px!important;top:8px!important}
+}
+
+
+/* Industrial IA 5.34.6 — mandatory post-cut recommendation decision */
+.post-cut-recommendation-card{max-width:520px;display:grid;gap:14px;border:2px solid color-mix(in srgb,var(--accent) 62%,var(--line));box-shadow:0 22px 70px rgba(0,0,0,.28)}
+.post-cut-recommendation-summary{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface2)}
+.post-cut-recommendation-summary>div{display:grid;gap:3px;text-align:center}.post-cut-recommendation-summary small{font-size:.66rem;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.05em}.post-cut-recommendation-summary strong{font-size:1.55rem;line-height:1;color:var(--text)}
+.post-cut-arrow{font-size:1.5rem;font-weight:950;color:var(--accent2)}
+#post-cut-recommendation-reason{margin:0;font-weight:800;line-height:1.45}
+.post-cut-learning-note{display:block;color:var(--muted);line-height:1.4}
+.post-cut-recommendation-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.post-cut-recommendation-actions button{min-height:50px;margin:0;border-radius:13px;font-weight:900}
+@media(max-width:520px){.post-cut-recommendation-actions{grid-template-columns:1fr}.post-cut-recommendation-summary strong{font-size:1.3rem}}

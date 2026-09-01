@@ -10,10 +10,10 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.33.1" rel="stylesheet"/>
+<link href="styles.css?v=5.34.6" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
-<body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — LEARNING &amp; PRODUCTION DATA DISABLED</div>
+<body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — ISOLATED DEMO DATA • REAL PRODUCTION &amp; LEARNING DISABLED</div>
 <div class="app-shell">
 <header class="topbar">
 <div class="brand industrial-brand">
@@ -57,6 +57,11 @@
 <span class="shift-dot" id="shift-dot"></span>
 <div><strong id="shift-status-title">No active shift</strong><small class="operator-greeting hidden" id="operator-greeting"></small><small id="shift-status-meta">Start a shift to separate products and predictions.</small></div>
 </div>
+<div aria-live="polite" class="line-quality-strip hidden" id="line-quality-strip">
+<div class="line-quality-card" id="line-quality-w1"><small id="line-quality-w1-label">Winder 1</small><strong id="line-quality-w1-title">—</strong><span id="line-quality-w1-detail">—</span></div>
+<div class="line-quality-card" id="line-quality-w2"><small id="line-quality-w2-label">Winder 2</small><strong id="line-quality-w2-title">—</strong><span id="line-quality-w2-detail">—</span></div>
+<div class="line-quality-card" id="line-quality-balance"><small id="line-quality-balance-label">Sheet Balance</small><strong id="line-quality-balance-title">—</strong><span id="line-quality-balance-detail">—</span></div>
+</div>
 <section aria-live="polite" class="smart-trend-summary waiting" id="trend-panel">
 <span aria-hidden="true" class="smart-trend-icon">📈</span>
 <span class="smart-trend-item smart-trend-main">
@@ -80,7 +85,7 @@
 <span class="smart-trend-item smart-trend-action">
 <small id="trend-action-label">Preventive Action</small>
 <strong id="trend-action">Waiting</strong>
-<button class="trend-apply-mini hidden" id="apply-preventive-swrap" type="button">Apply</button>
+
 </span>
 <span class="help-wrap trend-help-wrap">
 <button aria-expanded="false" aria-label="How AI Predictor works" class="info-help" id="trend-help" type="button">?</button>
@@ -102,7 +107,7 @@
 <div class="priority-range-labels"><span>Too light</span><span>Too heavy</span></div>
 <div class="priority-range-track">
 <span class="priority-range-yellow left"></span><span class="priority-range-green"></span><span class="priority-range-yellow right"></span>
-<span class="priority-range-marker" id="priority-range-marker"></span>
+<span class="priority-range-marker-label" id="priority-range-marker-label">—</span><span class="priority-range-marker" id="priority-range-marker"></span>
 </div>
 <div class="priority-range-numbers"><span id="priority-range-low">—</span><span id="priority-range-target">—</span><span id="priority-range-high">—</span></div>
 </div>
@@ -140,10 +145,7 @@
 </datalist>
 <div class="result-box industrial-result" id="bw-result-box">
 <div class="result-copy"><span id="average-bw-label">Average Basis Weight</span><strong id="bw-result">—</strong><small id="bw-meta">48” mandrel (default)</small>
-<div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div><div aria-live="assertive" class="die-move-alert hidden" id="die-move-alert">
-<div><small id="die-move-kicker">SHEET BALANCE</small><strong id="die-move-title">—</strong></div>
-<p id="die-move-message">—</p>
-</div>
+<div class="winder-results hidden" id="winder-results"><span><b id="winder1-result-label">Winder 1</b>: <strong id="bw1-result">—</strong></span><span><b id="winder2-result-label">Winder 2</b>: <strong id="bw2-result">—</strong></span><span class="imbalance" id="winder-imbalance">—</span></div>
 </div>
 <div aria-label="Waiting for calculation" aria-live="polite" class="result-status idle" id="result-status">
 <span class="result-status-dot"></span>
@@ -163,7 +165,7 @@
 </div>
 <div class="range-track-wrap">
 <div class="range-labels"><span id="too-light-label">Too light</span><span id="too-heavy-label">Too heavy</span></div>
-<div class="range-track"><span class="range-green"></span><span class="range-yellow left"></span><span class="range-yellow right"></span><span class="range-marker" id="range-marker"></span></div>
+<div class="range-track"><span class="range-green"></span><span class="range-yellow left"></span><span class="range-yellow right"></span><span class="range-marker-label" id="range-marker-label">—</span><span class="range-marker" id="range-marker"></span></div>
 <div class="range-numbers"><span id="range-low">—</span><span id="range-target">—</span><span id="range-high">—</span></div>
 </div>
 <p class="optimizer-action" id="optimizer-action"></p>
@@ -179,7 +181,7 @@
 <strong>S-Wrap <b id="decision-swrap">—</b></strong>
 <small>Predicted next BW: <b id="decision-predicted-bw">—</b> • Confidence: <b id="decision-confidence">0%</b></small>
 </div>
-<div class="recommendation-actions">
+<div class="recommendation-actions hidden">
 <button class="primary" id="accept-swrap-recommendation" type="button">✓ Apply recommendation</button>
 <button class="text-button" id="reject-swrap-recommendation" type="button">Keep current</button>
 </div>
@@ -289,7 +291,7 @@
 <span class="production-summary-chevron">›</span>
 <span aria-hidden="true" class="production-hidden-values"><strong id="prod-produced-material">0</strong><strong id="prod-shift-target">—</strong><span id="prod-target-label">Shift target</span><span id="production-forecast">Start a shift to begin production tracking.</span></span>
 </button></main>
-<footer id="footer-text">Industrial IA 5.33.1 • Daily Quality Report</footer>
+<footer id="footer-text">Industrial IA 5.34.6 • Header Quality + Operator Rail Hotfix</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -412,9 +414,31 @@
 <label><span id="daily-report-period-label">Period</span><select id="daily-report-period"><option value="last24">Last 24 hours</option><option value="calendar">Calendar day</option></select></label>
 <label id="daily-report-date-wrap"><span id="daily-report-date-label">Date</span><input id="daily-report-date" type="date"/></label>
 <label><span id="daily-report-scope-label">Lines</span><select id="daily-report-scope"><option value="current">Current line</option><option value="all">All lines</option></select></label>
+<label><span id="daily-report-shift-label">Shift</span><select id="daily-report-shift"><option value="all">All Shifts</option><option value="A">A Shift</option><option value="B">B Shift</option><option value="C">C Shift</option><option value="D">D Shift</option></select></label>
 </div>
 <div class="daily-report-actions"><button class="secondary" id="daily-report-refresh" type="button">Generate report</button><button class="primary" id="daily-report-print" type="button">Print report</button></div>
 <div class="daily-report-preview" id="daily-report-preview"></div>
+</div>
+</div>
+<div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="post-cut-recommendation-dialog" role="dialog" aria-labelledby="post-cut-recommendation-title">
+<div class="product-dialog-card compact-dialog post-cut-recommendation-card">
+<div class="product-dialog-heading"><div><p class="eyebrow" id="post-cut-recommendation-eyebrow">VIEJITO RECOMMENDATION</p><h3 id="post-cut-recommendation-title">S-Wrap decision</h3></div></div>
+<div class="post-cut-recommendation-summary">
+<div><small id="post-cut-current-label">Current S-Wrap</small><strong id="post-cut-current-swrap">—</strong></div>
+<span class="post-cut-arrow">→</span>
+<div><small id="post-cut-suggested-label">Suggested S-Wrap</small><strong id="post-cut-suggested-swrap">—</strong></div>
+</div>
+<p id="post-cut-recommendation-reason">—</p>
+<small class="post-cut-learning-note" id="post-cut-learning-note">If accepted, Viejito will wait for the next completed cut and compare the predicted BW with the actual BW to learn.</small>
+<div class="post-cut-recommendation-actions"><button class="primary" id="post-cut-accept" type="button">✓ Accept suggestion</button><button class="secondary" id="post-cut-continue" type="button">Continue running</button></div>
+</div>
+</div>
+<div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="lead-confirm-dialog" role="dialog">
+<div class="product-dialog-card compact-dialog lead-confirm-card">
+<div class="product-dialog-heading"><div><p class="eyebrow" id="lead-confirm-eyebrow">SHEET BALANCE ESCALATION</p><h3 id="lead-confirm-title">Lead notification check</h3></div></div>
+<p id="lead-confirm-message">This imbalance has continued for four consecutive cuts. Did you notify your Lead?</p>
+<div class="lead-confirm-actions"><button class="primary" id="lead-confirm-yes" type="button">Yes — Lead notified</button><button class="secondary" id="lead-confirm-no" type="button">No — not yet</button></div>
+<small id="lead-confirm-note">This check is recorded in the Daily Quality Report. It is not used to blame the operator.</small>
 </div>
 </div>
 <div aria-hidden="true" aria-modal="true" class="product-dialog hidden" id="settings-password-dialog" role="dialog">
@@ -479,7 +503,7 @@
 <section class="settings-section">
 <small id="settings-demo-kicker">DEMO / TRAINING</small>
 <strong id="settings-demo-title">Demo Mode — Do Not Learn</strong>
-<p class="settings-help" id="settings-demo-help">Use fake values to demonstrate Viejito without adding them to production history, trends, learning, or production totals.</p>
+<p class="settings-help" id="settings-demo-help">Use fake values to demonstrate Viejito with a separate demo trend/report history. Demo data never enters real production history, real learning, or production totals.</p>
 <div class="settings-choice-grid two">
 <button class="settings-choice" data-draft-demo="off" type="button">Production</button>
 <button class="settings-choice" data-draft-demo="on" type="button">Demo Mode</button>
@@ -511,6 +535,7 @@
 </div>
 </div>
 <label class="product-search-label operator-picker" id="operator-picker"><span id="operator-picker-label">Operator</span><input autocomplete="name" id="product-operator" maxlength="50" placeholder="Enter operator name" type="text"/></label>
+<div class="scheduled-shift-preview hidden" id="scheduled-shift-preview"><small>SCHEDULED SHIFT</small><strong id="scheduled-shift-value">—</strong><span>Fixed by plant calendar and current time.</span></div>
 <label class="product-search-label operator-picker" id="shift-language-picker"><span id="shift-language-picker-label">Language / Idioma</span><select id="product-language"><option value="">Select language / Selecciona idioma</option><option value="en">English</option><option value="es">Español</option></select></label>
 <label class="product-search-label"><span>Sheet type</span><input autocomplete="off" id="product-search" list="sheet-type-list" placeholder="Example: 8.6" type="text"/></label>
 <div class="target-preview"><span id="product-target-copy">Target BW updates automatically</span><strong id="product-target-preview">—</strong></div>
@@ -564,11 +589,12 @@
 </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="optimizer.js?v=5.33.1"></script>
-<script src="process-learning.js?v=5.33.1"></script>
-<script src="davis-standard-brain.js?v=5.33.1"></script>
-<script src="daily-report.js?v=5.33.1"></script>
-<script src="local-brain.js?v=5.33.1"></script>
-<script src="app.js?v=5.33.1"></script>
+<script src="optimizer.js?v=5.34.6"></script>
+<script src="process-learning.js?v=5.34.6"></script>
+<script src="davis-standard-brain.js?v=5.34.6"></script>
+<script src="shift-schedule.js?v=5.34.6"></script>
+<script src="daily-report.js?v=5.34.6"></script>
+<script src="local-brain.js?v=5.34.6"></script>
+<script src="app.js?v=5.34.6"></script>
 </body>
 </html>

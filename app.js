@@ -10,7 +10,13 @@ const DEFAULT_TARGET_BW = 6.35;
 const DEFAULT_CURRENT_SWRAP = 170;
 const MAX_SWRAP_SPEED = Number(window.VIEJITO_MAX_SWRAP)||228;
 const PROCESS_PERFORMANCE_KEY='viejitoProcessPerformanceV1';
+const DEMO_MODE_KEY='viejitoDemoModeV1';
 const TREND_HISTORY_KEY = 'viejitoBWTrendHistoryV3';
+const DEMO_TREND_HISTORY_KEY = 'viejitoDemoBWTrendHistoryV1';
+const DEMO_QUALITY_EVENT_KEY='viejitoDemoQualityEventsV1';
+const DEMO_OPEN_RECOMMENDATION_KEY='viejitoDemoOpenRecommendationV1';
+const DEMO_PENDING_RECOMMENDATION_KEY='viejitoDemoPendingRecommendationV1';
+const DEMO_ACCEPTED_PREVENTIVE_TREND_KEY='viejitoDemoAcceptedPreventiveTrendV1';
 const SHIFT_KEY = 'viejitoActiveShiftV1';
 const SHIFT_ARCHIVE_KEY = 'viejitoShiftArchiveV1';
 const TREND_SAMPLE_SIZE = 5;
@@ -47,6 +53,68 @@ const lineRemove = base => localStorage.removeItem(lineKey(base));
 let inChatQuery = false;
 const CHAT_MEMORY_MODE_KEY='viejitoChatMemoryModeV1';
 const CHAT_HISTORY_KEY='viejitoChatHistoryV1';
+const QUALITY_EVENT_KEY='viejitoQualityEventsV1';
+const OPEN_RECOMMENDATION_KEY='viejitoOpenRecommendationV1';
+const LEAD_PROMPT_EVENT='lead_confirmation';
+const BW_LEAD_PROMPT_EVENT='bw_lead_confirmation';
+function demoMode(){return localStorage.getItem(DEMO_MODE_KEY)==='on';}
+function activeTrendHistoryKey(){return demoMode()?DEMO_TREND_HISTORY_KEY:TREND_HISTORY_KEY;}
+function activeQualityEventKey(){return demoMode()?DEMO_QUALITY_EVENT_KEY:QUALITY_EVENT_KEY;}
+function activeOpenRecommendationKey(){return demoMode()?DEMO_OPEN_RECOMMENDATION_KEY:OPEN_RECOMMENDATION_KEY;}
+function activePendingRecommendationKey(){return demoMode()?DEMO_PENDING_RECOMMENDATION_KEY:PENDING_RECOMMENDATION_KEY;}
+function activeAcceptedPreventiveTrendKey(){return demoMode()?DEMO_ACCEPTED_PREVENTIVE_TREND_KEY:ACCEPTED_PREVENTIVE_TREND_KEY;}
+
+function scheduledShiftInfo(value=new Date()){
+  try{return window.ViejitoShiftSchedule?.shiftAt?.(value)||null;}catch(_){return null;}
+}
+function scheduledShiftCode(value=new Date()){return scheduledShiftInfo(value)?.code||null;}
+function shiftDisplay(info=scheduledShiftInfo()){
+  if(!info)return '—';
+  const day=info.type==='day';
+  return `${info.code} Shift • ${day?'Day 7:00 AM–7:00 PM':'Night 7:00 PM–7:00 AM'}`;
+}
+function qualityEventsForLine(line=ACTIVE_LINE){
+  const key=`${activeQualityEventKey()}::line${Number(line)}`;
+  try{const rows=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(rows)?rows:[];}catch(_){return [];}
+}
+function saveQualityEventsForLine(line,rows){
+  localStorage.setItem(`${activeQualityEventKey()}::line${Number(line)}`,JSON.stringify((rows||[]).slice(-1200)));
+}
+function recordQualityEvent(type,data={},line=ACTIVE_LINE){
+  const now=new Date(),sched=scheduledShiftInfo(now),active=Number(line)===Number(ACTIVE_LINE)?state?.activeShift:null;
+  const event={id:`qe-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,type:String(type),time:now.toISOString(),line:Number(line),shiftCode:String(active?.shiftCode||sched?.code||''),shiftWorkDate:String(active?.shiftWorkDate||sched?.workDate||''),shiftId:active?.id||data.shiftId||null,runId:active?.runId||data.runId||null,operator:active?.operator||data.operator||'',product:active?.product||data.product||'',...data};
+  const rows=qualityEventsForLine(line);rows.push(event);saveQualityEventsForLine(line,rows);return event;
+}
+function openRecommendationOpportunity(){
+  try{return JSON.parse(lineGet(activeOpenRecommendationKey(),'null')||'null');}catch(_){return null;}
+}
+function saveOpenRecommendationOpportunity(value){const key=activeOpenRecommendationKey();if(value)lineSet(key,JSON.stringify(value));else lineRemove(key);}
+function finalizeRecommendationOpportunity(outcome='not_used',reason='next_cut'){
+  const open=openRecommendationOpportunity();if(!open)return null;
+  const type=outcome==='accepted'?'recommendation_accepted':'recommendation_not_used';
+  const event=recordQualityEvent(type,{recommendationId:open.id,recommendationType:open.recommendationType||'corrective',suggestedSWrap:Number(open.suggestedSWrap)||null,beforeSWrap:Number(open.beforeSWrap)||null,targetBW:Number(open.targetBW)||null,beforeBW:Number(open.beforeBW)||null,reason,product:open.product||'',shiftId:open.shiftId||null,runId:open.runId||null});
+  saveOpenRecommendationOpportunity(null);return event;
+}
+function registerRecommendationOpportunity(result,trend=null){
+  if(!state.activeShift)return null;
+  // Only one actionable recommendation owns the next-cut decision. Corrective has priority.
+  let kind=null,suggested=null,beforeBW=null,targetBW=null;
+  if(result?.suggestAdjustment&&positive(Number(result.suggestedSWrap))&&!recommendationAlreadyCurrent(result)){
+    kind=result.edgePreventive?'preventive_edge':'corrective';suggested=Number(result.suggestedSWrap);beforeBW=Number(result.actualBW);targetBW=Number(result.targetBW);
+  }else if(trend?.ready&&trend?.recommendAdjustment&&positive(Number(trend.suggestedSWrap))&&!preventiveTrendAlreadyApplied(trend)){
+    kind='preventive';suggested=Number(trend.suggestedSWrap);beforeBW=Number(state.lastCompletedCut?.averageBW);targetBW=Number(trend.targetBW||state.targetBW);
+  }
+  if(!kind){saveOpenRecommendationOpportunity(null);return null;}
+  const existing=openRecommendationOpportunity();
+  const signature=`${state.activeShift.id}|${state.activeShift.runId}|${state.lastCompletedCut?.time||Date.now()}|${kind}|${suggested}`;
+  if(existing?.signature===signature)return existing;
+  const item={id:`rec-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,signature,recommendationType:kind,suggestedSWrap:suggested,beforeSWrap:Number(state.currentSWrap),beforeBW,targetBW,product:state.activeShift.product,shiftId:state.activeShift.id,runId:state.activeShift.runId,time:new Date().toISOString()};
+  saveOpenRecommendationOpportunity(item);recordQualityEvent('recommendation_presented',{recommendationId:item.id,recommendationType:kind,suggestedSWrap:suggested,beforeSWrap:item.beforeSWrap,targetBW,beforeBW});return item;
+}
+function recordSWrapChange(before,after,source='manual',meta={}){
+  const a=Number(before),b=Number(after);if(!state.activeShift||!positive(a,b)||Math.abs(a-b)<0.05)return null;
+  return recordQualityEvent('swrap_change',{beforeSWrap:a,afterSWrap:b,source,...meta});
+}
 
 
 const translations = {
@@ -74,9 +142,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.33.1',
+    introTitle: 'Industrial IA 5.34.6',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 228 is interpreted as S-Wrap Speed; more than 228 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.33.1 • Daily Quality Report'
+    footer: 'Industrial IA 5.34.6 • Daily Quality Report'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -102,9 +170,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.33.1',
+    introTitle: 'Industrial IA 5.34.6',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 228 interpreto S-Wrap Speed; más de 228 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.33.1 • Reporte diario + Brain local'
+    footer: 'Industrial IA 5.34.6 • Reporte diario + Brain local'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -130,9 +198,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.33.1',
+    introTitle: 'Industrial IA 5.34.6',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 228 est interprété comme la vitesse S-Wrap; plus de 228 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.33.1 • Rapport quotidien + Cerveau local'
+    footer: 'Industrial IA 5.34.6 • Rapport quotidien + Cerveau local'
   }
 };
 
@@ -311,10 +379,8 @@ function getSarcasmLine(){
 }
 
 
-const DEMO_MODE_KEY='viejitoDemoModeV1';
 const ADMIN_PASSWORD_HASH_KEY='viejitoAdminPasswordHashV1';
 const MIGRATION_514_KEY='viejitoMigration514Done';
-function demoMode(){return localStorage.getItem(DEMO_MODE_KEY)==='on';}
 function hashAdminPassword(value){
   let h=2166136261; for(const ch of String(value||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);} return (h>>>0).toString(16);
 }
@@ -396,7 +462,7 @@ const state = {
   shiftArchive: storedJSON(SHIFT_ARCHIVE_KEY,[]),
   productionTargets: storedJSON('viejitoProductionTargetsV1',{}),
   latestOptimization: null,
-  bwTrendHistory: storedJSON(TREND_HISTORY_KEY,[]),
+  bwTrendHistory: storedJSON(activeTrendHistoryKey(),[]),
   latestTrend: null,
   lastCompletedCut: storedJSON(LAST_COMPLETED_CUT_KEY,null),
   selectedLine: ACTIVE_LINE,
@@ -503,7 +569,9 @@ function currentProcessContext(){
     mandrel,
     extruder:Number(state.activeShift?.extruder)||null,
     shiftId:state.activeShift?.id||null,
-    runId:state.activeShift?.runId||null
+    runId:state.activeShift?.runId||null,
+    shiftCode:state.activeShift?.shiftCode||scheduledShiftCode()||null,
+    shiftWorkDate:state.activeShift?.shiftWorkDate||scheduledShiftInfo()?.workDate||null
   };
 }
 function optimizeBasisWeight(actualBW,targetBW=state.targetBW,currentSWrap=state.currentSWrap,{persist=true}={}){
@@ -514,7 +582,25 @@ function optimizeBasisWeight(actualBW,targetBW=state.targetBW,currentSWrap=state
   // The last completed cut can legitimately have been made at a different S-Wrap.
   if(persist) saveOptimizerSettings(normalizedTarget,normalizedSWrap);
   const optimizer=new SmartOptimizer({targetBW:normalizedTarget,currentSWrap:normalizedSWrap,roundMode:'nearest1',learningEngine:state.learningEngine,context:currentProcessContext()});
-  return optimizer.evaluate(actualBW);
+  const result=optimizer.evaluate(actualBW);
+  // 5.34.6: a green average at the outer edge of the ±0.17 band gets a
+  // small 2-point preventive S-Wrap option before the next cut enters warning.
+  const edgeStart=0.15;
+  if(result.level==='green'&&Number(result.absoluteDifference)>=edgeStart&&Number(result.absoluteDifference)<=Number(result.greenTolerance||0.17)){
+    const direction=Number(result.difference)>=0?1:-1;
+    const preventive=clampSWrap(Number(result.currentSWrap)+(2*direction));
+    if(Math.abs(preventive-Number(result.currentSWrap))>=0.5){
+      result.edgePreventive=true;
+      result.recommendationType='preventive_edge';
+      result.fullCorrectiveFormulaSuggestion=result.formulaSuggestion;
+      result.formulaSuggestion=preventive;
+      result.suggestedSWrap=preventive;
+      result.adjustment=Number((preventive-Number(result.currentSWrap)).toFixed(1));
+      result.direction=result.adjustment>0?'increase':result.adjustment<0?'decrease':'hold';
+      result.suggestAdjustment=result.direction!=='hold';
+    }
+  }
+  return result;
 }
 function optimizerAction(result){
   if(!result.suggestAdjustment) return ot('noChange',{speed:fmt(result.currentSWrap,1)});
@@ -524,6 +610,15 @@ function optimizerAction(result){
   return ot('hold',{speed:fmt(result.currentSWrap,1)});
 }
 function optimizerStatus(result){
+  if(result.level==='green'&&result.edgePreventive){
+    const title=state.language==='es'?'EN OBJETIVO — CERCA DEL LÍMITE':state.language==='fr'?'DANS LA CIBLE — PRÈS DE LA LIMITE':'ON TARGET — NEAR LIMIT';
+    const message=state.language==='es'
+      ?`Todavía está dentro de ±0.17, pero está cerca del warning. Sugerencia preventiva: S-Wrap ${fmt(result.currentSWrap,1)} → ${fmt(result.suggestedSWrap,1)}. Vigila el próximo corte.`
+      :state.language==='fr'
+        ?`Toujours dans ±0,17, mais près de la limite. Suggestion préventive : S-Wrap ${fmt(result.currentSWrap,1)} → ${fmt(result.suggestedSWrap,1)}. Surveillez la prochaine coupe.`
+        :`Still within ±0.17, but close to warning. Preventive suggestion: S-Wrap ${fmt(result.currentSWrap,1)} → ${fmt(result.suggestedSWrap,1)}. Watch the next cut.`;
+    return {title,message};
+  }
   if(result.level==='green') return {title:ot('greenStatus'),message:ot('greenMessage')};
   if(result.level==='yellow') return {title:ot('yellowStatus'),message:ot('yellowMessage')};
   const current=Number(result.currentSWrap);
@@ -555,8 +650,9 @@ function renderResultStatus(result){
   const statusBox=$('result-status');
   if(!statusBox) return;
   const status=optimizerStatus(result);
-  statusBox.classList.remove('idle','green','yellow','red','status-pop');
+  statusBox.classList.remove('idle','green','yellow','red','status-pop','edge-preventive');
   statusBox.classList.add(result.level);
+  statusBox.classList.toggle('edge-preventive',!!result.edgePreventive);
   void statusBox.offsetWidth;
   statusBox.classList.add('status-pop');
   $('result-status-title').textContent=status.title;
@@ -569,8 +665,9 @@ function renderProcessPrioritySummary(result){
   const box=$('process-priority-summary');
   if(!box||!result)return;
   const status=optimizerStatus(result);
-  box.classList.remove('hidden','green','yellow','red','status-pop');
+  box.classList.remove('hidden','green','yellow','red','status-pop','edge-preventive');
   box.classList.add(result.level);
+  box.classList.toggle('edge-preventive',!!result.edgePreventive);
   void box.offsetWidth;box.classList.add('status-pop');
   $('priority-average-bw').textContent=fmt(result.actualBW,3);
   $('priority-target-bw').textContent=fmt(result.targetBW,2);
@@ -583,16 +680,21 @@ function renderProcessPrioritySummary(result){
   if($('priority-range-low'))$('priority-range-low').textContent=Number(low).toFixed(2);
   if($('priority-range-target'))$('priority-range-target').textContent=Number(result.targetBW).toFixed(2);
   if($('priority-range-high'))$('priority-range-high').textContent=Number(high).toFixed(2);
-  if($('priority-range-marker'))$('priority-range-marker').style.left=`${Math.max(0,Math.min(100,((result.actualBW-low)/(high-low||1))*100))}%`;
+  const priorityPos=Math.max(0,Math.min(100,((result.actualBW-low)/(high-low||1))*100));
+  if($('priority-range-marker'))$('priority-range-marker').style.left=`${priorityPos}%`;
+  const markerLevel=result.level==='red'?'red':(result.level==='yellow'||result.edgePreventive)?'yellow':'green';
+  const markerLabel=$('priority-range-marker-label');if(markerLabel){markerLabel.style.left=`${priorityPos}%`;markerLabel.textContent=fmt(result.actualBW,3);markerLabel.classList.remove('green','yellow','red');markerLabel.classList.add(markerLevel);}
 }
 
 function renderOptimizerPanel(result){
   const panel=$('optimizer-panel');
   const status=optimizerStatus(result);
-  panel.classList.remove('hidden','green','yellow','red');
+  panel.classList.remove('hidden','green','yellow','red','edge-preventive');
   panel.classList.add(result.level);
-  $('bw-result-box').classList.remove('green','yellow','red');
+  panel.classList.toggle('edge-preventive',!!result.edgePreventive);
+  $('bw-result-box').classList.remove('green','yellow','red','edge-preventive');
   $('bw-result-box').classList.add(result.level);
+  $('bw-result-box').classList.toggle('edge-preventive',!!result.edgePreventive);
   $('optimizer-status').textContent=status.title;
   $('optimizer-message').textContent=status.message;
   $('optimizer-target').textContent=fmt(result.targetBW);
@@ -616,6 +718,7 @@ function renderOptimizerPanel(result){
   const span=result.warningTolerance*2;
   const position=Math.max(0,Math.min(100,((result.actualBW-(result.targetBW-result.warningTolerance))/span)*100));
   $('range-marker').style.left=`${position}%`;
+  const rangeLabel=$('range-marker-label');if(rangeLabel){rangeLabel.style.left=`${position}%`;rangeLabel.textContent=fmt(result.actualBW,3);rangeLabel.classList.remove('green','yellow','red');rangeLabel.classList.add(result.level==='red'?'red':(result.level==='yellow'||result.edgePreventive)?'yellow':'green');}
   renderResultStatus(result);
   renderProcessPrioritySummary(result);
   renderRecommendationDecision(result);
@@ -631,11 +734,11 @@ function sanitizeTrendHistory(){
 }
 function saveTrendHistory(){
   sanitizeTrendHistory();
-  lineSet(TREND_HISTORY_KEY,JSON.stringify(state.bwTrendHistory));
+  lineSet(activeTrendHistoryKey(),JSON.stringify(state.bwTrendHistory));
 }
 const ACCEPTED_PREVENTIVE_TREND_KEY='viejitoAcceptedPreventiveTrendV1';
 function acceptedPreventiveTrend(){
-  try{return JSON.parse(lineGet(ACCEPTED_PREVENTIVE_TREND_KEY,'null')||'null');}catch(_){return null;}
+  try{return JSON.parse(lineGet(activeAcceptedPreventiveTrendKey(),'null')||'null');}catch(_){return null;}
 }
 function trendSignature(trend){
   if(!trend||!Array.isArray(trend.values))return '';
@@ -647,8 +750,9 @@ function preventiveTrendAlreadyApplied(trend){
   return !!(accepted&&accepted.signature&&accepted.signature===trendSignature(trend));
 }
 function saveAcceptedPreventiveTrend(value){
-  if(value)lineSet(ACCEPTED_PREVENTIVE_TREND_KEY,JSON.stringify(value));
-  else lineRemove(ACCEPTED_PREVENTIVE_TREND_KEY);
+  const key=activeAcceptedPreventiveTrendKey();
+  if(value)lineSet(key,JSON.stringify(value));
+  else lineRemove(key);
 }
 function trendDirectionLabel(direction){
   if(direction==='up') return ot('trendUpLabel');
@@ -758,18 +862,24 @@ function renderTrendPanel(trend=analyzeTrend()){
   if($('trend-projected'))$('trend-projected').textContent=trend.ready?fmt(trend.projectedBW,3):'—';
   if($('trend-rolls'))$('trend-rolls').textContent=fillTemplate(localizedTrendCopy('rolls'),{count:trend.count||0,need:trend.required||TREND_SAMPLE_SIZE});
 
+  renderLineQualityStrip(state.lastCompletedCut);
+  renderTrendQualityCompact(state.lastCompletedCut);
   const applyButton=$('apply-preventive-swrap');
-  const show=!!(!correctiveActive&&trend.ready&&trend.recommendAdjustment&&positive(trend.suggestedSWrap)&&!preventiveTrendAlreadyApplied(trend));
+  const edge=state.latestOptimization;
+  const edgeShow=!!(!correctiveActive&&edge?.edgePreventive&&edge?.suggestAdjustment&&positive(edge.suggestedSWrap)&&!recommendationAlreadyCurrent(edge));
+  const trendShow=!!(!correctiveActive&&trend.ready&&trend.recommendAdjustment&&positive(trend.suggestedSWrap)&&!preventiveTrendAlreadyApplied(trend));
+  const show=edgeShow||trendShow;
+  const preventiveSuggested=edgeShow?Number(edge.suggestedSWrap):Number(trend.suggestedSWrap);
   if(applyButton){
     applyButton.classList.toggle('hidden',!show);
     applyButton.disabled=!show;
-    if(show)applyButton.textContent=window.innerWidth<=520?localizedTrendCopy('applyShort'):localizedTrendCopy('applySuggestion');
+    if(show)applyButton.textContent=`${localizedTrendCopy('applyShort')} ${fmt(preventiveSuggested,1)}`;
   }
   if($('trend-action')){
     $('trend-action').classList.remove('hidden');
     if(show){
-      const before=Number(state.currentSWrap)||Number(trend.suggestedSWrap-trend.adjustment);
-      $('trend-action').textContent=`S-Wrap ${fmt(before,1)} → ${fmt(trend.suggestedSWrap,1)}`;
+      const before=Number(state.currentSWrap)||Number(preventiveSuggested-(edgeShow?Number(edge.adjustment||0):Number(trend.adjustment||0)));
+      $('trend-action').textContent=`S-Wrap ${fmt(before,1)} → ${fmt(preventiveSuggested,1)}`;
     }else if(correctiveActive)$('trend-action').textContent=localizedTrendCopy('correctiveBelow');
     else if(trend?.blockedByMax)$('trend-action').textContent=`MAX S-Wrap ${MAX_SWRAP_SPEED}`;
     else if(currentStatus==='yellow'||(trend.ready&&trend.level==='warning'))$('trend-action').textContent=localizedTrendCopy('watch');
@@ -778,6 +888,9 @@ function renderTrendPanel(trend=analyzeTrend()){
 }
 
 function acceptPreventiveSWrapChange(){
+  if(!requireActiveShift({openStart:true}))return false;
+  const edge=state.latestOptimization;
+  if(edge?.edgePreventive&&edge?.suggestAdjustment&&positive(edge.suggestedSWrap)&&!recommendationAlreadyCurrent(edge)){acceptSWrapRecommendation();return true;}
   const trend=state.latestTrend||analyzeTrend();
   if(activeCorrectiveBWAction()){
     showToast(localizedTrendCopy('correctiveDeferred'));
@@ -787,12 +900,17 @@ function acceptPreventiveSWrapChange(){
   const before=Number(state.currentSWrap);
   const applied=Number(trend.suggestedSWrap);
   const ctx=currentProcessContext();
+  if(!pendingRecommendation())savePreventiveRecommendationForLearning(trend,before,applied);
   saveAcceptedPreventiveTrend({
     signature:trendSignature(trend),acceptedAt:new Date().toISOString(),beforeSWrap:before,appliedSWrap:applied,
     targetBW:Number(trend.targetBW||state.targetBW),projectedBW:Number(trend.projectedBW),direction:trend.direction,
     consistency:Number(trend.consistency)||0,values:Array.isArray(trend.values)?trend.values.map(Number):[],
     product:ctx.product,mandrel:ctx.mandrel,extruder:ctx.extruder,shiftId:ctx.shiftId,runId:ctx.runId
   });
+  const openRec=openRecommendationOpportunity();
+  if(openRec?.recommendationType==='preventive')finalizeRecommendationOpportunity('accepted','apply_button');
+  else recordQualityEvent('recommendation_accepted',{recommendationType:'preventive',suggestedSWrap:applied,beforeSWrap:before,targetBW:Number(trend.targetBW||state.targetBW),beforeBW:Number(state.lastCompletedCut?.averageBW)||null,reason:'apply_button'});
+  recordSWrapChange(before,applied,'preventive_recommendation',{suggestedSWrap:applied});
   syncCurrentSWrap(applied,{save:true});
   if($('bw-current-swrap'))$('bw-current-swrap').value=fmt(applied,1);
 
@@ -810,12 +928,12 @@ function acceptPreventiveSWrapChange(){
   return true;
 }
 function recordBWForTrend(bw,targetBW=state.targetBW,currentSWrap=state.currentSWrap,pair=null){
-  // Queries/what-if chat and Demo Mode are read-only: never contaminate real trend history.
-  if(inChatQuery||demoMode()) return analyzeTrend(targetBW,currentSWrap);
+  // Chat what-if queries are read-only. Demo Mode writes only to its separate demo history.
+  if(inChatQuery) return analyzeTrend(targetBW,currentSWrap);
   if(!positive(bw)) return analyzeTrend(targetBW,currentSWrap);
   sanitizeTrendHistory();
   const context=currentProcessContext();
-  state.bwTrendHistory.push({bw:Number(bw),targetBW:Number(targetBW)||Number(state.targetBW)||null,currentSWrap:Number(currentSWrap)||Number(state.currentSWrap)||null,winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,extruder:context.extruder,shiftId:context.shiftId,runId:context.runId,time:new Date().toISOString()});
+  state.bwTrendHistory.push({bw:Number(bw),targetBW:Number(targetBW)||Number(state.targetBW)||null,currentSWrap:Number(currentSWrap)||Number(state.currentSWrap)||null,winder1:pair?.winder1??Number(bw),winder2:pair?.winder2??null,product:context.product,mandrel:context.mandrel,extruder:context.extruder,shiftId:context.shiftId,runId:context.runId,shiftCode:state.activeShift?.shiftCode||scheduledShiftCode(),shiftWorkDate:state.activeShift?.shiftWorkDate||scheduledShiftInfo()?.workDate||'',operator:state.activeShift?.operator||state.operator||'',time:new Date().toISOString()});
   state.bwTrendHistory=state.bwTrendHistory.slice(-250);
   saveTrendHistory();
   const trend=analyzeTrend(targetBW,currentSWrap);
@@ -853,12 +971,97 @@ function renderLearningDashboard(){
   $('dashboard-confidence').textContent=`${confidence}%`;
 }
 
+let postCutRecommendationDecision=null;
+let postCutEscalationsPending=false;
+function postCutRecommendationCandidate(result=state.latestOptimization,trend=state.latestTrend){
+  if(result?.suggestAdjustment&&positive(Number(result.suggestedSWrap))&&!recommendationAlreadyCurrent(result)){
+    const current=Number(state.currentSWrap)||Number(result.currentSWrap);
+    const suggested=Number(result.suggestedSWrap);
+    const actual=Number(result.actualBW),target=Number(result.targetBW);
+    const delta=Number.isFinite(actual)&&Number.isFinite(target)?actual-target:null;
+    const type=result.edgePreventive?'preventive_edge':'corrective';
+    const reason=result.edgePreventive
+      ?chatLang(`Average BW ${fmt(actual,3)} is near the limit. Preventive S-Wrap adjustment recommended.`,`Average BW ${fmt(actual,3)} está cerca del límite. Se recomienda un ajuste preventivo de S-Wrap.`,`Le BW moyen ${fmt(actual,3)} est près de la limite. Un ajustement préventif du S-Wrap est recommandé.`)
+      :chatLang(`Average BW ${fmt(actual,3)} is OUT OF RANGE (${delta>=0?'+':''}${fmt(delta,3)} vs target ${fmt(target,2)}).`,`Average BW ${fmt(actual,3)} está FUERA DE RANGO (${delta>=0?'+':''}${fmt(delta,3)} vs objetivo ${fmt(target,2)}).`,`Le BW moyen ${fmt(actual,3)} est HORS PLAGE (${delta>=0?'+':''}${fmt(delta,3)} vs cible ${fmt(target,2)}).`);
+    return {kind:'optimizer',type,current,suggested,reason,result};
+  }
+  if(trend?.ready&&trend?.recommendAdjustment&&positive(Number(trend.suggestedSWrap))&&!preventiveTrendAlreadyApplied(trend)&&!activeCorrectiveBWAction()){
+    const current=Number(state.currentSWrap),suggested=Number(trend.suggestedSWrap);
+    const reason=chatLang(`Trend Predictor projects the next BW at ${fmt(trend.projectedBW,3)}. Preventive S-Wrap adjustment recommended.`,`Trend Predictor proyecta el próximo BW en ${fmt(trend.projectedBW,3)}. Se recomienda un ajuste preventivo de S-Wrap.`,`Trend Predictor projette le prochain BW à ${fmt(trend.projectedBW,3)}. Un ajustement préventif du S-Wrap est recommandé.`);
+    return {kind:'trend',type:'preventive',current,suggested,reason,trend};
+  }
+  return null;
+}
+function renderPostCutRecommendationDialog(candidate){
+  const dialog=$('post-cut-recommendation-dialog');if(!dialog||!candidate)return false;
+  postCutRecommendationDecision=candidate;
+  if($('post-cut-recommendation-eyebrow'))$('post-cut-recommendation-eyebrow').textContent=chatLang('VIEJITO RECOMMENDATION','RECOMENDACIÓN DE VIEJITO','RECOMMANDATION VIEJITO');
+  if($('post-cut-recommendation-title'))$('post-cut-recommendation-title').textContent=chatLang('S-Wrap decision','Decisión de S-Wrap','Décision S-Wrap');
+  if($('post-cut-current-label'))$('post-cut-current-label').textContent=chatLang('Current S-Wrap','S-Wrap actual','S-Wrap actuel');
+  if($('post-cut-suggested-label'))$('post-cut-suggested-label').textContent=chatLang('Suggested S-Wrap','S-Wrap sugerido','S-Wrap suggéré');
+  if($('post-cut-current-swrap'))$('post-cut-current-swrap').textContent=fmt(candidate.current,1);
+  if($('post-cut-suggested-swrap'))$('post-cut-suggested-swrap').textContent=fmt(candidate.suggested,1);
+  if($('post-cut-recommendation-reason'))$('post-cut-recommendation-reason').textContent=candidate.reason;
+  if($('post-cut-learning-note'))$('post-cut-learning-note').textContent=chatLang('If accepted, Viejito will wait for the next completed cut and compare the predicted BW with the actual BW to learn.','Si aceptas, Viejito esperará el siguiente corte completo y comparará el BW predicho con el BW real para aprender.','Si vous acceptez, Viejito attendra la prochaine coupe terminée et comparera le BW prévu au BW réel pour apprendre.');
+  if($('post-cut-accept'))$('post-cut-accept').textContent=chatLang(`✓ Accept ${fmt(candidate.suggested,1)}`,`✓ Aceptar ${fmt(candidate.suggested,1)}`,`✓ Accepter ${fmt(candidate.suggested,1)}`);
+  if($('post-cut-continue'))$('post-cut-continue').textContent=chatLang(`Continue running ${fmt(candidate.current,1)}`,`Seguir corriendo ${fmt(candidate.current,1)}`,`Continuer à ${fmt(candidate.current,1)}`);
+  dialog.classList.remove('hidden');dialog.setAttribute('aria-hidden','false');
+  return true;
+}
+function closePostCutRecommendationDialog(){
+  const dialog=$('post-cut-recommendation-dialog');if(dialog){dialog.classList.add('hidden');dialog.setAttribute('aria-hidden','true');}
+  postCutRecommendationDecision=null;
+}
+function savePreventiveRecommendationForLearning(trend,before,applied){
+  if(!trend||!positive(before,applied))return null;
+  const ctx=currentProcessContext(),beforeBW=Number(state.lastCompletedCut?.averageBW);
+  const predicted=positive(beforeBW,before,applied)?beforeBW*before/applied:Number(trend.projectedBW);
+  const pending={
+    acceptedAt:new Date().toISOString(),beforeBW:Number(beforeBW),targetBW:Number(trend.targetBW||state.targetBW),
+    beforeSWrap:Number(before),formulaSuggestion:Number(applied),appliedSWrap:Number(applied),predictedBW:Number(predicted),
+    product:ctx.product,mandrel:ctx.mandrel,extruder:ctx.extruder,shiftId:ctx.shiftId,runId:ctx.runId,
+    confidence:Number(trend.consistency)||0,recommendationType:'preventive'
+  };
+  savePendingRecommendation(pending);return pending;
+}
+function runPostCutEscalations(){
+  if(!postCutEscalationsPending)return;
+  postCutEscalationsPending=false;
+  handleSheetBalanceEscalationAfterCut();
+  if(!$('lead-confirm-dialog')||$('lead-confirm-dialog').classList.contains('hidden'))handleAverageBWEscalationAfterCut();
+}
+function openPostCutRecommendationDecision(result,trend){
+  const candidate=postCutRecommendationCandidate(result,trend);
+  if(!candidate){runPostCutEscalations();return false;}
+  return renderPostCutRecommendationDialog(candidate);
+}
+function acceptPostCutRecommendation(){
+  const c=postCutRecommendationDecision;if(!c)return;
+  if(c.kind==='trend'){
+    const before=Number(state.currentSWrap),applied=Number(c.suggested),trend=c.trend;
+    savePreventiveRecommendationForLearning(trend,before,applied);
+    acceptPreventiveSWrapChange();
+  }else acceptSWrapRecommendation();
+  closePostCutRecommendationDialog();
+  runPostCutEscalations();
+}
+function continueRunningPostCut(){
+  const c=postCutRecommendationDecision;if(!c)return;
+  savePendingRecommendation(null);
+  const open=openRecommendationOpportunity();
+  if(open)finalizeRecommendationOpportunity('not_used','continue_running');
+  else recordQualityEvent('recommendation_not_used',{recommendationType:c.type||'unknown',suggestedSWrap:Number(c.suggested)||null,beforeSWrap:Number(c.current)||null,targetBW:Number(c.result?.targetBW||c.trend?.targetBW||state.targetBW)||null,beforeBW:Number(c.result?.actualBW||state.lastCompletedCut?.averageBW)||null,reason:'continue_running'});
+  showToast(chatLang(`Continuing at S-Wrap ${fmt(c.current,1)}. Recommendation recorded as not applied.`,`Siguiendo con S-Wrap ${fmt(c.current,1)}. La recomendación quedó registrada como no aplicada.`,`Poursuite au S-Wrap ${fmt(c.current,1)}. Recommandation enregistrée comme non appliquée.`));
+  closePostCutRecommendationDialog();
+  runPostCutEscalations();
+}
+
 const PENDING_RECOMMENDATION_KEY='viejitoPendingRecommendationV1';
 function pendingRecommendation(){
-  try{return JSON.parse(lineGet(PENDING_RECOMMENDATION_KEY,'null')||'null');}catch(_){return null;}
+  try{return JSON.parse(lineGet(activePendingRecommendationKey(),'null')||'null');}catch(_){return null;}
 }
 function savePendingRecommendation(value){
-  if(value)lineSet(PENDING_RECOMMENDATION_KEY,JSON.stringify(value));else lineRemove(PENDING_RECOMMENDATION_KEY);
+  const key=activePendingRecommendationKey();if(value)lineSet(key,JSON.stringify(value));else lineRemove(key);
 }
 function predictBWAfterSWrap(result,swrap){
   const applied=Number(swrap),current=Number(result.currentSWrap),actual=Number(result.actualBW);
@@ -892,7 +1095,7 @@ function renderRecommendationDecision(result){
   const box=$('recommendation-decision');
   if(!box)return;
   const show=!!(result&&result.suggestAdjustment&&positive(result.suggestedSWrap)&&!recommendationAlreadyCurrent(result));
-  box.classList.toggle('hidden',!show);
+  box.classList.add('hidden');
   renderOptimizationSWrapContext(result);
   if(!show)return;
   const predicted=predictBWAfterSWrap(result,result.suggestedSWrap);
@@ -901,6 +1104,7 @@ function renderRecommendationDecision(result){
   $('decision-confidence').textContent=`${result.learning?.confidence||0}%`;
 }
 function acceptSWrapRecommendation(){
+  if(!requireActiveShift({openStart:true}))return false;
   const r=state.latestOptimization;
   if(!r||!r.suggestAdjustment)return;
   const applied=Number(r.suggestedSWrap),predicted=predictBWAfterSWrap(r,applied),ctx=currentProcessContext();
@@ -912,16 +1116,24 @@ function acceptSWrapRecommendation(){
     confidence:Number(r.learning?.confidence)||0
   };
   savePendingRecommendation(pending);
+  const openRec=openRecommendationOpportunity();
+  const recommendationType=r.edgePreventive?'preventive_edge':'corrective';
+  if(openRec&&['corrective','preventive_edge'].includes(openRec.recommendationType))finalizeRecommendationOpportunity('accepted','apply_button');
+  else recordQualityEvent('recommendation_accepted',{recommendationType,suggestedSWrap:applied,beforeSWrap:Number(r.currentSWrap),targetBW:Number(r.targetBW),beforeBW:Number(r.actualBW),reason:'apply_button'});
+  recordSWrapChange(Number(r.currentSWrap),applied,r.edgePreventive?'preventive_edge_recommendation':'corrective_recommendation',{suggestedSWrap:applied});
   syncCurrentSWrap(applied,{save:true});
   if($('bw-current-swrap'))$('bw-current-swrap').value=fmt(applied,1);
-  if($('recommendation-note'))$('recommendation-note').textContent=`Applied ${fmt(applied,1)}. Waiting for the next completed cut to compare predicted ${fmt(predicted,3)} BW with actual BW.`;
+  if($('recommendation-note'))$('recommendation-note').textContent=chatLang(`Applied ${fmt(applied,1)}. Waiting for the next completed cut to compare predicted ${fmt(predicted,3)} BW with actual BW.`,`Aplicado ${fmt(applied,1)}. Esperando el siguiente corte completo para comparar BW predicho ${fmt(predicted,3)} con BW real.`,`Appliqué ${fmt(applied,1)}. En attente de la prochaine coupe terminée pour comparer le BW prévu ${fmt(predicted,3)} au BW réel.`);
   renderOptimizationSWrapContext(r);
   renderRecommendationDecision(r);
   renderTrendPanel(analyzeTrend(Number(r.targetBW||state.targetBW),applied));
-  showToast(`S-Wrap changed to ${fmt(applied,1)}. Viejito is waiting for the next BW to measure its prediction.`);
+  showToast(chatLang(`S-Wrap changed to ${fmt(applied,1)}. Viejito is waiting for the next BW to measure its prediction.`,`S-Wrap cambiado a ${fmt(applied,1)}. Viejito está esperando el siguiente BW para medir su predicción.`,`S-Wrap changé à ${fmt(applied,1)}. Viejito attend le prochain BW pour mesurer sa prédiction.`));
 }
 function rejectSWrapRecommendation(){
   savePendingRecommendation(null);
+  const open=openRecommendationOpportunity();
+  if(open&&['corrective','preventive_edge'].includes(open.recommendationType))finalizeRecommendationOpportunity('not_used','keep_current');
+  else if(state.latestOptimization?.suggestAdjustment)recordQualityEvent('recommendation_not_used',{recommendationType:state.latestOptimization.edgePreventive?'preventive_edge':'corrective',suggestedSWrap:Number(state.latestOptimization.suggestedSWrap)||null,beforeSWrap:Number(state.currentSWrap)||null,targetBW:Number(state.latestOptimization.targetBW)||null,beforeBW:Number(state.latestOptimization.actualBW)||null,reason:'keep_current'});
   if($('recommendation-note'))$('recommendation-note').textContent='Recommendation not applied. Current S-Wrap was kept.';
   showToast('Recommendation not applied. Current S-Wrap kept.');
 }
@@ -995,6 +1207,7 @@ function parseSmartBWRequest(text){
   return null;
 }
 function handleSmartBW({weight,length,targetBW,currentSWrap},mandrel){
+  const gate=activeShiftChatGate();if(gate)return gate;
   try{
     const result=calculateBW(weight,length,mandrel);
     const optimizer=optimizeBasisWeight(result,targetBW,currentSWrap);
@@ -1034,6 +1247,59 @@ function saveChatWorkflow(){
   if(chatWorkflow) lineSet(CHAT_WORKFLOW_KEY,JSON.stringify(chatWorkflow));
   else lineRemove(CHAT_WORKFLOW_KEY);
 }
+
+function startLineChatWorkflow(line=ACTIVE_LINE){
+  line=Number(line)||ACTIVE_LINE;
+  if(line!==ACTIVE_LINE)switchLine(line);
+  closeExpiredShiftForSchedule();
+  if(state.activeShift)return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} is already running ${state.activeShift.product} on ${state.activeShift.shiftCode||scheduledShiftCode()||'the scheduled'} Shift.`,`Line ${ACTIVE_LINE} ya está corriendo ${state.activeShift.product} en Turno ${state.activeShift.shiftCode||scheduledShiftCode()||'programado'}.`,`Line ${ACTIVE_LINE} est déjà active.`)};
+  const sched=scheduledShiftInfo();
+  chatWorkflow={type:'start-line',stage:'operator',line:ACTIVE_LINE,shiftCode:sched?.code||null,shiftWorkDate:sched?.workDate||'',shiftType:sched?.type||'',language:['en','es'].includes(state.language)?state.language:'en',startedAt:new Date().toISOString()};
+  saveChatWorkflow();
+  return {kind:'info',title:chatLang(`Start Line ${ACTIVE_LINE} — ${sched?.code||'—'} Shift`,`Empezar Line ${ACTIVE_LINE} — Turno ${sched?.code||'—'}`,`Démarrer Line ${ACTIVE_LINE}`),message:chatLang(`The schedule says ${shiftDisplay(sched)}. What is your name?`,`El calendario marca ${shiftDisplay(sched)}. ¿Cuál es tu nombre?`,`Quel est votre nom ?`)};
+}
+function startLineWorkflowSummary(flow){
+  const target=targetFromProduct(flow.product),mandrel=automaticMandrelForProduct(flow.product)||state.mandrel||DEFAULT_MANDREL;
+  return chatLang(
+    `Line ${flow.line} • ${flow.shiftCode} Shift • Operator ${flow.operator} • Job ${flow.product} • Target ${fmt(target,2)} • Mandrel ${mandrel}” • S-Wrap ${fmt(flow.swrap,1)}. Start the line? Reply yes or no.`,
+    `Line ${flow.line} • Turno ${flow.shiftCode} • Operador ${flow.operator} • Trabajo ${flow.product} • Target ${fmt(target,2)} • Mandrel ${mandrel}” • S-Wrap ${fmt(flow.swrap,1)}. ¿Empiezo la línea? Responde sí o no.`,
+    `Line ${flow.line} • Quart ${flow.shiftCode} • ${flow.product} • S-Wrap ${fmt(flow.swrap,1)}. Confirmer ?`
+  );
+}
+function handleStartLineChatWorkflow(text){
+  if(!chatWorkflow||chatWorkflow.type!=='start-line')return null;
+  const q=normalizeKnowledgeQuery(text),flow=chatWorkflow;
+  if(/\b(cancel|cancelar|cancela|no iniciar|stop)\b/.test(q)&&flow.stage!=='confirm'){
+    chatWorkflow=null;saveChatWorkflow();return {kind:'info',message:chatLang('Line startup cancelled.','Inicio de línea cancelado.','Démarrage annulé.')};
+  }
+  // The shift is fixed by plant calendar/time. Refresh it in case the workflow crossed 07:00/19:00.
+  const sched=scheduledShiftInfo();flow.shiftCode=sched?.code||flow.shiftCode;flow.shiftWorkDate=sched?.workDate||flow.shiftWorkDate;flow.shiftType=sched?.type||flow.shiftType;
+  if(flow.stage==='operator'){
+    const check=validateOperatorName(text);if(!check.ok)return {kind:'info',message:chatLang('Enter your operator name, for example Jose Esquivel.','Escribe tu nombre de operador, por ejemplo José Esquivel.','Entrez le nom de l’opérateur.')};
+    flow.operator=check.name;flow.stage='product';saveChatWorkflow();
+    return {kind:'info',message:chatLang(`Thanks, ${operatorFirstNameFrom(check.name)}. What job/product are you running? Example: 6.35/43.`,`Gracias, ${operatorFirstNameFrom(check.name)}. ¿Qué trabajo/producto vas a correr? Ejemplo: 6.35/43.`,`Quel produit ?`)};
+  }
+  if(flow.stage==='product'){
+    const product=normalizeProduct(text);const target=targetFromProduct(product);
+    if(!product||!positive(target))return {kind:'info',message:chatLang('I need a valid sheet type, for example 6.35/43.','Necesito un sheet type válido, por ejemplo 6.35/43.','Entrez un produit valide.')};
+    flow.product=product;flow.targetBW=target;flow.mandrel=automaticMandrelForProduct(product)||DEFAULT_MANDREL;flow.stage='swrap';saveChatWorkflow();
+    return {kind:'info',message:chatLang(`I found Target ${fmt(target,2)} and ${flow.mandrel}” mandrel. What is the current S-Wrap?`,`Detecté Target ${fmt(target,2)} y mandrel ${flow.mandrel}”. ¿Cuál es el S-Wrap actual?`,`Quel est le S-Wrap actuel ?`)};
+  }
+  if(flow.stage==='swrap'){
+    const vals=numbers(text).filter(v=>positive(v)),v=vals[0];if(!positive(v))return {kind:'info',message:chatLang('Enter the current S-Wrap, for example 170.','Escribe el S-Wrap actual, por ejemplo 170.','Entrez le S-Wrap actuel.')};
+    flow.swrap=clampSWrap(v);flow.stage='confirm';saveChatWorkflow();return {kind:'info',title:chatLang('Confirm startup','Confirma inicio','Confirmer'),message:startLineWorkflowSummary(flow)};
+  }
+  if(flow.stage==='confirm'){
+    const yes=/^(yes|y|si|sí|correcto|ok|okay|dale|start|empieza|inicia)\b/.test(q),no=/^(no|cancel|cancelar|cancela)\b/.test(q);
+    if(!yes&&!no)return {kind:'info',message:chatLang('Reply yes to start the line or no to cancel.','Responde sí para empezar la línea o no para cancelar.','Oui ou non ?')};
+    if(no){chatWorkflow=null;saveChatWorkflow();return {kind:'info',message:chatLang('Line startup cancelled.','Inicio de línea cancelado.','Démarrage annulé.')};}
+    const data={...flow};chatWorkflow=null;saveChatWorkflow();
+    const ok=commitStartShift(data.product,data.line,data.swrap,data.language,data.operator);
+    return ok===false?{kind:'error',message:chatLang('I could not start the line. Check the startup information.','No pude iniciar la línea. Revisa los datos de inicio.','Impossible de démarrer la ligne.')}:{kind:'result',title:`Line ${data.line} — ${data.shiftCode} Shift`,message:chatLang(`Line ${data.line} is running ${data.product} at S-Wrap ${fmt(data.swrap,1)}. Production calculations are now unlocked.`,`Line ${data.line} está corriendo ${data.product} a S-Wrap ${fmt(data.swrap,1)}. Los cálculos de producción ya están habilitados.`,`Line démarrée.`)};
+  }
+  return null;
+}
+function operatorFirstNameFrom(name){const v=String(name||'').trim();return v?v.split(/\s+/)[0]:'';}
 function chatLang(en,es,fr){return state.language==='es'?es:state.language==='fr'?fr:en;}
 function targetFromChatProduct(product){
   const match=String(product||'').match(/\d+(?:\.\d+)?/);
@@ -1169,6 +1435,7 @@ function buildChatChangeoverRecommendation(flow,actualBW){
 }
 function handleChangeoverChat(text){
   const request=detectChatChangeover(text);
+  if(request||chatWorkflow?.type==='changeover-advice'){const gate=activeShiftChatGate();if(gate)return gate;}
   if(request){
     const sharedContext=sharedOperationalContextForChat();
     const detectedSWrap=sharedContext.currentSWrap;
@@ -1220,6 +1487,7 @@ function smartChatBWPair(text){
   if(/[a-záéíóú]/i.test(raw.replace(/\b(lb|lbs|ft|feet|pie|pies|peso|weight|length|largo)\b/gi,''))) return null;
   const vals=numbers(raw);
   if(vals.length!==2)return null;
+  const gate=activeShiftChatGate();if(gate)return gate;
   let weight=null,length=null;
   const a=vals[0],b=vals[1];
   // Explicit labels always win.
@@ -1245,8 +1513,10 @@ function smartChatBWPair(text){
 
 function requestedLineNumber(text){
   const q=String(text||'').toLowerCase();
-  const m=q.match(/\b(?:line|línea|linea|extruder|extrusor|ext)\s*#?\s*([1-4])\b/i);
-  return m?Number(m[1]):null;
+  const m=q.match(/\b(?:line|línea|linea|extruder|extrusor|ext)\s*#?\s*(1|2|3|4|one|two|three|four|uno|una|dos|tres|cuatro)\b/i);
+  if(!m)return null;
+  const map={one:1,uno:1,una:1,two:2,dos:2,three:3,tres:3,four:4,cuatro:4};
+  return Number(m[1])||map[m[1].toLowerCase()]||null;
 }
 function getLineJSON(base,line,fallback=null){
   const raw=localStorage.getItem(`${base}::line${line}`);
@@ -1260,8 +1530,10 @@ function lineOperationalSnapshot(line){
   const shift=getLineJSON(SHIFT_KEY,line,null);
   const last=getLineJSON(LAST_COMPLETED_CUT_KEY,line,null);
   const records=getLineJSON('viejitoMachineLearningV3',line,[])||[];
-  const trend=getLineJSON(TREND_HISTORY_KEY,line,[])||[];
-  const running=!!(shift && (shift.status==='running'||shift.running===true||shift.active===true||shift.startedAt||shift.startTime) && !shift.endedAt && !shift.endTime);
+  const trend=getLineJSON(activeTrendHistoryKey(),line,[])||[];
+  const baseRunning=!!(shift && (shift.status==='running'||shift.running===true||shift.active===true||shift.startedAt||shift.startTime) && !shift.endedAt && !shift.endTime);
+  const schedNow=scheduledShiftInfo(),shiftSched=shift?.shiftCode?{code:String(shift.shiftCode),workDate:String(shift.shiftWorkDate||'')}:scheduledShiftInfo(new Date(shift?.startedAt||shift?.startTime||0));
+  const running=!!(baseRunning&&schedNow&&shiftSched&&String(shiftSched.code||'')===String(schedNow.code||'')&&String(shiftSched.workDate||'')===String(schedNow.workDate||''));
   const product=(shift?.product||shift?.runs?.find?.(r=>r.id===shift.runId)?.product||last?.product||getLineText('viejitoProduct',line,'')||'—');
   const sw=Number(shift?.currentSWrap ?? last?.currentSWrap ?? getLineText('viejitoCurrentSWrap',line,''));
   const target=Number(last?.targetBW ?? getLineText('viejitoTargetBW',line,''));
@@ -1273,7 +1545,7 @@ function lineOperationalSnapshot(line){
   const sourceRows=trendDual.length?trendDual:records;
   for(const r of sourceRows){
     const w1=Number(r?.winder1),w2=Number(r?.winder2),avg=Number(r?.averageBW??r?.finalBW??r?.bw);
-    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId,shiftId:r?.shiftId,targetBW:r?.targetBW,currentSWrap:r?.currentSWrap});
+    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId,shiftId:r?.shiftId,shiftCode:r?.shiftCode,shiftWorkDate:r?.shiftWorkDate,operator:r?.operator,targetBW:r?.targetBW,currentSWrap:r?.currentSWrap});
   }
   if(last&&Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2))){
     const sig=`${last.time||''}|${last.winder1}|${last.winder2}`;
@@ -1306,6 +1578,92 @@ function sheetBalanceWatch(cuts){
   const worsening=streak>=2&&lastDiff>firstDiff+0.015;
   return {last,side,streak,flipped,improving,worsening,previous,recentSame,leadReview:streak>=4,persistent:streak>=3};
 }
+let pendingLeadPrompt=null;
+function sheetBalanceIncidentKey(watch,line=ACTIVE_LINE){
+  const start=watch?.recentSame?.[0]?.time||watch?.last?.time||'';
+  return `${Number(line)}|${watch?.side||''}|${start}`;
+}
+function leadEventForIncident(incidentKey,type=null){
+  const rows=qualityEventsForLine(ACTIVE_LINE);
+  return [...rows].reverse().find(e=>e.incidentKey===incidentKey&&(!type||e.type===type))||null;
+}
+function openLeadConfirmationPrompt(watch){
+  const dialog=$('lead-confirm-dialog');if(!dialog||!watch)return;
+  const incidentKey=sheetBalanceIncidentKey(watch),side=watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet';
+  if(leadEventForIncident(incidentKey,LEAD_PROMPT_EVENT))return;
+  pendingLeadPrompt={incidentKey,side:watch.side,streak:watch.streak,difference:Number(watch.last?.balance?.difference)||0,products:[...new Set((watch.recentSame||[]).map(r=>r.product).filter(Boolean))]};
+  if($('lead-confirm-message'))$('lead-confirm-message').textContent=state.language==='es'
+    ?`${side} sigue pesado después de ${watch.streak} cortes consecutivos. Viejito pidió avisar al Lead en el tercer corte. ¿Ya avisaste al Lead?`
+    :`${side} is still heavier after ${watch.streak} consecutive cuts. Viejito asked for Lead notification on the third cut. Did you notify your Lead?`;
+  dialog.classList.remove('hidden');dialog.setAttribute('aria-hidden','false');
+}
+function saveLeadConfirmation(status){
+  if(!pendingLeadPrompt)return;
+  const p={...pendingLeadPrompt},isBW=p.kind==='bw';
+  recordQualityEvent(isBW?'bw_lead_confirmation':'lead_confirmation',{incidentKey:p.incidentKey,status:status==='yes'?'yes':'no',streak:p.streak,heavySide:p.side||null,balanceDifference:p.difference??null,bwDirection:p.bwDirection||null,bwDelta:p.bwDelta??null,products:p.products,issue:isBW?'average_bw':'sheet_balance'});
+  const dialog=$('lead-confirm-dialog');if(dialog){dialog.classList.add('hidden');dialog.setAttribute('aria-hidden','true');}
+  pendingLeadPrompt=null;
+  showToast(status==='yes'
+    ?(state.language==='es'?'Confirmado: el Lead fue avisado/consultado.':state.language==='fr'?'Confirmé : le Lead a été avisé/consulté.':'Lead notification/consultation confirmed.')
+    :(state.language==='es'?'Quedó registrado que todavía no se ha confirmado el aviso al Lead. Por favor avísale ahora.':state.language==='fr'?'La notification au Lead n’est pas encore confirmée. Veuillez l’aviser maintenant.':'Lead notification is not confirmed yet. Please notify the Lead now.'));
+}
+function handleSheetBalanceEscalationAfterCut(){
+  const cuts=(state.bwTrendHistory||[]).filter(r=>Number.isFinite(Number(r?.winder1))&&Number.isFinite(Number(r?.winder2)));
+  const watch=sheetBalanceWatch(cuts);if(!watch)return;
+  const incidentKey=sheetBalanceIncidentKey(watch),side=watch.side==='top'?'Winder 2 / Top Sheet':'Winder 1 / Bottom Sheet';
+  if(watch.streak>=3&&!leadEventForIncident(incidentKey,'lead_notification_requested')){
+    recordQualityEvent('lead_notification_requested',{incidentKey,streak:watch.streak,heavySide:watch.side,balanceDifference:Number(watch.last?.balance?.difference)||0,products:[...new Set((watch.recentSame||[]).map(r=>r.product).filter(Boolean))]});
+    showToast(state.language==='es'?`⚠️ ${side} lleva 3 cortes consecutivos pesado. Avisa a tu Lead y continúa vigilando el balance.`:`⚠️ ${side} has been heavy for 3 consecutive cuts. Notify your Lead and keep monitoring the balance.`);
+  }
+  if(watch.streak>=4&&!leadEventForIncident(incidentKey,LEAD_PROMPT_EVENT))openLeadConfirmationPrompt(watch);
+}
+function averageBWFailureWatch(cuts){
+  const rows=(cuts||[]).map(c=>({...c,average:Number(c?.averageBW??c?.bw),target:Number(c?.targetBW)}))
+    .filter(c=>Number.isFinite(c.average)&&Number.isFinite(c.target))
+    .sort((a,b)=>new Date(a.time||0)-new Date(b.time||0));
+  const last=rows[rows.length-1];
+  if(!last||Math.abs(last.average-last.target)<0.25)return null;
+  const recent=[];
+  for(let i=rows.length-1;i>=0;i--){
+    const row=rows[i],delta=row.average-row.target;
+    if(Math.abs(delta)<0.25)break;
+    recent.unshift({...row,delta});
+  }
+  if(!recent.length)return null;
+  const latest=recent[recent.length-1];
+  return {last:latest,streak:recent.length,recent,direction:latest.delta>0?'heavy':'light'};
+}
+function averageBWIncidentKey(watch,line=ACTIVE_LINE){
+  const start=watch?.recent?.[0]?.time||watch?.last?.time||'';
+  return `${Number(line)}|average-bw|${start}`;
+}
+function openAverageBWLeadPrompt(watch){
+  const dialog=$('lead-confirm-dialog');if(!dialog||!watch)return;
+  const incidentKey=averageBWIncidentKey(watch);
+  if(leadEventForIncident(incidentKey,BW_LEAD_PROMPT_EVENT))return;
+  pendingLeadPrompt={kind:'bw',incidentKey,streak:watch.streak,bwDirection:watch.direction,bwDelta:Number(watch.last?.delta)||0,products:[...new Set((watch.recent||[]).map(r=>r.product).filter(Boolean))]};
+  const direction=watch.direction==='heavy'?chatLang('heavy','pesado','lourd'):chatLang('light','liviano','léger');
+  if($('lead-confirm-eyebrow'))$('lead-confirm-eyebrow').textContent=chatLang('AVERAGE BW ESCALATION','ESCALACIÓN DE BW PROMEDIO','ESCALADE BW MOYEN');
+  if($('lead-confirm-title'))$('lead-confirm-title').textContent=chatLang('Lead consultation check','Confirmación de consulta al Lead','Confirmation de consultation du Lead');
+  if($('lead-confirm-message'))$('lead-confirm-message').textContent=chatLang(
+    `Average BW has been out of range for ${watch.streak} consecutive completed cuts (${direction}). Did you notify or consult your Lead?`,
+    `El BW promedio lleva ${watch.streak} cortes completos consecutivos fuera de rango (${direction}). ¿Ya avisaste o consultaste al Lead?`,
+    `Le BW moyen est hors plage depuis ${watch.streak} coupes complètes consécutives (${direction}). Avez-vous avisé ou consulté le Lead?`
+  );
+  if($('lead-confirm-yes'))$('lead-confirm-yes').textContent=chatLang('Yes — Lead consulted','Sí — Lead consultado','Oui — Lead consulté');
+  if($('lead-confirm-no'))$('lead-confirm-no').textContent=chatLang('No — not yet','No — todavía no','Non — pas encore');
+  if($('lead-confirm-note'))$('lead-confirm-note').textContent=chatLang('This check is recorded for follow-up. It is not used to blame the operator.','Esta confirmación queda registrada para seguimiento. No se usa para culpar al operador.','Cette confirmation est enregistrée pour le suivi. Elle ne sert pas à blâmer l’opérateur.');
+  dialog.classList.remove('hidden');dialog.setAttribute('aria-hidden','false');
+}
+function handleAverageBWEscalationAfterCut(){
+  const cuts=(state.bwTrendHistory||[]).filter(r=>Number.isFinite(Number(r?.averageBW??r?.bw))&&Number.isFinite(Number(r?.targetBW)));
+  const watch=averageBWFailureWatch(cuts);if(!watch||watch.streak<3)return;
+  const incidentKey=averageBWIncidentKey(watch);
+  if(!leadEventForIncident(incidentKey,'bw_lead_notification_requested')){
+    recordQualityEvent('bw_lead_notification_requested',{incidentKey,streak:watch.streak,bwDirection:watch.direction,bwDelta:Number(watch.last?.delta)||0,products:[...new Set((watch.recent||[]).map(r=>r.product).filter(Boolean))],issue:'average_bw'});
+  }
+  if(!leadEventForIncident(incidentKey,BW_LEAD_PROMPT_EVENT))openAverageBWLeadPrompt(watch);
+}
 function lineStatusAnswer(line){
   const s=lineOperationalSnapshot(line),es=state.language==='es',fr=state.language==='fr';
   if(!s.running){
@@ -1322,6 +1680,10 @@ function lineStatusAnswer(line){
       parts.push(es?(level==='green'?'BW dentro de rango.':level==='warning'?`BW en WARNING (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW FUERA DE RANGO (${diff>=0?'+':''}${fmt(diff,3)}).`):fr?(level==='green'?'BW dans la plage.':level==='warning'?`BW en ALERTE (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW HORS PLAGE (${diff>=0?'+':''}${fmt(diff,3)}).`):(level==='green'?'BW is in range.':level==='warning'?`BW WARNING (${diff>=0?'+':''}${fmt(diff,3)}).`:`BW OUT OF RANGE (${diff>=0?'+':''}${fmt(diff,3)}).`));
     }
     if(Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2))){
+      const q1=completedWinderQuality(1,Number(last.winder1),target),q2=completedWinderQuality(2,Number(last.winder2),target);
+      if(!q1.pass||!q2.pass){
+        parts.push(es?`${q1.side}: ${q1.status} (${fmt(last.winder1,3)}). ${q2.side}: ${q2.status} (${fmt(last.winder2,3)}). El promedio no convierte rollos individuales fuera de rango en PASS.`:fr?`${q1.side}: ${q1.status} (${fmt(last.winder1,3)}). ${q2.side}: ${q2.status} (${fmt(last.winder2,3)}).`:`${q1.side}: ${q1.status} (${fmt(last.winder1,3)}). ${q2.side}: ${q2.status} (${fmt(last.winder2,3)}). A passing average does not make out-of-range individual rolls PASS.`);
+      }
       const bal=analyzeDieBalance(last.winder1,last.winder2),copy=dieMoveCopy(bal);
       if(copy)parts.push(`${copy.title}: ${copy.message}`);
       else parts.push(es?'Sheet balance dentro del límite de 0.25 BW.':fr?'Équilibre des sheets dans la limite de 0,25 BW.':'Sheet balance is within the 0.25 BW limit.');
@@ -1334,9 +1696,9 @@ function lineStatusAnswer(line){
       const bolt=watch.side==='top'?'top':'bottom';
       parts.push(es?`👀 Posible sobrecorrección: el desbalance cambió de lado. Creo que te pasaste de fuerte 😅. Ahora ${sideName} está más pesado por ${fmt(watch.last.balance.difference,2)} BW; toca cerrar el ${bolt} die bolt.`:`👀 Possible overcorrection: the imbalance flipped sides. Easy there, Hercules 😅. ${sideName} is now heavier by ${fmt(watch.last.balance.difference,2)} BW; close the ${bolt} die bolt.`);
     }else if(watch.streak>=4){
-      parts.push(es?`🚩 Sheet Balance Escalation: ${sideName} lleva ${watch.streak} cortes consecutivos más pesado. El desbalance sigue sin resolverse, incluso si hubo cambio de producto. Pide apoyo a tu Lead para revisar el ajuste antes de continuar haciendo más cambios.`:`🚩 Sheet Balance Escalation: ${sideName} has been heavier for ${watch.streak} consecutive cuts. The imbalance remains unresolved, even across a product change. Ask your Lead to help review the adjustment before making more changes.`);
+      parts.push(es?`🚩 Sheet Balance Escalation: ${sideName} lleva ${watch.streak} cortes consecutivos más pesado. En el tercer corte Viejito indicó avisar al Lead; confirma que el Lead fue avisado y continúa revisando la respuesta del ajuste.`:`🚩 Sheet Balance Escalation: ${sideName} has been heavier for ${watch.streak} consecutive cuts. Viejito requested Lead notification on the third cut; confirm the Lead was notified and continue reviewing the adjustment response.`);
     }else if(watch.streak>=3){
-      parts.push(es?`⚠️ Sheet Balance persistente: ${sideName} lleva ${watch.streak} cortes consecutivos más pesado. Verifica el Die Move y confirma que la máquina esté respondiendo al ajuste.`:`⚠️ Persistent Sheet Balance: ${sideName} has been heavier for ${watch.streak} consecutive cuts. Verify the Die Move and confirm the machine is responding to the adjustment.`);
+      parts.push(es?`⚠️ Sheet Balance persistente: ${sideName} lleva ${watch.streak} cortes consecutivos más pesado. Avisa a tu Lead y continúa verificando el Die Move y la respuesta de la máquina.`:`⚠️ Persistent Sheet Balance: ${sideName} has been heavier for ${watch.streak} consecutive cuts. Notify your Lead and continue verifying the Die Move and machine response.`);
     }else if(watch.improving){
       parts.push(es?'El desbalance está disminuyendo; el Die Move parece estar respondiendo. Sigue monitoreando.':'The imbalance is decreasing; the Die Move appears to be working. Keep monitoring.');
     }
@@ -1538,6 +1900,7 @@ function processLearningOutputMessage(primary,secondary,estimate,requestedSpeed=
   ),meta:chatLang(`Predictive only — completed-roll measured BW remains final. Confidence ${estimate.confidence}% • ${estimate.count} comparable sample(s) • ${learningScope} • ${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” total width`,`Solo predictivo — el BW medido del rollo completo sigue siendo el valor final. Confianza ${estimate.confidence}% • ${estimate.count} muestra(s) comparable(s) • ${learningScope} • ${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” de ancho total`,`Prévision seulement — le BW mesuré reste final. Confiance ${estimate.confidence}% • ${estimate.count} échantillon(s) • ${learningScope}`) };
 }
 function saveProcessPerformanceSample(flow){
+  const gate=activeShiftChatGate();if(gate)return gate;
   if(demoMode())return {kind:'info',message:chatLang('Demo Mode: process learning is disabled.','Modo Demo: el aprendizaje de proceso está desactivado.','Mode démo : apprentissage désactivé.')};
   const primary=Number(flow.primaryRPM),secondary=Number(flow.secondaryRPM),w1=Number(flow.w1),w2=Number(flow.w2),minutes=Number(flow.minutes),swrap=clampSWrap(flow.swrapSpeed||state.currentSWrap);
   if(!positive(primary,secondary,w1,w2,minutes,swrap))return {kind:'error',message:t('invalidNumbers')};
@@ -1570,6 +1933,7 @@ function processWorkflowPrompt(stage){
   return chatLang(`What S-Wrap/line speed was used? Maximum is ${MAX_SWRAP_SPEED} ft/min.`,`¿Qué S-Wrap/velocidad de línea usaste? El máximo es ${MAX_SWRAP_SPEED} ft/min.`,`Quelle vitesse S-Wrap ? Maximum ${MAX_SWRAP_SPEED} ft/min.`);
 }
 function startProcessLearningWorkflow(seed={}){
+  const gate=activeShiftChatGate();if(gate)return gate;
   chatWorkflow={type:'process-performance',...seed,startedAt:new Date().toISOString()};
   chatWorkflow.stage=processWorkflowNextStage(chatWorkflow);
   if(chatWorkflow.stage==='complete'){const result=saveProcessPerformanceSample(chatWorkflow);chatWorkflow=null;saveChatWorkflow();return result;}
@@ -1654,6 +2018,7 @@ function currentProductionOutputForRecommendation(){
   try{const stats=runStats(currentProductionRun());return positive(stats?.rate)?Number(stats.rate):null;}catch(_){return null;}
 }
 function coordinatedSpeedRecommendation(flow={}){
+  const gate=activeShiftChatGate();if(gate)return gate;
   const primary=Number(flow.primaryRPM),secondary=Number(flow.secondaryRPM),currentSpeed=Number(flow.currentSWrap||state.currentSWrap),targetSpeed=clampSWrap(flow.targetSWrap);
   if(!positive(primary,secondary,currentSpeed,targetSpeed))return {kind:'error',message:t('invalidNumbers')};
   const product=state.activeShift?.product||state.product||'',mandrel=currentMandrel('bw');
@@ -1693,6 +2058,7 @@ function coordinatedSpeedRecommendation(flow={}){
   ),meta:chatLang(`Viejito always coordinates Primary + Secondary; it will not issue a Secondary-only speed recommendation. ${method}. Predictive guidance only — actual pressure, melt, load and completed-roll BW remain authoritative.`,`Viejito siempre coordina Primary + Secondary; no dará una recomendación de velocidad solo para Secondary. ${method}. Guía predictiva solamente — presión, melt, load y BW real del rollo siguen siendo la autoridad.`,`Primary + Secondary sont toujours coordonnés. ${method}.`) };
 }
 function startCoordinatedSpeedWorkflow(seed={}){
+  const gate=activeShiftChatGate();if(gate)return gate;
   chatWorkflow={type:'coordinated-speed-bw',...seed,startedAt:new Date().toISOString()};
   chatWorkflow.stage=positive(chatWorkflow.primaryRPM)?(positive(chatWorkflow.secondaryRPM)?'complete':'secondary'):'primary';
   if(chatWorkflow.stage==='complete'){const result=coordinatedSpeedRecommendation(chatWorkflow);chatWorkflow=null;saveChatWorkflow();return result;}
@@ -1744,6 +2110,7 @@ function updateManualProcessPreview(){
   if($('manual-output'))$('manual-output').textContent=positive(output)?fmt(output,0):'—';
 }
 function openManualProcessDialog(){
+  if(!requireActiveShift({openStart:true}))return false;
   closeToolMenu();renderManualProcessLanguage();
   if($('manual-process-context'))$('manual-process-context').textContent=manualProcessContextText();
   ['manual-primary','manual-secondary','manual-w1','manual-w2','manual-minutes'].forEach(id=>{if($(id))$(id).value='';});
@@ -1801,6 +2168,7 @@ function updateSpeedChangePreview(){
   $('speed-change-result')?.classList.add('hidden');
 }
 function openSpeedChangeDialog(){
+  if(!requireActiveShift({openStart:true}))return false;
   closeToolMenu();renderSpeedChangeLanguage();renderSpeedChangeContext();
   ['speed-current-primary','speed-current-secondary','speed-w1','speed-w2','speed-minutes','speed-target-speed'].forEach(id=>{if($(id))$(id).value='';});
   const lastBW=currentLastBW();if($('speed-target-bw'))$('speed-target-bw').value=positive(lastBW)?String(Number(lastBW.toFixed(3))):'';
@@ -2040,6 +2408,7 @@ function processPerformanceChatQuery(text){
   const troubleshooting=/\b(why|porque|por que|trouble|problem|problema|melt|heat|load|pressure|presion|friction|friccion|hot|cold|caliente|frio|enfriar|cool)\b/.test(q);
   const predictionIntent=/\b(output|rate|lbs|lb hr|bw|basis weight|predict|prediction|predicho|cuanto produce|cuánto produce|que bw|qué bw|s wrap|swrap)\b/.test(q);
   if(troubleshooting&&!predictionIntent)return null;
+  {const gate=activeShiftChatGate();if(gate)return gate;}
   const estimate=state.processLearning.estimate({primaryRPM:primary,secondaryRPM:secondary,product:state.activeShift?.product||state.product||'',mandrel:currentMandrel('bw')});
   if(!estimate.ready)return {kind:'info',title:chatLang('Process Performance Learning','Aprendizaje de desempeño del proceso','Apprentissage process'),message:chatLang(
     `I do not have enough real output history yet for Primary ${fmt(primary,1)} / Secondary ${fmt(secondary,1)}. Say “learn output” and I will ask for both roll weights and run time so I can calculate lb/hr and learn this line.`,
@@ -2051,6 +2420,7 @@ function processPerformanceChatQuery(text){
 
 
 function outputRateResult(w1,w2,minutes){
+  const gate=activeShiftChatGate();if(gate)return gate;
   const a=Number(w1),b=Number(w2),mins=Number(minutes);
   if(!positive(a,b,mins))return {kind:'error',message:t('invalidNumbers')};
   const output=(a+b)*60/mins;
@@ -2065,6 +2435,7 @@ function outputRateResult(w1,w2,minutes){
   ),meta:chatLang(`${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” total width • predictive BW only; completed-roll BW remains final.`,`${mandrel}” × 2 = ${totalWebWidthForMandrel(mandrel)}” de ancho total • BW predictivo; el BW del rollo terminado sigue siendo el valor final.`,`BW prédictif uniquement.`)};
 }
 function startOutputRateWorkflow(w1=null,w2=null){
+  const gate=activeShiftChatGate();if(gate)return gate;
   chatWorkflow={type:'output-rate',stage:'weights',w1:positive(w1)?Number(w1):null,w2:positive(w2)?Number(w2):null,startedAt:new Date().toISOString()};
   if(positive(chatWorkflow.w1,chatWorkflow.w2))chatWorkflow.stage='minutes';
   saveChatWorkflow();
@@ -2125,14 +2496,14 @@ function productionStatusForChat(){
 function chatActionCommand(text){
   const q=normalizeKnowledgeQuery(text);
   const requested=requestedLineNumber(text);
+  const startVerb=/\b(start|begin|run|empezar|empieza|iniciar|inicia|arrancar|arranca|comenzar|comienza)\b/.test(q);
+  const bareStart=q.match(/\b(?:start|begin|run|empezar|empieza|iniciar|inicia|arrancar|arranca|comenzar|comienza)\s+(?:(?:line|linea|la)\s*)?(1|2|3|4|one|two|three|four|uno|una|dos|tres|cuatro)\b/);
+  const wordLine={one:1,two:2,three:3,four:4,uno:1,una:1,dos:2,tres:3,cuatro:4};
+  const startLine=bareStart?(Number(bareStart[1])||wordLine[bareStart[1]]||null):null;
+  if(startVerb&&(/\b(line|linea|shift|turno)\b/.test(q)||startLine))return startLineChatWorkflow(requested||startLine||ACTIVE_LINE);
   if(requested&&/\b(go to|switch to|change to|show|ve a|cambia a|cambiar a|muestra|selecciona)\b/.test(q)&&/\b(line|linea|extruder|extrusor)\b/.test(q)){
     if(requested!==ACTIVE_LINE)switchLine(requested);
     return lineStatusAnswer(requested);
-  }
-  if(/\b(start shift|start the shift|begin shift|empezar turno|iniciar turno|comenzar turno)\b/.test(q)){
-    if(state.activeShift)return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} already has an active shift.`,`Line ${ACTIVE_LINE} ya tiene un turno activo.`,`Line ${ACTIVE_LINE} a déjà un quart actif.`)};
-    openProductDialog('start');
-    return {kind:'info',title:chatLang('Start Shift opened','Inicio de turno abierto','Démarrage du quart ouvert'),message:chatLang('Enter operator name, product, S-Wrap and language, then press Start Shift.','Ingresa nombre del operador, producto, S-Wrap e idioma y presiona Empezar turno.','Saisissez les informations du quart puis démarrez-le.')};
   }
   if(/\b(end shift|end the shift|finish shift|fin de turno|terminar turno|cerrar turno)\b/.test(q)){
     if(!state.activeShift)return {kind:'info',message:chatLang('There is no active shift to end.','No hay un turno activo para terminar.','Aucun quart actif à terminer.')};
@@ -2142,6 +2513,7 @@ function chatActionCommand(text){
     return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} shift ended.`,`Turno de Line ${ACTIVE_LINE} terminado.`,`Quart de Line ${ACTIVE_LINE} terminé.`)};
   }
   if(/^(changeover|change product|product change|cambio de producto|cambiar producto|cambio)$/i.test(String(text||'').trim())){
+    {const gate=activeShiftChatGate();if(gate)return gate;}
     changeProduct();
     return {kind:'info',message:chatLang('I opened Changeover. Select the destination product.','Abrí Changeover. Selecciona el producto destino.','Changement de produit ouvert.')};
   }
@@ -2153,6 +2525,7 @@ function chatActionCommand(text){
   if(/\b(open settings|settings|abre settings|abre ajustes|ajustes)\b/.test(q)){openSettings();return {kind:'info',message:chatLang('Settings is protected. Enter the Settings password to continue.','Settings está protegido. Ingresa la contraseña para continuar.','Réglages protégés par mot de passe.')};}
   const mandrel=requestedMandrel(text);
   if(mandrel&&/\b(set|use|change|select|pon|usa|cambia|selecciona|mandrel|mandril)\b/.test(q)){
+    {const gate=activeShiftChatGate();if(gate)return gate;}
     selectMandrel('bw',mandrel);selectMandrel('ft',mandrel);saveSession();
     return {kind:'info',message:chatLang(`Line ${ACTIVE_LINE} mandrel set to ${mandrel} inches.`,`Mandrel de Line ${ACTIVE_LINE} cambiado a ${mandrel} pulgadas.`,`Mandrin réglé à ${mandrel} pouces.`)};
   }
@@ -2169,7 +2542,8 @@ function chatActionCommand(text){
   if(setSWrapMatch){
     const requestedSpeed=Number(setSWrapMatch[1]);
     if(!positive(requestedSpeed))return {kind:'error',message:t('invalidNumbers')};
-    const applied=clampSWrap(requestedSpeed);syncCurrentSWrap(applied);saveSession();renderShiftPanel();renderTrendPanel(analyzeTrend());
+    if(!requireActiveShift())return {kind:'info',message:chatLang(`Start ${scheduledShiftCode()||'the scheduled'} Shift before changing the live S-Wrap.`,`Primero empieza el Turno ${scheduledShiftCode()||'programado'} antes de cambiar el S-Wrap de la línea.`,`Démarrez le quart avant de modifier le S-Wrap.`)};
+    const before=Number(state.currentSWrap),applied=clampSWrap(requestedSpeed);recordSWrapChange(before,applied,'chat_manual');syncCurrentSWrap(applied);saveSession();renderShiftPanel();renderTrendPanel(analyzeTrend());
     return {kind:'result',title:chatLang('Current S-Wrap updated','S-Wrap actual actualizado','S-Wrap mis à jour'),message:requestedSpeed>MAX_SWRAP_SPEED?chatLang(`Requested ${fmt(requestedSpeed,1)}. Plant maximum reached — Current S-Wrap set to ${MAX_SWRAP_SPEED} ft/min.`,`Pediste ${fmt(requestedSpeed,1)}. Se alcanzó el máximo de planta — S-Wrap actual quedó en ${MAX_SWRAP_SPEED} ft/min.`,`Maximum atteint : ${MAX_SWRAP_SPEED} ft/min.`):`S-Wrap ${fmt(applied,1)} ft/min`};
   }
   if(/\b(daily report|quality report|day report|reporte diario|reporte del dia|reporte del día|reporte de calidad)\b/.test(q)){
@@ -2204,12 +2578,12 @@ function unsupportedChatResponse(){
 }
 
 
-// V5.33 — Viejito Local Brain orchestration layer.
+// V5.34.6 — Viejito Local Brain orchestration layer.
 // This is a deterministic offline brain: it never calls a cloud model and it never writes
 // operational state while answering QUERY/SIMULATION requests. Existing calculators,
 // optimizers and learning engines remain the source of truth; Brain decides which ones to combine.
 const BRAIN_LAST_INSIGHT_KEY='viejitoBrainLastInsightV1';
-const viejitoBrain=window.ViejitoLocalBrain?new window.ViejitoLocalBrain({version:'5.33.1'}):null;
+const viejitoBrain=window.ViejitoLocalBrain?new window.ViejitoLocalBrain({version:'5.34.6'}):null;
 let brainSkillsRegistered=false;
 
 function brainLineSnapshot(line=ACTIVE_LINE){
@@ -2230,7 +2604,7 @@ function brainLineSnapshot(line=ACTIVE_LINE){
   const sourceRows=trendDual.length?trendDual:(records||[]);
   for(const r of sourceRows){
     const w1=Number(r?.winder1),w2=Number(r?.winder2),avg=Number(r?.averageBW??r?.finalBW??r?.bw);
-    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId,shiftId:r?.shiftId,targetBW:r?.targetBW,currentSWrap:r?.currentSWrap});
+    if(Number.isFinite(w1)&&Number.isFinite(w2))recentCuts.push({winder1:w1,winder2:w2,averageBW:avg,time:r?.time||r?.timestamp||r?.completedAt||'',product:r?.product,runId:r?.runId,shiftId:r?.shiftId,shiftCode:r?.shiftCode,shiftWorkDate:r?.shiftWorkDate,operator:r?.operator,targetBW:r?.targetBW,currentSWrap:r?.currentSWrap});
   }
   if(last&&Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2)))recentCuts.push(last);
   return {...stored,shift,last,records,trend,running,product,swrap,target,recentCuts:recentCuts.slice(-20)};
@@ -2392,7 +2766,7 @@ function brainComposeResponse(run,requestedLine=ACTIVE_LINE){
   const lang=state.language,es=lang==='es',fr=lang==='fr',intent=run.plan.intent;
   if(intent==='brain_status'){
     const count=viejitoBrain.skillNames().length,c=brainContext(requestedLine);
-    return {kind:'info',title:es?'VIEJITO LOCAL BRAIN 🧠':fr?'CERVEAU LOCAL VIEJITO 🧠':'VIEJITO LOCAL BRAIN 🧠',message:es?`Brain 5.33.1 activo y 100% local. ${count} skills conectados. No usa LLM ni internet. Contexto actual: Line ${c.line}, ${c.running?`corriendo ${c.product} a S-Wrap ${fmt(c.currentSWrap,1)}`:'sin turno activo'}.`:fr?`Brain 5.33.1 local actif. ${count} skills connectés.`:`Brain 5.33.1 is active and fully local. ${count} connected skills. No LLM or internet. Current context: Line ${c.line}, ${c.running?`running ${c.product} at S-Wrap ${fmt(c.currentSWrap,1)}`:'no active shift'}.`,brain:{plan:run.plan}};
+    return {kind:'info',title:es?'VIEJITO LOCAL BRAIN 🧠':fr?'CERVEAU LOCAL VIEJITO 🧠':'VIEJITO LOCAL BRAIN 🧠',message:es?`Brain 5.34.6 activo y 100% local. ${count} skills conectados. No usa LLM ni internet. Contexto actual: Line ${c.line}, ${c.running?`corriendo ${c.product} a S-Wrap ${fmt(c.currentSWrap,1)}`:'sin turno activo'}.`:fr?`Brain 5.34.6 local actif. ${count} skills connectés.`:`Brain 5.34.6 is active and fully local. ${count} connected skills. No LLM or internet. Current context: Line ${c.line}, ${c.running?`running ${c.product} at S-Wrap ${fmt(c.currentSWrap,1)}`:'no active shift'}.`,brain:{plan:run.plan}};
   }
   if(intent==='compare_lines'){
     const v=brainResultValue(run,'line.compare');return {kind:'result',title:es?'BRAIN — COMPARACIÓN DE LÍNEAS':'BRAIN — LINE COMPARISON',message:v?.findings?.[0]?.message||v?.summary||'',brain:{plan:run.plan}};
@@ -2438,23 +2812,16 @@ function refreshBrainInsightAfterCut(){
 
 
 
-// V5.33.1 — Daily Quality Report (real completed cuts only).
+// V5.34.6 — Daily Quality + Operator Action Report (English output by design).
 let lastDailyReport=null;
 function dailyReportCopy(){
-  const es=state.language==='es',fr=state.language==='fr';
   return {
-    tool:es?'Reporte diario':fr?'Rapport quotidien':'Daily Quality Report',
-    kicker:es?'REVISIÓN DE CALIDAD':fr?'REVUE QUALITÉ':'QUALITY REVIEW',
-    title:es?'Reporte diario de calidad':fr?'Rapport quotidien de qualité':'Daily Quality Report',
-    help:es?'Revisa cortes reales completos para ver tendencia de BW y desbalance de sheet. Puedes imprimir la línea seleccionada o las cuatro líneas.':fr?'Analyse des coupes réelles pour la tendance BW et le déséquilibre des sheets.':'Review real completed cuts for BW trend and sheet balance. Print the selected line or all four lines.',
-    period:es?'Período':fr?'Période':'Period',last24:es?'Últimas 24 horas':fr?'Dernières 24 heures':'Last 24 hours',calendar:es?'Día calendario':fr?'Jour calendrier':'Calendar day',
-    date:es?'Fecha':fr?'Date':'Date',lines:es?'Líneas':fr?'Lignes':'Lines',current:es?`Line ${ACTIVE_LINE}`:`Line ${ACTIVE_LINE}`,all:es?'Todas las líneas':fr?'Toutes les lignes':'All lines',
-    generate:es?'Generar reporte':fr?'Générer':'Generate report',print:es?'Imprimir reporte':fr?'Imprimer':'Print report',
-    noData:es?'No hay cortes reales completos guardados para este período.':fr?'Aucune coupe réelle enregistrée pour cette période.':'No real completed cuts are stored for this period.',
-    generated:es?'Generado':fr?'Généré':'Generated',cuts:es?'Cortes':fr?'Coupes':'Cuts',products:es?'Productos':fr?'Produits':'Products',
-    bwTrend:es?'Tendencia de BW vs target':fr?'Tendance BW vs cible':'BW trend vs target',balanceTrend:es?'Tendencia de desbalance':fr?'Tendance du déséquilibre':'Sheet-balance trend',
-    inTarget:es?'Promedio en target':fr?'Moyenne sur cible':'Average on target',outRange:es?'Promedio fuera':fr?'Moyenne hors plage':'Average out of range',imbalance:es?'Cortes desbalanceados':fr?'Coupes déséquilibrées':'Imbalanced cuts',maxImbalance:es?'Máx. desbalance':fr?'Déséquilibre max':'Max imbalance',lead:es?'Revisión del Lead':fr?'Révision du Lead':'Lead review',
-    incident:es?'Incidentes de Sheet Balance':fr?'Incidents Sheet Balance':'Sheet Balance incidents',detail:es?'Detalle de cortes':fr?'Détail des coupes':'Cut detail',productTrend:es?'Tendencia por producto':fr?'Tendance par produit':'Trend by product'
+    tool:'Daily Quality Report',kicker:'QUALITY & SHIFT REVIEW',title:'Daily Quality Report',
+    help:'Review real completed cuts, BW trend, sheet balance, S-Wrap changes and recommendation use. Print one line or all four lines.',
+    period:'Period',last24:'Last 24 hours',calendar:'Calendar day',date:'Date',lines:'Lines',current:`Line ${ACTIVE_LINE}`,all:'All lines',shift:'Shift',allShifts:'All Shifts',
+    generate:'Generate report',print:'Print report',noData:'No real completed cuts or operator-action events are stored for this selection.',generated:'Generated',cuts:'Cuts',products:'Products',
+    bwTrend:'BW trend vs target',balanceTrend:'Sheet-balance trend',inTarget:'Average on target',outRange:'Average out of range',imbalance:'Imbalanced cuts',maxImbalance:'Max imbalance',lead:'Lead review',
+    incident:'Sheet Balance incidents',detail:'Cut detail',productTrend:'Trend by product',swrapChanges:'S-Wrap changes',recommendApplied:'Recommendations applied',recommendNotApplied:'Recommendations not applied',operatorActions:'S-Wrap & recommendation actions'
   };
 }
 function renderDailyReportLabels(){
@@ -2466,129 +2833,206 @@ function renderDailyReportLabels(){
   if($('daily-report-period-label'))$('daily-report-period-label').textContent=c.period;
   if($('daily-report-date-label'))$('daily-report-date-label').textContent=c.date;
   if($('daily-report-scope-label'))$('daily-report-scope-label').textContent=c.lines;
-  const period=$('daily-report-period'); if(period){period.options[0].text=c.last24;period.options[1].text=c.calendar;}
-  const scope=$('daily-report-scope'); if(scope){scope.options[0].text=c.current;scope.options[1].text=c.all;}
+  if($('daily-report-shift-label'))$('daily-report-shift-label').textContent=c.shift;
+  const period=$('daily-report-period');if(period){period.options[0].text=c.last24;period.options[1].text=c.calendar;}
+  const scope=$('daily-report-scope');if(scope){scope.options[0].text=c.current;scope.options[1].text=c.all;}
+  const shift=$('daily-report-shift');if(shift){shift.options[0].text=c.allShifts;for(const code of ['A','B','C','D']){const opt=[...shift.options].find(x=>x.value===code);if(opt)opt.text=`${code} Shift`;}}
   if($('daily-report-refresh'))$('daily-report-refresh').textContent=c.generate;
   if($('daily-report-print'))$('daily-report-print').textContent=c.print;
 }
 function dailyReportCutsForLine(line){
-  const n=Number(line);
-  const rows=n===ACTIVE_LINE?(Array.isArray(state.bwTrendHistory)?state.bwTrendHistory:[]):(getLineJSON(TREND_HISTORY_KEY,n,[])||[]);
+  const n=Number(line),rows=n===ACTIVE_LINE?(Array.isArray(state.bwTrendHistory)?state.bwTrendHistory:[]):(getLineJSON(activeTrendHistoryKey(),n,[])||[]);
   return rows.filter(r=>Number.isFinite(Number(r?.winder1))&&Number.isFinite(Number(r?.winder2))&&Number.isFinite(Number(r?.bw??r?.averageBW)));
 }
+function dailyReportEventsForLine(line){return qualityEventsForLine(Number(line));}
 function dailyReportPeriod(){
   const type=$('daily-report-period')?.value||'last24';
   if(type==='calendar')return {type:'calendar',date:$('daily-report-date')?.value||window.ViejitoDailyReport?.localDayKey?.(new Date())};
   return {type:'last24',end:new Date().toISOString()};
 }
 function dailyReportScopeLines(){return $('daily-report-scope')?.value==='all'?[1,2,3,4]:[ACTIVE_LINE];}
+function dailyReportShift(){return String($('daily-report-shift')?.value||'all').toUpperCase();}
 function formatReportDateTime(v){
   const d=new Date(v);if(Number.isNaN(d.getTime()))return '—';
-  return d.toLocaleString(state.language==='es'?'es-US':state.language==='fr'?'fr-FR':'en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  return d.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
 }
-function formatReportPeriod(period,generatedAt){
-  const es=state.language==='es';
-  if(period?.type==='calendar')return `${es?'Día':'Day'} ${period.date}`;
+function formatReportPeriod(period,generatedAt,shift='ALL'){
+  const code=String(shift||'ALL').toUpperCase();
+  if(period?.type==='calendar'){
+    if(code!=='ALL'){
+      const win=window.ViejitoShiftSchedule?.shiftWindow?.(period.date,code);
+      if(win)return `${period.date} • ${code} Shift • ${win.type==='day'?'7:00 AM–7:00 PM':'7:00 PM–7:00 AM'}`;
+    }
+    return `Calendar day ${period.date}${code!=='ALL'?` • ${code} Shift`:''}`;
+  }
   const end=new Date(period?.end||generatedAt),start=new Date(end.getTime()-24*3600000);
-  return `${formatReportDateTime(start)} → ${formatReportDateTime(end)}`;
+  return `${formatReportDateTime(start)} → ${formatReportDateTime(end)}${code!=='ALL'?` • ${code} Shift only`:' • All Shifts'}`;
 }
-function reportDirectionLabel(direction){
-  const es=state.language==='es';
-  if(direction==='rising')return es?'Subiendo':'Rising';
-  if(direction==='falling')return es?'Bajando':'Falling';
-  return es?'Estable':'Stable';
-}
-function reportSideLabel(side){return side==='top'?'Winder 2 / Top Sheet':side==='bottom'?'Winder 1 / Bottom Sheet':(state.language==='es'?'Balanceado':'Balanced');}
+function reportDirectionLabel(direction){return direction==='rising'?'Rising':direction==='falling'?'Falling':'Stable';}
+function reportSideLabel(side){return side==='top'?'Winder 2 / Top Sheet':side==='bottom'?'Winder 1 / Bottom Sheet':'Balanced';}
 function reportChartSvg(values,{zero=0,thresholds=[],kind='delta'}={}){
-  const pts=(values||[]).map(Number).filter(Number.isFinite),w=620,h=150,pad=18;
-  if(!pts.length)return `<div class="report-empty">—</div>`;
-  const refs=[...pts,zero,...thresholds.flatMap(t=>[Number(t),-Number(t)])].filter(Number.isFinite);
-  let min=Math.min(...refs),max=Math.max(...refs);if(min===max){min-=1;max+=1;}const extra=(max-min)*.12;min-=extra;max+=extra;
-  const x=i=>pad+(pts.length===1?(w-2*pad)/2:i*(w-2*pad)/(pts.length-1));
-  const y=v=>h-pad-(v-min)*(h-2*pad)/(max-min);
-  const poly=pts.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const lines=[];
+  const pts=(values||[]).map(Number).filter(Number.isFinite),w=620,h=150,pad=18;if(!pts.length)return `<div class="report-empty">—</div>`;
+  const refs=[...pts,zero,...thresholds.flatMap(t=>[Number(t),-Number(t)])].filter(Number.isFinite);let min=Math.min(...refs),max=Math.max(...refs);if(min===max){min-=1;max+=1;}const extra=(max-min)*.12;min-=extra;max+=extra;
+  const x=i=>pad+(pts.length===1?(w-2*pad)/2:i*(w-2*pad)/(pts.length-1)),y=v=>h-pad-(v-min)*(h-2*pad)/(max-min),poly=pts.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' '),lines=[];
   if(zero>=min&&zero<=max)lines.push(`<line x1="${pad}" y1="${y(zero).toFixed(1)}" x2="${w-pad}" y2="${y(zero).toFixed(1)}" class="report-zero"/>`);
   for(const t of thresholds){const n=Number(t);if(n>=min&&n<=max)lines.push(`<line x1="${pad}" y1="${y(n).toFixed(1)}" x2="${w-pad}" y2="${y(n).toFixed(1)}" class="report-threshold"/>`);if(kind==='delta'&&-n>=min&&-n<=max)lines.push(`<line x1="${pad}" y1="${y(-n).toFixed(1)}" x2="${w-pad}" y2="${y(-n).toFixed(1)}" class="report-threshold"/>`);}
   return `<svg viewBox="0 0 ${w} ${h}" role="img">${lines.join('')}<polyline points="${poly}" class="report-polyline"/>${pts.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.2" class="report-dot"/>`).join('')}</svg>`;
 }
+function leadConfirmationForStreak(line,streak){
+  if(!streak)return null;
+  return [...(line.actions?.leadRows||[])].reverse().find(e=>e.type==='lead_confirmation'&&e.incidentKey===streak.incidentKey)||null;
+}
 function dailyReportAssessment(line){
-  const es=state.language==='es',streak=line.balance.activeStreak;
-  if(streak?.leadReview){
-    const products=streak.products?.length?` (${streak.products.join(' → ')})`:'';
-    return {cls:'lead',title:es?'🚩 REVISIÓN DEL LEAD RECOMENDADA':'🚩 LEAD REVIEW RECOMMENDED',text:es?`${reportSideLabel(streak.side)} lleva ${streak.count} cortes consecutivos más pesado${products}. La racha continúa a través de cambios de producto hasta que el balance vuelva dentro de 0.25 BW o cambie el lado pesado.`:`${reportSideLabel(streak.side)} has been heavier for ${streak.count} consecutive cuts${products}. The line-based streak continues across product changes until balance returns within 0.25 BW or the heavy side flips.`};
+  const streak=line.balance.activeStreak,lead=leadConfirmationForStreak(line,streak);
+  if(streak?.count>=4){
+    const status=lead?.status==='yes'?'Lead notification confirmed.':lead?.status==='no'?'Lead notification was NOT confirmed by the operator.':'No Lead-notification confirmation was recorded.';
+    return {cls:'lead',title:'🚩 LEAD FOLLOW-UP REQUIRED',text:`${reportSideLabel(streak.side)} has been heavier for ${streak.count} consecutive cuts across ${streak.products?.join(' → ')||'the current work'}. ${status} The line-based streak continues until balance returns within 0.25 BW or the heavy side flips.`};
   }
-  if(streak?.persistent)return {cls:'persistent',title:es?'⚠️ DESBALANCE PERSISTENTE':'⚠️ PERSISTENT IMBALANCE',text:es?`${reportSideLabel(streak.side)} lleva ${streak.count} cortes consecutivos más pesado. Revisar Die Move y respuesta de la máquina.`:`${reportSideLabel(streak.side)} has been heavier for ${streak.count} consecutive cuts. Verify the Die Move and machine response.`};
-  if(streak)return {cls:'persistent',title:es?'Sheet Balance activo':'Active Sheet Balance issue',text:es?`${reportSideLabel(streak.side)} está más pesado por ${fmt(streak.lastDifference,2)} BW. Racha actual: ${streak.count}.`:`${reportSideLabel(streak.side)} is heavier by ${fmt(streak.lastDifference,2)} BW. Current streak: ${streak.count}.`};
-  return {cls:'good',title:es?'✓ Sin desbalance persistente activo':'✓ No active persistent imbalance',text:es?'El último corte guardado no mantiene una racha activa fuera del límite de 0.25 BW.':'The latest stored cut does not maintain an active streak outside the 0.25 BW balance limit.'};
+  if(streak?.count>=3)return {cls:'lead',title:'⚠️ NOTIFY LEAD — PERSISTENT IMBALANCE',text:`${reportSideLabel(streak.side)} has been heavier for ${streak.count} consecutive cuts. The operator should notify the Lead and continue monitoring the response to the Die Move.`};
+  if(streak)return {cls:'persistent',title:'Active Sheet Balance issue',text:`${reportSideLabel(streak.side)} is heavier by ${fmt(streak.lastDifference,2)} BW. Current streak: ${streak.count}.`};
+  return {cls:'good',title:'✓ No active persistent imbalance',text:'The latest stored cut does not maintain an active streak outside the 0.25 BW balance limit.'};
+}
+function recommendationOutcomeText(e){
+  if(e.type==='recommendation_accepted')return 'Applied';
+  if(e.reason==='keep_current')return 'Not applied — Keep current selected';
+  if(e.reason==='continue_running')return 'Not applied — Continue running selected';
+  if(e.reason==='shift_end'||e.reason==='shift_boundary')return 'Not applied before shift ended';
+  if(e.reason==='changeover')return 'Not applied before product change';
+  return 'Not applied before next cut';
+}
+function swrapSourceLabel(source){
+  const map={corrective_recommendation:'Corrective recommendation',preventive_recommendation:'Preventive recommendation',preventive_edge_recommendation:'Near-limit preventive recommendation',manual_input:'Manual input',chat_manual:'Chat manual change',changeover:'Changeover'};return map[source]||String(source||'Change');
 }
 function renderDailyReportLine(line){
-  const c=dailyReportCopy(),es=state.language==='es';
-  if(!line.totalCuts)return `<section class="report-sheet"><div class="report-sheet-head"><div><small>LINE</small><h4>Line ${line.line}</h4></div></div><div class="report-empty">${escapeHTML(c.noData)}</div></section>`;
-  const assess=dailyReportAssessment(line),bwRows=line.cuts.filter(x=>Number.isFinite(x.delta)),bwVals=bwRows.map(x=>x.delta),balVals=line.cuts.map(x=>x.balanceDifference);
-  const inPct=line.bw.withTarget?Math.round(line.bw.green*100/line.bw.withTarget):0;
+  const c=dailyReportCopy(),hasActions=(line.actions?.events?.length||0)>0;
+  if(!line.totalCuts&&!hasActions)return `<section class="report-sheet"><div class="report-sheet-head"><div><small>LINE</small><h4>Line ${line.line}</h4></div></div><div class="report-empty">${escapeHTML(c.noData)}</div></section>`;
+  const assess=dailyReportAssessment(line),bwRows=line.cuts.filter(x=>Number.isFinite(x.delta)),bwVals=bwRows.map(x=>x.delta),balVals=line.cuts.map(x=>x.balanceDifference),inPct=line.bw.withTarget?Math.round(line.bw.green*100/line.bw.withTarget):0;
   const productRows=line.productTrends.map(p=>`<tr><td>${escapeHTML(p.product)}</td><td>${p.count}</td><td>${Number.isFinite(p.targetBW)?fmt(p.targetBW,2):'—'}</td><td>${Number.isFinite(p.firstBW)?fmt(p.firstBW,3):'—'} → ${Number.isFinite(p.lastBW)?fmt(p.lastBW,3):'—'}</td><td>${escapeHTML(reportDirectionLabel(p.direction))}</td></tr>`).join('');
-  const incidentRows=line.balance.incidents.slice(-12).map(i=>`<tr><td>${formatReportDateTime(i.startTime)}</td><td>${escapeHTML(reportSideLabel(i.side))}</td><td>${i.count}</td><td>${escapeHTML((i.products||[]).join(' → '))}</td><td>${fmt(i.firstDifference,2)} → ${fmt(i.lastDifference,2)}</td><td class="${i.leadReview?'bad':''}">${i.leadReview?(es?'LEAD':'LEAD REVIEW'):i.persistent?(es?'PERSISTENTE':'PERSISTENT'):i.maxLevel==='required'?(es?'OBLIGATORIO':'REQUIRED'):(es?'SUGERIDO':'SUGGESTED')}</td></tr>`).join('');
-  const detailRows=line.cuts.slice(-30).reverse().map(x=>`<tr><td>${formatReportDateTime(x.time)}</td><td>${escapeHTML(x.product)}</td><td>${fmt(x.winder1,3)}</td><td>${fmt(x.winder2,3)}</td><td>${fmt(x.averageBW,3)}</td><td>${Number.isFinite(x.targetBW)?fmt(x.targetBW,2):'—'}</td><td>${Number.isFinite(x.delta)?`${x.delta>=0?'+':''}${fmt(x.delta,3)}`:'—'}</td><td class="${x.balanceLevel!=='balanced'?'bad':''}">${fmt(x.balanceDifference,2)}</td><td>${escapeHTML(reportSideLabel(x.heavySide))}</td></tr>`).join('');
+  const incidentRows=line.balance.incidents.slice(-12).map(i=>`<tr><td>${formatReportDateTime(i.startTime)}</td><td>${escapeHTML(reportSideLabel(i.side))}</td><td>${i.count}</td><td>${escapeHTML((i.shifts||[]).join(', ')||'—')}</td><td>${escapeHTML((i.products||[]).join(' → '))}</td><td>${fmt(i.firstDifference,2)} → ${fmt(i.lastDifference,2)}</td><td class="${i.leadReview?'bad':''}">${i.count>=4?'LEAD FOLLOW-UP':i.count>=3?'NOTIFY LEAD':i.maxLevel==='required'?'DIE MOVE REQUIRED':'DIE MOVE'}</td></tr>`).join('');
+  const detailRows=line.cuts.slice(-40).reverse().map(x=>`<tr><td>${formatReportDateTime(x.time)}</td><td>${escapeHTML(x.shiftCode||'—')}</td><td>${escapeHTML(x.product)}</td><td>${fmt(x.winder1,3)}</td><td>${fmt(x.winder2,3)}</td><td>${fmt(x.averageBW,3)}</td><td>${Number.isFinite(x.targetBW)?fmt(x.targetBW,2):'—'}</td><td>${Number.isFinite(x.delta)?`${x.delta>=0?'+':''}${fmt(x.delta,3)}`:'—'}</td><td class="${x.balanceLevel!=='balanced'?'bad':''}">${fmt(x.balanceDifference,2)}</td><td>${escapeHTML(reportSideLabel(x.heavySide))}</td></tr>`).join('');
+  const swRows=(line.actions?.swrapRows||[]).slice(-30).reverse().map(e=>`<tr><td>${formatReportDateTime(e.time)}</td><td>${escapeHTML(e.shiftCode||'—')}</td><td>${escapeHTML(e.product||'—')}</td><td>${fmt(e.beforeSWrap,1)} → ${fmt(e.afterSWrap,1)}</td><td>${escapeHTML(swrapSourceLabel(e.source))}</td></tr>`).join('');
+  const recRows=(line.actions?.recommendationRows||[]).slice(-30).reverse().map(e=>`<tr><td>${formatReportDateTime(e.time)}</td><td>${escapeHTML(e.shiftCode||'—')}</td><td>${escapeHTML(e.product||'—')}</td><td>${escapeHTML(e.recommendationType||'corrective')}</td><td>${Number.isFinite(Number(e.suggestedSWrap))?fmt(e.suggestedSWrap,1):'—'}</td><td class="${e.type==='recommendation_not_used'?'bad':''}">${escapeHTML(recommendationOutcomeText(e))}</td></tr>`).join('');
+  const leadSummary=`Lead notification requests: ${line.actions?.leadRequests||0} • Confirmed: ${line.actions?.leadConfirmed||0} • Not confirmed: ${line.actions?.leadNotConfirmed||0}`;
   return `<section class="report-sheet">
-    <div class="report-sheet-head"><div><small>INDUSTRIAL IA • QUALITY</small><h4>Line ${line.line}</h4></div><div><small>${escapeHTML(c.products)}</small><br><strong>${escapeHTML(line.products.join(' • ')||'—')}</strong></div></div>
+    <div class="report-sheet-head"><div><small>INDUSTRIAL IA • QUALITY & SHIFT REVIEW</small><h4>Line ${line.line}</h4></div><div><small>Products</small><br><strong>${escapeHTML(line.products.join(' • ')||'—')}</strong><br><small>Shifts: ${escapeHTML(line.shifts.join(', ')||'—')}</small></div></div>
     <div class="report-summary-grid">
-      <div class="report-stat"><span>${escapeHTML(c.cuts)}</span><strong>${line.totalCuts}</strong></div>
-      <div class="report-stat"><span>${escapeHTML(c.inTarget)}</span><strong>${line.bw.green}/${line.bw.withTarget} (${inPct}%)</strong></div>
-      <div class="report-stat"><span>${escapeHTML(c.outRange)}</span><strong>${line.bw.out}</strong></div>
-      <div class="report-stat"><span>${escapeHTML(c.imbalance)}</span><strong>${line.balance.imbalanceCuts}</strong></div>
-      <div class="report-stat"><span>${escapeHTML(c.maxImbalance)}</span><strong>${fmt(line.balance.maxDifference,2)} BW</strong></div>
+      <div class="report-stat"><span>${c.cuts}</span><strong>${line.totalCuts}</strong></div><div class="report-stat"><span>${c.inTarget}</span><strong>${line.bw.green}/${line.bw.withTarget} (${inPct}%)</strong></div><div class="report-stat"><span>${c.outRange}</span><strong>${line.bw.out}</strong></div><div class="report-stat"><span>${c.imbalance}</span><strong>${line.balance.imbalanceCuts}</strong></div><div class="report-stat"><span>${c.maxImbalance}</span><strong>${fmt(line.balance.maxDifference,2)} BW</strong></div><div class="report-stat"><span>${c.swrapChanges}</span><strong>${line.actions?.swrapChanges||0}</strong></div><div class="report-stat"><span>${c.recommendApplied}</span><strong>${line.actions?.recommendationsApplied||0}</strong></div><div class="report-stat"><span>${c.recommendNotApplied}</span><strong>${line.actions?.recommendationsNotApplied||0}</strong></div>
     </div>
-    <div class="report-alert ${assess.cls}"><strong>${escapeHTML(assess.title)}</strong><p>${escapeHTML(assess.text)}</p></div>
-    <div class="report-chart-grid">
-      <div class="report-chart-card"><h5>${escapeHTML(c.bwTrend)}</h5>${reportChartSvg(bwVals,{zero:0,thresholds:[0.17,0.25],kind:'delta'})}<div class="report-chart-caption"><span>${es?'Primero':'First'} ${Number.isFinite(line.bw.firstDelta)?`${line.bw.firstDelta>=0?'+':''}${fmt(line.bw.firstDelta,3)}`:'—'}</span><strong>${escapeHTML(reportDirectionLabel(line.bw.direction))}</strong><span>${es?'Último':'Last'} ${Number.isFinite(line.bw.lastDelta)?`${line.bw.lastDelta>=0?'+':''}${fmt(line.bw.lastDelta,3)}`:'—'}</span></div></div>
-      <div class="report-chart-card"><h5>${escapeHTML(c.balanceTrend)}</h5>${reportChartSvg(balVals,{zero:0,thresholds:[0.25,1.0],kind:'balance'})}<div class="report-chart-caption"><span>0.25 ${es?'Die Move sugerido':'suggested'}</span><strong>${line.balance.requiredCuts} ≥ 1.00</strong><span>1.00 ${es?'obligatorio':'required'}</span></div></div>
-    </div>
-    <div><div class="report-subtitle"><h5>${escapeHTML(c.productTrend)}</h5><small>${line.productTrends.length}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>${es?'Producto':'Product'}</th><th>${c.cuts}</th><th>Target</th><th>Average BW</th><th>Trend</th></tr></thead><tbody>${productRows||`<tr><td colspan="5">—</td></tr>`}</tbody></table></div></div>
-    <div><div class="report-subtitle"><h5>${escapeHTML(c.incident)}</h5><small>${line.balance.incidents.length}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>${es?'Inicio':'Start'}</th><th>${es?'Lado pesado':'Heavy side'}</th><th>${c.cuts}</th><th>${c.products}</th><th>${es?'Diferencia':'Difference'}</th><th>${es?'Nivel':'Level'}</th></tr></thead><tbody>${incidentRows||`<tr><td colspan="6">${es?'Sin incidentes en el período.':'No incidents in period.'}</td></tr>`}</tbody></table></div></div>
-    <div><div class="report-subtitle"><h5>${escapeHTML(c.detail)}</h5><small>${es?'Últimos 30 del período':'Last 30 in period'}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>${es?'Hora':'Time'}</th><th>${es?'Producto':'Product'}</th><th>W1</th><th>W2</th><th>Avg</th><th>Target</th><th>Δ BW</th><th>Balance Δ</th><th>${es?'Lado pesado':'Heavy side'}</th></tr></thead><tbody>${detailRows}</tbody></table></div></div>
+    <div class="report-alert ${assess.cls}"><strong>${escapeHTML(assess.title)}</strong><p>${escapeHTML(assess.text)}</p><p>${escapeHTML(leadSummary)}</p></div>
+    ${line.totalCuts?`<div class="report-chart-grid"><div class="report-chart-card"><h5>${c.bwTrend}</h5>${reportChartSvg(bwVals,{zero:0,thresholds:[0.17,0.25],kind:'delta'})}<div class="report-chart-caption"><span>First ${Number.isFinite(line.bw.firstDelta)?`${line.bw.firstDelta>=0?'+':''}${fmt(line.bw.firstDelta,3)}`:'—'}</span><strong>${escapeHTML(reportDirectionLabel(line.bw.direction))}</strong><span>Last ${Number.isFinite(line.bw.lastDelta)?`${line.bw.lastDelta>=0?'+':''}${fmt(line.bw.lastDelta,3)}`:'—'}</span></div></div><div class="report-chart-card"><h5>${c.balanceTrend}</h5>${reportChartSvg(balVals,{zero:0,thresholds:[0.25,1.0],kind:'balance'})}<div class="report-chart-caption"><span>0.25 Die Move suggested</span><strong>${line.balance.requiredCuts} ≥ 1.00</strong><span>1.00 required</span></div></div></div>`:''}
+    ${line.productTrends.length?`<div><div class="report-subtitle"><h5>${c.productTrend}</h5><small>${line.productTrends.length}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>Product</th><th>Cuts</th><th>Target</th><th>Average BW</th><th>Trend</th></tr></thead><tbody>${productRows}</tbody></table></div></div>`:''}
+    <div><div class="report-subtitle"><h5>${c.operatorActions}</h5><small>${line.actions?.events?.length||0} events</small></div><div class="report-table-wrap"><table class="report-table report-actions-table"><thead><tr><th colspan="5">S-Wrap changes</th></tr><tr><th>Time</th><th>Shift</th><th>Product</th><th>S-Wrap</th><th>Source</th></tr></thead><tbody>${swRows||'<tr><td colspan="5">No S-Wrap changes recorded.</td></tr>'}</tbody></table></div><div class="report-table-wrap"><table class="report-table report-actions-table"><thead><tr><th colspan="6">Recommendation decisions</th></tr><tr><th>Time</th><th>Shift</th><th>Product</th><th>Type</th><th>Suggested S-Wrap</th><th>Outcome</th></tr></thead><tbody>${recRows||'<tr><td colspan="6">No recommendation decisions recorded.</td></tr>'}</tbody></table></div></div>
+    ${line.totalCuts?`<div><div class="report-subtitle"><h5>${c.incident}</h5><small>${line.balance.incidents.length}</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>Start</th><th>Heavy side</th><th>Cuts</th><th>Shift(s)</th><th>Products</th><th>Difference</th><th>Level</th></tr></thead><tbody>${incidentRows||'<tr><td colspan="7">No incidents in period.</td></tr>'}</tbody></table></div></div><div><div class="report-subtitle"><h5>${c.detail}</h5><small>Last 40 in selection</small></div><div class="report-table-wrap"><table class="report-table"><thead><tr><th>Time</th><th>Shift</th><th>Product</th><th>W1</th><th>W2</th><th>Avg</th><th>Target</th><th>Δ BW</th><th>Balance Δ</th><th>Heavy side</th></tr></thead><tbody>${detailRows}</tbody></table></div></div>`:''}
   </section>`;
 }
 function buildDailyReportFromControls(){
   if(!window.ViejitoDailyReport)return null;
-  const lines=dailyReportScopeLines().map(line=>({line,cuts:dailyReportCutsForLine(line)}));
-  return window.ViejitoDailyReport.buildReport(lines,dailyReportPeriod(),new Date());
+  const lines=dailyReportScopeLines().map(line=>({line,cuts:dailyReportCutsForLine(line),events:dailyReportEventsForLine(line)}));
+  const report=window.ViejitoDailyReport.buildReport(lines,dailyReportPeriod(),new Date(),{shift:dailyReportShift()});if(report)report.demo=demoMode();return report;
 }
 function renderDailyReportPreview(){
-  const report=buildDailyReportFromControls(),box=$('daily-report-preview'),c=dailyReportCopy();
-  if(!report||!box)return null;
-  lastDailyReport=report;
-  const header=`<section class="report-sheet"><div class="report-sheet-head"><div><small>INDUSTRIAL IA 5.33.1</small><h4>${escapeHTML(c.title)}</h4></div><div><small>${escapeHTML(c.generated)}</small><br><strong>${formatReportDateTime(report.generatedAt)}</strong></div></div><div class="report-alert ${report.leadReviewLines.length?'lead':'good'}"><strong>${escapeHTML(formatReportPeriod(report.period,report.generatedAt))}</strong><p>${report.totalCuts} ${escapeHTML(c.cuts.toLowerCase())}${report.leadReviewLines.length?` • ${escapeHTML(c.lead)}: Line ${report.leadReviewLines.join(', ')}`:''}</p></div></section>`;
-  box.innerHTML=header+report.lines.map(renderDailyReportLine).join('');
-  return report;
+  const report=buildDailyReportFromControls(),box=$('daily-report-preview'),c=dailyReportCopy();if(!report||!box)return null;lastDailyReport=report;
+  const demoNote=report.demo?' • DEMO DATA — NOT PRODUCTION':'';
+  const header=`<section class="report-sheet"><div class="report-sheet-head"><div><small>INDUSTRIAL IA 5.34.6${demoNote}</small><h4>${escapeHTML(c.title)}</h4></div><div><small>${c.generated}</small><br><strong>${formatReportDateTime(report.generatedAt)}</strong></div></div><div class="report-alert ${report.leadReviewLines.length?'lead':'good'}"><strong>${escapeHTML(formatReportPeriod(report.period,report.generatedAt,report.shift))}</strong><p>${report.totalCuts} cuts • ${report.totalSWrapChanges} S-Wrap changes • ${report.totalRecommendationsApplied} recommendations applied • ${report.totalRecommendationsNotApplied} not applied${report.leadReviewLines.length?` • Lead follow-up: Line ${report.leadReviewLines.join(', ')}`:''}</p></div></section>`;
+  box.innerHTML=header+report.lines.map(renderDailyReportLine).join('');return report;
 }
 function openDailyReportDialog(){
-  const d=$('daily-report-dialog');if(!d)return;
-  renderDailyReportLabels();
-  const date=$('daily-report-date');if(date&&!date.value)date.value=window.ViejitoDailyReport?.localDayKey?.(new Date())||'';
-  if($('daily-report-scope'))$('daily-report-scope').value='current';
-  if($('daily-report-period'))$('daily-report-period').value='last24';
-  updateDailyReportPeriodUI();renderDailyReportPreview();
-  d.classList.remove('hidden');d.setAttribute('aria-hidden','false');closeToolMenu();
+  const d=$('daily-report-dialog');if(!d)return;renderDailyReportLabels();const date=$('daily-report-date');if(date&&!date.value)date.value=window.ViejitoDailyReport?.localDayKey?.(new Date())||'';if($('daily-report-scope'))$('daily-report-scope').value='current';if($('daily-report-shift'))$('daily-report-shift').value='all';if($('daily-report-period'))$('daily-report-period').value='last24';updateDailyReportPeriodUI();renderDailyReportPreview();d.classList.remove('hidden');d.setAttribute('aria-hidden','false');closeToolMenu();
 }
 function closeDailyReportDialog(){const d=$('daily-report-dialog');if(d){d.classList.add('hidden');d.setAttribute('aria-hidden','true');}}
 function updateDailyReportPeriodUI(){const calendar=$('daily-report-period')?.value==='calendar';if($('daily-report-date-wrap'))$('daily-report-date-wrap').classList.toggle('hidden',!calendar);}
 function dailyReportPrintableDocument(report){
-  const c=dailyReportCopy();
-  const body=`<header class="print-head"><div><strong>INDUSTRIAL IA 5.33.1</strong><h1>${escapeHTML(c.title)}</h1><p>${escapeHTML(formatReportPeriod(report.period,report.generatedAt))}</p></div><div><small>${escapeHTML(c.generated)}</small><br>${formatReportDateTime(report.generatedAt)}</div></header>${report.lines.map(renderDailyReportLine).join('')}`;
-  return `<!doctype html><html lang="${escapeHTML(state.language)}"><head><meta charset="utf-8"><title>${escapeHTML(c.title)}</title><style>
-  *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:22px;background:#fff}.print-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px}.print-head h1{margin:4px 0;font-size:24px}.print-head p{margin:0}.report-sheet{page-break-inside:avoid;border:1px solid #bbb;border-radius:10px;padding:14px;margin:0 0 16px}.report-sheet-head{display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:10px}.report-sheet-head h4{margin:3px 0;font-size:20px}.report-summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0}.report-stat{border:1px solid #ccc;border-radius:7px;padding:7px}.report-stat span{display:block;font-size:9px;text-transform:uppercase}.report-stat strong{font-size:14px}.report-alert{border:1px solid #aaa;border-left:5px solid #555;padding:9px;margin:10px 0}.report-alert.lead{border-left-color:#b00020}.report-alert.persistent{border-left-color:#a46600}.report-alert.good{border-left-color:#087a45}.report-alert p{margin:3px 0 0;font-size:11px}.report-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.report-chart-card{border:1px solid #ccc;border-radius:7px;padding:8px}.report-chart-card h5{margin:0 0 5px}.report-chart-card svg{width:100%;height:120px}.report-zero{stroke:#333;stroke-width:1}.report-threshold{stroke:#999;stroke-width:1;stroke-dasharray:4 4}.report-polyline{fill:none;stroke:#111;stroke-width:2}.report-dot{fill:#111}.report-chart-caption{display:flex;justify-content:space-between;font-size:9px}.report-subtitle{display:flex;justify-content:space-between;margin-top:12px}.report-subtitle h5{margin:0 0 5px}.report-table-wrap{overflow:visible}.report-table{width:100%;border-collapse:collapse;font-size:9px}.report-table th,.report-table td{border:1px solid #ccc;padding:4px;text-align:left}.report-table th{background:#eee}.bad{font-weight:bold}.report-empty{padding:15px;border:1px dashed #aaa;text-align:center}@media print{body{padding:0}.report-sheet{break-inside:avoid}.report-chart-grid{break-inside:avoid}.report-table{font-size:8px}@page{margin:.4in}}
-  </style></head><body>${body}</body></html>`;
+  const c=dailyReportCopy(),demoNote=report.demo?' • DEMO DATA — NOT PRODUCTION':'',body=`<header class="print-head"><div><strong>INDUSTRIAL IA 5.34.6${demoNote}</strong><h1>${escapeHTML(c.title)}</h1><p>${escapeHTML(formatReportPeriod(report.period,report.generatedAt,report.shift))}</p></div><div><small>${c.generated}</small><br>${formatReportDateTime(report.generatedAt)}</div></header>${report.lines.map(renderDailyReportLine).join('')}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${escapeHTML(c.title)}</title><style>*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:22px;background:#fff}.print-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px}.print-head h1{margin:4px 0;font-size:24px}.print-head p{margin:0}.report-sheet{page-break-inside:avoid;border:1px solid #bbb;border-radius:10px;padding:14px;margin:0 0 16px}.report-sheet-head{display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:10px}.report-sheet-head h4{margin:3px 0;font-size:20px}.report-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.report-stat{border:1px solid #ccc;border-radius:7px;padding:7px}.report-stat span{display:block;font-size:8px;text-transform:uppercase}.report-stat strong{font-size:14px}.report-alert{border:1px solid #aaa;border-left:5px solid #555;padding:9px;margin:10px 0}.report-alert.lead{border-left-color:#b00020}.report-alert.persistent{border-left-color:#a46600}.report-alert.good{border-left-color:#087a45}.report-alert p{margin:3px 0 0;font-size:10px}.report-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.report-chart-card{border:1px solid #ccc;border-radius:7px;padding:8px}.report-chart-card h5{margin:0 0 5px}.report-chart-card svg{width:100%;height:120px}.report-zero{stroke:#333;stroke-width:1}.report-threshold{stroke:#999;stroke-width:1;stroke-dasharray:4 4}.report-polyline{fill:none;stroke:#111;stroke-width:2}.report-dot{fill:#111}.report-chart-caption{display:flex;justify-content:space-between;font-size:8px}.report-subtitle{display:flex;justify-content:space-between;margin-top:12px}.report-subtitle h5{margin:0 0 5px}.report-table-wrap{overflow:visible;margin-bottom:7px}.report-table{width:100%;border-collapse:collapse;font-size:8px}.report-table th,.report-table td{border:1px solid #ccc;padding:4px;text-align:left}.report-table th{background:#eee}.bad{font-weight:bold}.report-empty{padding:15px;border:1px dashed #aaa;text-align:center}@media print{body{padding:0}.report-sheet{break-inside:avoid}.report-chart-grid{break-inside:avoid}@page{margin:.35in}}</style></head><body>${body}</body></html>`;
 }
-function printDailyReport(){
-  const report=renderDailyReportPreview()||lastDailyReport;if(!report)return;
-  const win=window.open('','_blank');
-  if(!win){showToast(state.language==='es'?'El navegador bloqueó la ventana de impresión.':'The browser blocked the print window.');return;}
-  win.document.open();win.document.write(dailyReportPrintableDocument(report));win.document.close();
-  setTimeout(()=>{try{win.focus();win.print();}catch(_){}},250);
+function printDailyReport(){const report=renderDailyReportPreview()||lastDailyReport;if(!report)return;const win=window.open('','_blank');if(!win){showToast('The browser blocked the print window.');return;}win.document.open();win.document.write(dailyReportPrintableDocument(report));win.document.close();setTimeout(()=>{try{win.focus();win.print();}catch(_){}},250);}
+
+const SHIFT_CALENDAR_MONTHS=Object.freeze({
+  january:0,jan:0,enero:0,
+  february:1,feb:1,febrero:1,
+  march:2,mar:2,marzo:2,
+  april:3,apr:3,abril:3,
+  may:4,mayo:4,
+  june:5,jun:5,junio:5,
+  july:6,jul:6,julio:6,
+  august:7,aug:7,agosto:7,
+  september:8,sep:8,sept:8,septiembre:8,setiembre:8,
+  october:9,oct:9,octubre:9,
+  november:10,nov:10,noviembre:10,
+  december:11,dec:11,diciembre:11
+});
+function validCalendarDate(year,month,day){
+  const y=Number(year),m=Number(month),d=Number(day);if(!Number.isInteger(y)||!Number.isInteger(m)||!Number.isInteger(d))return null;
+  const out=new Date(y,m,d,12,0,0,0);return out.getFullYear()===y&&out.getMonth()===m&&out.getDate()===d?out:null;
+}
+function upcomingCalendarYear(month,day,now=new Date()){
+  let y=now.getFullYear(),candidate=validCalendarDate(y,month,day);if(!candidate)return y;
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
+  if(candidate<today)y+=1;return y;
+}
+function parseCalendarClock(q){
+  let m=q.match(/\b(?:at|a\s+las?)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+  if(m){let h=Number(m[1]),min=Number(m[2]||0);if(h>=1&&h<=12&&min>=0&&min<60){if(m[3]==='pm'&&h<12)h+=12;if(m[3]==='am'&&h===12)h=0;return {hour:h,minute:min};}}
+  m=q.match(/\b(?:at|a\s+las?)\s*(\d{1,2})(?::(\d{2}))\b/);
+  if(m){const h=Number(m[1]),min=Number(m[2]);if(h>=0&&h<=23&&min>=0&&min<60)return {hour:h,minute:min};}
+  return null;
+}
+function parseShiftCalendarDate(text,now=new Date()){
+  const q=normalizeKnowledgeQuery(text),schedule=window.ViejitoShiftSchedule;if(!schedule)return null;
+  const yearMatch=q.match(/\b(20\d{2}|21\d{2})\b/);let year=yearMatch?Number(yearMatch[1]):null,date=null,label='date';
+  if(/\b(thanksgiving|thanksgiving day|accion de gracias|dia de accion de gracias)\b/.test(q)){
+    if(!year){let y=now.getFullYear(),t=schedule.thanksgivingDate?.(y);const today=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);if(t&&t<today)y+=1;year=y;}
+    date=schedule.thanksgivingDate?.(year)||null;label='Thanksgiving';
+  }
+  if(!date&&/\b(today|hoy)\b/.test(q))date=validCalendarDate(now.getFullYear(),now.getMonth(),now.getDate());
+  if(!date&&/\b(day after tomorrow|pasado manana)\b/.test(q)){const d=new Date(now);d.setDate(d.getDate()+2);date=validCalendarDate(d.getFullYear(),d.getMonth(),d.getDate());}
+  if(!date&&/\b(tomorrow|manana)\b/.test(q)){const d=new Date(now);d.setDate(d.getDate()+1);date=validCalendarDate(d.getFullYear(),d.getMonth(),d.getDate());}
+  if(!date){
+    let m=q.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:de\s+)?(january|jan|enero|february|feb|febrero|march|mar|marzo|april|apr|abril|may|mayo|june|jun|junio|july|jul|julio|august|aug|agosto|september|sep|sept|septiembre|setiembre|october|oct|octubre|november|nov|noviembre|december|dec|diciembre)(?:\s+(?:de|del)?\s*(20\d{2}|21\d{2}))?\b/);
+    if(m){const day=Number(m[1]),month=SHIFT_CALENDAR_MONTHS[m[2]],y=Number(m[3])||year||upcomingCalendarYear(month,day,now);date=validCalendarDate(y,month,day);}
+  }
+  if(!date){
+    let m=q.match(/\b(january|jan|enero|february|feb|febrero|march|mar|marzo|april|apr|abril|may|mayo|june|jun|junio|july|jul|julio|august|aug|agosto|september|sep|sept|septiembre|setiembre|october|oct|octubre|november|nov|noviembre|december|dec|diciembre)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(20\d{2}|21\d{2}))?\b/);
+    if(m){const month=SHIFT_CALENDAR_MONTHS[m[1]],day=Number(m[2]),y=Number(m[3])||year||upcomingCalendarYear(month,day,now);date=validCalendarDate(y,month,day);}
+  }
+  if(!date){
+    const m=q.match(/\b(20\d{2}|21\d{2})-(\d{1,2})-(\d{1,2})\b/);if(m)date=validCalendarDate(Number(m[1]),Number(m[2])-1,Number(m[3]));
+  }
+  if(!date)return null;
+  const clock=parseCalendarClock(q);if(clock)date=new Date(date.getFullYear(),date.getMonth(),date.getDate(),clock.hour,clock.minute,0,0);
+  return {date,clock,label};
+}
+function formatShiftCalendarDate(date){
+  const locale=state.language==='es'?'es-US':state.language==='fr'?'fr-FR':'en-US';
+  return date.toLocaleDateString(locale,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+function shiftCalendarChatQuery(text){
+  const q=normalizeKnowledgeQuery(text);
+  const asksShift=/\b(shift|turno|turnos|who works|who is working|works|working|quien trabaja|quien va a trabajar|trabaja|trabajara|trabajar)\b/.test(q);
+  if(!asksShift)return null;
+  const parsed=parseShiftCalendarDate(text);if(!parsed)return null;
+  const schedule=window.ViejitoShiftSchedule;if(!schedule)return null;
+  const dateLabel=formatShiftCalendarDate(parsed.date);
+  if(parsed.clock){
+    const info=schedule.shiftAt(parsed.date);if(!info)return null;
+    const timeLabel=parsed.date.toLocaleTimeString(state.language==='es'?'es-US':'en-US',{hour:'numeric',minute:'2-digit'});
+    return {kind:'result',title:chatLang('Shift calendar','Calendario de turnos','Calendrier des quarts'),message:chatLang(
+      `${dateLabel} at ${timeLabel}: ${info.code} Shift is working (${info.type==='day'?'day shift':'night shift'}). The schedule pair for the shift workday is ${info.pair}.`,
+      `${dateLabel} a las ${timeLabel}: trabaja el Turno ${info.code} (${info.type==='day'?'turno de día':'turno de noche'}). La pareja programada para ese turno es ${info.pair}.`,
+      `${dateLabel} à ${timeLabel} : quart ${info.code}.`
+    )};
+  }
+  const info=schedule.dateSchedule?.(parsed.date);if(!info)return null;
+  const holiday=parsed.label==='Thanksgiving'?chatLang('Thanksgiving — ','Thanksgiving — ','Thanksgiving — '):'';
+  return {kind:'result',title:chatLang('Shift calendar','Calendario de turnos','Calendrier des quarts'),message:chatLang(
+    `${holiday}${dateLabel} is an ${info.pair} workday. ${info.dayShift} Shift works 7:00 AM–7:00 PM, and ${info.nightShift} Shift works 7:00 PM–7:00 AM the next morning.`,
+    `${holiday}${dateLabel} corresponde a ${info.pair}. Turno ${info.dayShift} trabaja de 7:00 AM a 7:00 PM y Turno ${info.nightShift} de 7:00 PM a 7:00 AM del día siguiente.`,
+    `${holiday}${dateLabel} correspond à ${info.pair}. Quart ${info.dayShift} de 7 h à 19 h et quart ${info.nightShift} de 19 h à 7 h.`
+  )};
 }
 
 function localIntelligenceQuery(text){
+  const calendarResponse=shiftCalendarChatQuery(text); if(calendarResponse)return calendarResponse;
   const brainResponse=brainLocalQuery(text); if(brainResponse)return brainResponse;
   const q=String(text||'').toLowerCase();
   if(/\b(how are we|how is line|status|como vamos|cómo vamos|estado|comment va|cómo está|como esta|running|corriendo)\b/.test(q)){
@@ -2604,6 +3048,9 @@ function localIntelligenceQuery(text){
 
 function interpret(text){
   // Finish an active guided workflow before generic numeric parsing.
+  if(chatWorkflow?.type==='start-line'){
+    const startFlow=handleStartLineChatWorkflow(text); if(startFlow)return startFlow;
+  }
   if(chatWorkflow?.type==='coordinated-speed-bw'){
     const speedWorkflow=handleCoordinatedSpeedWorkflow(text); if(speedWorkflow)return speedWorkflow;
   }
@@ -2631,6 +3078,7 @@ function interpret(text){
   if(smartRequest) return handleSmartBW(smartRequest,mandrel);
   const explicit=explicitIntent(text);
   let vals=stripMandrelValue(numbers(text),text);
+  if((explicit||vals.length)){const gate=activeShiftChatGate();if(gate)return gate;}
   const lower=text.toLowerCase().trim();
 
   if(/^\s*(51|48)\s*(?:"|in|inch|pulgadas?|pouces?)?\s*$/.test(lower) && state.context.lastCalculation){
@@ -3042,6 +3490,11 @@ function openProductDialog(mode='change'){
       input.value=state.operator||'';
     }
   }
+  const scheduledRow=$('scheduled-shift-preview');
+  if(scheduledRow){
+    scheduledRow.classList.toggle('hidden',mode!=='start');
+    if(mode==='start'&&$('scheduled-shift-value'))$('scheduled-shift-value').textContent=shiftDisplay(scheduledShiftInfo());
+  }
   const languageRow=$('shift-language-picker');
   if(languageRow){
     languageRow.classList.toggle('hidden',mode!=='start');
@@ -3260,7 +3713,38 @@ function saveShift(){
   else lineRemove(SHIFT_KEY);
   lineSet(SHIFT_ARCHIVE_KEY,JSON.stringify((state.shiftArchive||[]).slice(-100)));
 }
+
+function closeExpiredShiftForSchedule(){
+  if(!state.activeShift)return false;
+  const current=scheduledShiftInfo();if(!current)return false;
+  if(!state.activeShift.shiftCode){
+    const inferred=scheduledShiftInfo(new Date(state.activeShift.startedAt||Date.now()));
+    if(inferred){state.activeShift.shiftCode=inferred.code;state.activeShift.shiftType=inferred.type;state.activeShift.shiftWorkDate=inferred.workDate;state.activeShift.scheduledStart=inferred.start;state.activeShift.scheduledEnd=inferred.end;saveShift();}
+  }
+  if(String(state.activeShift.shiftCode||'')===String(current.code||'')&&String(state.activeShift.shiftWorkDate||'')===String(current.workDate||''))return false;
+  finalizeRecommendationOpportunity('not_used','shift_boundary');
+  recordQualityEvent('shift_boundary_closed',{previousShiftCode:state.activeShift.shiftCode,nextShiftCode:current.code,product:state.activeShift.product,operator:state.activeShift.operator});
+  const currentRun=state.activeShift.runs?.find(r=>r.id===state.activeShift.runId);if(currentRun&&!currentRun.endedAt)currentRun.endedAt=new Date().toISOString();
+  state.shiftArchive.push({...state.activeShift,endedAt:new Date().toISOString(),autoClosedBySchedule:true,cuts:state.bwTrendHistory.filter(x=>x.shiftId===state.activeShift.id).length});
+  state.activeShift=null;clearPendingCutForRun();saveShift();saveSession();
+  return true;
+}
+function hasActiveScheduledShift(){closeExpiredShiftForSchedule();return !!state.activeShift;}
+function requireActiveShift({openStart=false}={}){
+  if(hasActiveScheduledShift())return true;
+  const sched=scheduledShiftInfo();
+  showToast(state.language==='es'?`Debes empezar el Turno ${sched?.code||''} antes de usar cálculos de producción.`:`Start ${sched?.code||'the scheduled'} Shift before using production calculations.`);
+  if(openStart)startShift();
+  return false;
+}
+
+function activeShiftChatGate(){
+  if(hasActiveScheduledShift())return null;
+  const sched=scheduledShiftInfo();
+  return {kind:'info',title:chatLang('START SHIFT REQUIRED','DEBES EMPEZAR EL TURNO','QUART REQUIS'),message:chatLang(`Production calculations are locked until ${sched?.code||'the scheduled'} Shift is started. Say “start Line ${ACTIVE_LINE}”.`,`Los cálculos de producción están bloqueados hasta empezar el Turno ${sched?.code||'programado'}. Dime “empezar línea ${ACTIVE_LINE}”.`,`Démarrez le quart programmé.`)};
+}
 function renderShiftPanel(){
+  closeExpiredShiftForSchedule();
   renderOperatorGreeting();
   renderLastWinderBW();
   if($('active-line-label'))$('active-line-label').textContent=`LINE ${ACTIVE_LINE}`;
@@ -3269,7 +3753,8 @@ function renderShiftPanel(){
   $('running-swrap')?.classList.toggle('running',active);
   $('running-swrap')?.classList.toggle('stopped',!active);
   $('shift-status-title').innerHTML=active?`<span class="shift-title-prefix">${shiftText('active')}</span><span class="shift-title-line">LINE ${ACTIVE_LINE}</span><span class="shift-title-date">${state.activeShift.name||'—'}</span>`:shiftText('inactive');
-  $('shift-status-meta').textContent=active?`${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • ${state.activeShift.startedAt.slice(0,10)} • S-Wrap ${fmt(state.currentSWrap,1)}`:shiftText('inactiveMeta');
+  const sched=scheduledShiftInfo();
+  $('shift-status-meta').textContent=active?`${state.activeShift.shiftCode||sched?.code||'—'} Shift • ${state.activeShift.product} • Target ${fmt(targetFromProduct(state.activeShift.product)||state.targetBW)} • S-Wrap ${fmt(state.currentSWrap,1)}`:`${shiftText('inactiveMeta')} ${sched?`Scheduled now: ${sched.code} Shift.`:''}`;
   const shiftButton=$('start-shift');
   if(shiftButton){
     shiftButton.querySelector('strong').textContent=active?shiftText('end'):shiftText('start');
@@ -3289,15 +3774,17 @@ function clearPendingCutForRun(){
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null};
   renderPendingCut();
 }
-function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null,shiftLanguage=null){
-  const name=new Date().toLocaleDateString();
+function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null,shiftLanguage=null,operatorName=null){
+  const sched=scheduledShiftInfo();
+  if(!sched)return showToast(state.language==='es'?'No pude determinar el turno programado. Revisa la fecha y hora del dispositivo.':'Unable to determine the scheduled shift. Check the device date and time.');
+  const name=`${sched.code} Shift • ${sched.workDate}`;
   product=normalizeProduct(product);
   if(!product)return showToast(shiftText('needProduct'));
-  const operatorCheck=validateOperatorName($('product-operator')?.value||state.operator||'');
-  if(!operatorCheck.ok)return showToast(state.language==='es'?'Ingresa un nombre de operador válido.':state.language==='fr'?"Saisissez un nom d’opérateur valide.":'Please enter a valid operator name.');
+  const operatorCheck=validateOperatorName(operatorName||$('product-operator')?.value||state.operator||'');
+  if(!operatorCheck.ok){showToast(state.language==='es'?'Ingresa un nombre de operador válido.':state.language==='fr'?"Saisissez un nom d’opérateur valide.":'Please enter a valid operator name.');return false;}
   const operator=operatorCheck.name;
-  shiftLanguage=String(shiftLanguage||$('product-language')?.value||'').trim();
-  if(!['en','es'].includes(shiftLanguage))return showToast(state.language==='es'?'Selecciona el idioma del turno.':'Select the shift language.');
+  shiftLanguage=String(shiftLanguage||$('product-language')?.value||state.language||'en').trim();
+  if(!['en','es'].includes(shiftLanguage))shiftLanguage='en';
   if(state.language!==shiftLanguage)applyLanguage(shiftLanguage,false);
   state.operator=operator;
   lineSet(OPERATOR_KEY,operator);
@@ -3305,21 +3792,24 @@ function commitStartShift(product,extruder=selectedExtruder,dialogSWrap=null,shi
   applyAutomaticMandrelForProduct(product,{forceDefault:true});
   const target=syncTargetFromProduct(product);
   const requestedSWrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
-  if(!positive(target,requestedSWrap))return showToast(t('invalidNumbers'));
+  if(!positive(target,requestedSWrap)){showToast(t('invalidNumbers'));return false;}
   const swrap=clampSWrap(requestedSWrap);
   if(requestedSWrap>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());
   extruder=ACTIVE_LINE;
   const now=new Date().toISOString();
-  state.activeShift={id:newId('shift'),name,operator,language:shiftLanguage,extruder,startedAt:now,product,runId:newId('run'),runs:[{id:null,extruder,operator,language:shiftLanguage,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
+  state.activeShift={id:newId('shift'),name,operator,language:shiftLanguage,shiftCode:sched.code,shiftType:sched.type,shiftWorkDate:sched.workDate,scheduledStart:sched.start,scheduledEnd:sched.end,extruder,startedAt:now,product,currentSWrap:swrap,runId:newId('run'),runs:[{id:null,extruder,operator,language:shiftLanguage,shiftCode:sched.code,shiftType:sched.type,shiftWorkDate:sched.workDate,product,targetBW:target,swrap,startedAt:now,materialLbs:0,cutCount:0}]};
   state.activeShift.runs[0].id=state.activeShift.runId;
   $('bw-product').value=product; $('bw-target').value=String(target); $('bw-current-swrap').value=fmt(swrap,1);
   state.product=product; saveOptimizerSettings(target,swrap); clearPendingCutForRun(); saveShift(); saveSession();
-  renderShiftPanel(); renderTrendPanel(analyzeTrend()); renderLearningDashboard(); showToast(shiftText('started',{product,extruder}));
+  recordQualityEvent('shift_started',{shiftCode:sched.code,shiftWorkDate:sched.workDate,product,operator,initialSWrap:swrap,targetBW:target});
+  renderShiftPanel(); renderTrendPanel(analyzeTrend()); renderLearningDashboard(); showToast(shiftText('started',{product,extruder})+` • ${sched.code} Shift`);
   closeProductDialog();
+  return true;
 }
 function startShift(){ openProductDialog('start'); }
 function commitProductChange(product,dialogSWrap=null){
   if(!state.activeShift)return commitStartShift(product,selectedExtruder,dialogSWrap);
+  finalizeRecommendationOpportunity('not_used','changeover');
   if((Number.isFinite(pendingCut.winder1)||Number.isFinite(pendingCut.winder2))&&!confirm(shiftText('pendingDiscard')))return false;
   product=normalizeProduct(product);
   if(!product)return false;
@@ -3327,14 +3817,16 @@ function commitProductChange(product,dialogSWrap=null){
   applyAutomaticMandrelForProduct(product,{forceDefault:true});
   const target=syncTargetFromProduct(product);
   if(!target)return showToast(shiftText('needProduct'));
+  const beforeSWrap=Number(state.currentSWrap);
   const requestedSWrap=Number(dialogSWrap ?? $('bw-current-swrap').value ?? state.currentSWrap);
   if(!positive(requestedSWrap)) return showToast(t('invalidNumbers'));
   const swrap=clampSWrap(requestedSWrap);
   if(requestedSWrap>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());
   $('bw-current-swrap').value=fmt(swrap,1); state.currentSWrap=swrap;
+  recordSWrapChange(beforeSWrap,swrap,'changeover',{fromProduct:old,toProduct:product});
   if(product===old){$('bw-product').value=product;saveOptimizerSettings(target,swrap);renderShiftPanel();closeProductDialog();return true;}
   const currentRun=state.activeShift.runs.find(r=>r.id===state.activeShift.runId);if(currentRun)currentRun.endedAt=new Date().toISOString();
-  const run={id:newId('run'),extruder:state.activeShift.extruder,product,targetBW:target,swrap,startedAt:new Date().toISOString(),materialLbs:0,cutCount:0};
+  const run={id:newId('run'),extruder:state.activeShift.extruder,operator:state.activeShift.operator,language:state.activeShift.language,shiftCode:state.activeShift.shiftCode,shiftType:state.activeShift.shiftType,shiftWorkDate:state.activeShift.shiftWorkDate,product,targetBW:target,swrap,startedAt:new Date().toISOString(),materialLbs:0,cutCount:0};
   state.activeShift.product=product;state.activeShift.runId=run.id;state.activeShift.runs.push(run);
   state.product=product;$('bw-product').value=product;$('bw-target').value=String(target);
   saveOptimizerSettings(target,swrap);
@@ -3348,6 +3840,8 @@ function changeProduct(nextProduct=null){
 }
 function endShift(){
   if(!state.activeShift)return;
+  finalizeRecommendationOpportunity('not_used','shift_end');
+  recordQualityEvent('shift_ended',{shiftCode:state.activeShift.shiftCode,shiftWorkDate:state.activeShift.shiftWorkDate,product:state.activeShift.product,operator:state.activeShift.operator});
   const currentRun=state.activeShift.runs.find(r=>r.id===state.activeShift.runId);if(currentRun)currentRun.endedAt=new Date().toISOString();
   const completed={...state.activeShift,endedAt:new Date().toISOString(),cuts:state.bwTrendHistory.filter(x=>x.shiftId===state.activeShift.id).length};
   state.shiftArchive.push(completed);state.activeShift=null;clearPendingCutForRun();saveShift();saveSession();renderShiftPanel();renderTrendPanel(analyzeTrend());showToast(shiftText('ended'));
@@ -3393,27 +3887,111 @@ function waitingSecondMessage(){
   if(state.language==='fr') return "Winder enregistré. En attente de l’autre winder; aucune tendance ni suggestion pour le moment.";
   return 'Winder saved. Waiting for the other winder; no trend or recommendation is recorded yet.';
 }
-function individualWinderStatus(value){
+function individualWinderStatus(value,index=1){
   if(!Number.isFinite(value)) return {level:'idle',label:'',difference:null};
   const target=Number($('bw-target')?.value||state.targetBW);
   if(!positive(target)) return {level:'idle',label:'',difference:null};
-  const difference=Math.abs(value-target);
-  if(difference<=0.17) return {level:'green',label:state.language==='es'?'EN OBJETIVO':state.language==='fr'?'DANS LA CIBLE':'ON TARGET',difference};
-  if(difference<0.25) return {level:'yellow',label:state.language==='es'?'ADVERTENCIA':state.language==='fr'?'ATTENTION':'WARNING',difference};
-  return {level:'red',label:state.language==='es'?'FUERA DE RANGO':state.language==='fr'?'HORS PLAGE':'OUT OF RANGE',difference};
+  const q=completedWinderQuality(index,value,target);
+  return {level:q.level,label:q.status,difference:Math.abs(q.delta),delta:q.delta};
 }
+function completedWinderQuality(index,value,targetBW){
+  const target=Number(targetBW),actual=Number(value);
+  if(!Number.isFinite(actual)||!positive(target)) return {level:'idle',pass:null,delta:null,status:'—',detail:'—',side:''};
+  const delta=actual-target,abs=Math.abs(delta);
+  const level=abs<=0.17?'green':abs<0.25?'yellow':'red';
+  const pass=level==='green';
+  const side=index===1?'Winder 1 / Bottom Sheet':'Winder 2 / Top Sheet';
+  let status='';
+  if(level==='green')status=chatLang('PASS','PASA','CONFORME');
+  else if(level==='yellow')status=delta>0
+    ?chatLang('HEAVY — WARNING','PESADO — ADVERTENCIA','LOURD — AVERTISSEMENT')
+    :chatLang('LIGHT — WARNING','LIGERO — ADVERTENCIA','LÉGER — AVERTISSEMENT');
+  else status=delta>0
+    ?chatLang('HEAVY — NOT PASS','PESADO — NO PASA','LOURD — NON CONFORME')
+    :chatLang('LIGHT — NOT PASS','LIGERO — NO PASA','LÉGER — NON CONFORME');
+  const detail=level==='green'
+    ?chatLang(`BW ${fmt(actual,3)} • Δ ${delta>=0?'+':''}${fmt(delta,3)} • within ±0.17`,`BW ${fmt(actual,3)} • Δ ${delta>=0?'+':''}${fmt(delta,3)} • dentro de ±0.17`,`BW ${fmt(actual,3)} • Δ ${delta>=0?'+':''}${fmt(delta,3)} • dans ±0,17`)
+    :chatLang(`BW ${fmt(actual,3)} • Δ ${delta>=0?'+':''}${fmt(delta,3)} vs target ${fmt(target,2)}`,`BW ${fmt(actual,3)} • Δ ${delta>=0?'+':''}${fmt(delta,3)} vs objetivo ${fmt(target,2)}`,`BW ${fmt(actual,3)} • Δ ${delta>=0?'+':''}${fmt(delta,3)} vs cible ${fmt(target,2)}`);
+  return {level,pass,delta,status,detail,side};
+}
+function renderCompletedWinderQuality(cut=state.lastCompletedCut){
+  const box=$('individual-winder-quality');
+  if(box)box.classList.add('hidden');
+}
+function renderLineQualityStrip(cut=state.lastCompletedCut){
+  const wrap=$('line-quality-strip'); if(!wrap)return;
+  const target=Number(cut?.targetBW||state.targetBW),w1=Number(cut?.winder1),w2=Number(cut?.winder2);
+  if(!Number.isFinite(w1)||!Number.isFinite(w2)||!positive(target)){wrap.classList.add('hidden');return;}
+  const q1=completedWinderQuality(1,w1,target),q2=completedWinderQuality(2,w2,target),balance=analyzeDieBalance(w1,w2);
+  const setCard=(base,{label,title,detail,level})=>{
+    const el=$(base); if(!el)return;
+    el.classList.remove('green','yellow','red');
+    el.classList.add(level||'green');
+    if($(base+'-label'))$(base+'-label').textContent=label;
+    if($(base+'-title'))$(base+'-title').textContent=title;
+    if($(base+'-detail'))$(base+'-detail').textContent=detail;
+  };
+  setCard('line-quality-w1',{
+    label:chatLang('WINDER 1','WINDER 1','BOBINEUSE 1'),
+    title:`BW ${fmt(w1,3)} • ${q1.status}`,
+    detail:q1.level==='green'
+      ?chatLang('Bottom Sheet within range', 'Bottom Sheet dentro de rango', 'Bottom Sheet dans la plage')
+      :chatLang(`Δ ${q1.delta>=0?'+':''}${fmt(q1.delta,3)} vs target`, `Δ ${q1.delta>=0?'+':''}${fmt(q1.delta,3)} vs objetivo`, `Δ ${q1.delta>=0?'+':''}${fmt(q1.delta,3)} vs cible`),
+    level:q1.level
+  });
+  setCard('line-quality-w2',{
+    label:chatLang('WINDER 2','WINDER 2','BOBINEUSE 2'),
+    title:`BW ${fmt(w2,3)} • ${q2.status}`,
+    detail:q2.level==='green'
+      ?chatLang('Top Sheet within range', 'Top Sheet dentro de rango', 'Top Sheet dans la plage')
+      :chatLang(`Δ ${q2.delta>=0?'+':''}${fmt(q2.delta,3)} vs target`, `Δ ${q2.delta>=0?'+':''}${fmt(q2.delta,3)} vs objetivo`, `Δ ${q2.delta>=0?'+':''}${fmt(q2.delta,3)} vs cible`),
+    level:q2.level
+  });
+  let balanceTitle='—',balanceDetail='—',balanceLevel='green';
+  if(balance.level==='required'){
+    balanceTitle=chatLang('DIE MOVE REQUIRED','DIE MOVE REQUERIDO','DIE MOVE REQUIS');
+    balanceDetail=balance.heavier==='top'
+      ?chatLang(`Top Sheet heavier by ${fmt(balance.difference,2)} BW`,`Top Sheet más pesado por ${fmt(balance.difference,2)} BW`,`Top Sheet plus lourd de ${fmt(balance.difference,2)} BW`)
+      :chatLang(`Bottom Sheet heavier by ${fmt(balance.difference,2)} BW`,`Bottom Sheet más pesado por ${fmt(balance.difference,2)} BW`,`Bottom Sheet plus lourd de ${fmt(balance.difference,2)} BW`);
+    balanceLevel='red';
+  }else if(balance.level==='suggested'){
+    balanceTitle=chatLang('DIE MOVE SUGGESTED','DIE MOVE SUGERIDO','DIE MOVE SUGGÉRÉ');
+    balanceDetail=balance.heavier==='top'
+      ?chatLang(`Top Sheet heavier by ${fmt(balance.difference,2)} BW`,`Top Sheet más pesado por ${fmt(balance.difference,2)} BW`,`Top Sheet plus lourd de ${fmt(balance.difference,2)} BW`)
+      :chatLang(`Bottom Sheet heavier by ${fmt(balance.difference,2)} BW`,`Bottom Sheet más pesado por ${fmt(balance.difference,2)} BW`,`Bottom Sheet plus lourd de ${fmt(balance.difference,2)} BW`);
+    balanceLevel='yellow';
+  }else{
+    balanceTitle=chatLang('NO DIE MOVE REQUIRED','NO REQUIERE DIE MOVE','PAS DE DIE MOVE REQUIS');
+    balanceDetail=chatLang('Sheet balance within 0.25 BW','Balance de sheet dentro de 0.25 BW','Équilibre sheet dans 0.25 BW');
+    balanceLevel='green';
+  }
+  setCard('line-quality-balance',{
+    label:chatLang('SHEET BALANCE','BALANCE DE SHEET','ÉQUILIBRE SHEET'),
+    title:balanceTitle,
+    detail:balanceDetail,
+    level:balanceLevel
+  });
+  wrap.classList.remove('hidden');
+}
+function renderTrendQualityCompact(cut=state.lastCompletedCut){
+  const box=$('trend-quality-compact');if(box)box.classList.add('hidden');
+}
+
 function renderWinderSaved(index,value){
   const block=document.querySelector(index===1?'#bw-weight':'#bw2-weight')?.closest('.winder-block');
   const label=$(index===1?'winder1-required':'winder2-optional');
   const valueEl=$(index===1?'winder1-saved-bw':'winder2-saved-bw');
   const stateEl=$(index===1?'winder1-state':'winder2-state');
-  const status=individualWinderStatus(value);
+  const currentStatus=individualWinderStatus(value,index);
+  const lastValue=Number(index===1?state.lastCompletedCut?.winder1:state.lastCompletedCut?.winder2);
+  const lastStatus=individualWinderStatus(lastValue,index);
   block?.classList.remove('measured','green','yellow','red');
-  if(Number.isFinite(value)) block?.classList.add('measured',status.level);
-  label.textContent=Number.isFinite(value)?'Saved BW':t('required');
+  if(Number.isFinite(value)) block?.classList.add('measured',currentStatus.level);
+  else if(Number.isFinite(lastValue))block?.classList.add(lastStatus.level);
+  label.textContent=Number.isFinite(value)?chatLang('Saved BW','BW guardado','BW enregistré'):t('required');
   valueEl.textContent=Number.isFinite(value)?fmt(value):'—';
   valueEl.classList.toggle('visible',Number.isFinite(value));
-  stateEl.textContent=Number.isFinite(value)?status.label:'';
+  stateEl.textContent=Number.isFinite(value)?currentStatus.label:'';
 }
 function renderPendingCut(){
   renderWinderSaved(1,pendingCut.winder1);
@@ -3444,6 +4022,7 @@ function confirmWinderEntry(index,weight,length){
 }
 
 function calculateSingleWinder(index){
+  if(!requireActiveShift({openStart:true}))return false;
   let weight=Number($(index===1?'bw-weight':'bw2-weight').value);
   let length=Number($(index===1?'bw-length':'bw2-length').value);
   if(!positive(weight,length))return showToast(t('invalidNumbers'));
@@ -3494,6 +4073,10 @@ function renderDieMoveAlert(w1,w2){
 }
 
 function completeDualWinderCut(){
+  if(!requireActiveShift({openStart:true}))return false;
+  // If the previous actionable recommendation reached the next cut without Apply/Keep Current,
+  // count it as a recommendation the operator did not use.
+  finalizeRecommendationOpportunity('not_used','next_cut');
   if(!Number.isFinite(pendingCut.winder1)||!Number.isFinite(pendingCut.winder2)){
     throw new Error(state.language==='es'?'Calcula y guarda los dos winders antes de sacar el promedio.':state.language==='fr'?'Calculez et enregistrez les deux winders avant la moyenne.':'Calculate and save both winders before averaging.');
   }
@@ -3508,18 +4091,22 @@ function completeDualWinderCut(){
   $('bw-meta').textContent=`${pendingCut.mandrel||currentMandrel('bw')}” • ${t('averageBW')}`;
   $('winder-imbalance').textContent=`${t('imbalance')}: ${fmt(difference,2)}`;
   $('winder-imbalance').classList.toggle('warning',difference>=0.25);
-  const dieBalance=renderDieMoveAlert(pair.winder1,pair.winder2);
+  const dieBalance=analyzeDieBalance(pair.winder1,pair.winder2);
+  renderLineQualityStrip({winder1:pair.winder1,winder2:pair.winder2,targetBW:target});
   renderOptimizerPanel(optimizer); renderTrendPanel(trend);
   addHistory('BW',`${t('winder1')} ${fmt(pair.winder1)} + ${t('winder2')} ${fmt(pair.winder2)} → Avg ${fmt(average)} • Target ${fmt(target)} • S-Wrap ${fmt(currentSWrap,1)} • ${optimizer.level.toUpperCase()} • ${pendingCut.mandrel||48}”`);
   const processContext=currentProcessContext();
-  const cutDraft={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,time:new Date().toISOString(),winder1Weight:Number(pendingCut.winder1Input?.weight)||null,winder2Weight:Number(pendingCut.winder2Input?.weight)||null,winder1Length:Number(pendingCut.winder1Input?.length)||null,winder2Length:Number(pendingCut.winder2Input?.length)||null};
+  const cutDraft={averageBW:average,winder1:pair.winder1,winder2:pair.winder2,targetBW:target,currentSWrap,product:processContext.product,mandrel:pendingCut.mandrel||currentMandrel('bw'),extruder:processContext.extruder,shiftId:processContext.shiftId,runId:processContext.runId,shiftCode:state.activeShift?.shiftCode||scheduledShiftCode(),shiftWorkDate:state.activeShift?.shiftWorkDate||scheduledShiftInfo()?.workDate||'',operator:state.activeShift?.operator||state.operator||'',time:new Date().toISOString(),winder1Weight:Number(pendingCut.winder1Input?.weight)||null,winder2Weight:Number(pendingCut.winder2Input?.weight)||null,winder1Length:Number(pendingCut.winder1Input?.length)||null,winder2Length:Number(pendingCut.winder2Input?.length)||null};
   const linkedProcessRecord=bindProcessRecordToCompletedCut(cutDraft);
   state.lastCompletedCut={...cutDraft,processRecordId:linkedProcessRecord?.id||null};
   renderLastWinderBW();
+  renderCompletedWinderQuality(state.lastCompletedCut);
   $('process-setpoint-panel')?.classList.add('hidden');
   // Last BW is operational line state and must persist even in Demo Mode.
   // Learning/production records remain disabled in Demo Mode below.
   lineSet(LAST_COMPLETED_CUT_KEY,JSON.stringify(state.lastCompletedCut));
+  registerRecommendationOpportunity(optimizer,trend);
+  postCutEscalationsPending=true;
   if(!demoMode()){
     const learnedPrediction=learnFromPendingRecommendation(average,pair,processContext);
     if(!learnedPrediction)state.learningEngine.addObservation({targetBW:target,appliedSWrap:currentSWrap,finalBW:average,...processContext,winder1:pair.winder1,winder2:pair.winder2});
@@ -3527,7 +4114,8 @@ function completeDualWinderCut(){
   }
   renderLearningDashboard();
   refreshBrainInsightAfterCut();
-  pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut();
+  pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut(); renderLastWinderBW(); renderLineQualityStrip(state.lastCompletedCut); renderTrendQualityCompact(state.lastCompletedCut);
+  openPostCutRecommendationDecision(optimizer,trend);
 }
 
 
@@ -3576,8 +4164,8 @@ const SETTINGS_DRAFT_KEY='viejitoSettingsDraftV1';
 let settingsDraft=null;
 
 const settingsCopy={
-  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line',demoK:'DEMO / TRAINING',demo:'Demo Mode — Do Not Learn',demoHelp:'Use fake values without adding them to production history, trends, learning, or production totals.',learningK:'LEARNING DATA',learning:'Learning Data Manager',learningHelp:'Review recent learning records for this line and remove incorrect test data.',resetHelp:'Protected maintenance actions. Use only when you intentionally want to erase Adaptive Learning, Trend history, or Process Performance Learning for the selected line.'},
-  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea',demoK:'DEMO / ENTRENAMIENTO',demo:'Modo Demo — No aprender',demoHelp:'Usa valores falsos sin agregarlos al historial, tendencias, aprendizaje ni totales reales de producción.',learningK:'DATOS DE APRENDIZAJE',learning:'Administrador de aprendizaje',learningHelp:'Revisa los registros recientes de esta línea y elimina datos de prueba incorrectos.',resetHelp:'Acciones de mantenimiento protegidas. Úsalas solo cuando realmente quieras borrar Adaptive Learning, el historial de tendencia o Process Performance Learning de la línea seleccionada.'},
+  en:{settings:'Settings',languageK:'LANGUAGE',language:'Application language',appearanceK:'APPEARANCE',appearance:'Display mode',personalityK:'CHAT PERSONALITY',personality:'Sarcasm',bwK:'BASIS WEIGHT',bw:'BW calculation factor',bwHelp:'450 matches the current plant system. 453.59237 uses the exact lb-to-gram conversion. BW and Feet use the selected factor automatically.',save:'Save Changes',saveNote:'Changes are applied only after Save Changes.',saved:'Settings saved.',changeLine:'Change line',demoK:'DEMO / TRAINING',demo:'Demo Mode — Do Not Learn',demoHelp:'Use fake values with a separate demo trend and report history. Demo data never enters real production history, real learning, or production totals.',learningK:'LEARNING DATA',learning:'Learning Data Manager',learningHelp:'Review recent learning records for this line and remove incorrect test data.',resetHelp:'Protected maintenance actions. Use only when you intentionally want to erase Adaptive Learning, Trend history, or Process Performance Learning for the selected line.'},
+  es:{settings:'Ajustes',languageK:'IDIOMA',language:'Idioma de la aplicación',appearanceK:'APARIENCIA',appearance:'Modo de pantalla',personalityK:'PERSONALIDAD DEL CHAT',personality:'Sarcasmo',bwK:'BASIS WEIGHT',bw:'Factor de cálculo BW',bwHelp:'450 coincide con el sistema actual de la planta. 453.59237 usa la conversión exacta de libras a gramos. BW y Feet usan automáticamente el factor seleccionado.',save:'Guardar cambios',saveNote:'Los cambios se aplican solamente después de Guardar cambios.',saved:'Ajustes guardados.',changeLine:'Cambiar línea',demoK:'DEMO / ENTRENAMIENTO',demo:'Modo Demo — No aprender',demoHelp:'Usa valores falsos con historial de tendencia y reporte separado para Demo. Los datos Demo nunca entran al historial real, aprendizaje real ni totales de producción.',learningK:'DATOS DE APRENDIZAJE',learning:'Administrador de aprendizaje',learningHelp:'Revisa los registros recientes de esta línea y elimina datos de prueba incorrectos.',resetHelp:'Acciones de mantenimiento protegidas. Úsalas solo cuando realmente quieras borrar Adaptive Learning, el historial de tendencia o Process Performance Learning de la línea seleccionada.'},
   fr:{settings:'Réglages',languageK:'LANGUE',language:"Langue de l’application",appearanceK:'APPARENCE',appearance:"Mode d’affichage",personalityK:'PERSONNALITÉ DU CHAT',personality:'Sarcasme',bwK:'BASIS WEIGHT',bw:'Facteur de calcul BW',bwHelp:'450 correspond au système actuel de l’usine. 453.59237 utilise la conversion exacte livre-gramme. BW et Feet utilisent automatiquement le facteur sélectionné.',save:'Enregistrer',saveNote:'Les modifications sont appliquées uniquement après Enregistrer.',saved:'Réglages enregistrés.',changeLine:'Changer de ligne',demoK:'DÉMO / FORMATION',demo:'Mode Démo — Ne pas apprendre',demoHelp:'Utilisez des valeurs fictives sans les ajouter à l’historique, aux tendances, à l’apprentissage ou aux totaux de production.',learningK:'DONNÉES D’APPRENTISSAGE',learning:'Gestion des données d’apprentissage',learningHelp:'Consultez les données récentes de cette ligne et supprimez les données de test incorrectes.',resetHelp:'Actions de maintenance protégées. Utilisez-les uniquement pour effacer volontairement les données d’apprentissage de la ligne sélectionnée.'}
 };
 function scopy(key,lang=state.language){return (settingsCopy[lang]||settingsCopy.en)[key]||key;}
@@ -3678,7 +4266,7 @@ function deleteLearningRecord(id){
 }
 function renderDemoModeBanner(){
   const b=$('demo-mode-banner'); if(!b)return; b.classList.toggle('hidden',!demoMode());
-  b.textContent=state.language==='es'?'MODO DEMO — APRENDIZAJE Y DATOS DE PRODUCCIÓN DESACTIVADOS':state.language==='fr'?'MODE DÉMO — APPRENTISSAGE ET DONNÉES DE PRODUCTION DÉSACTIVÉS':'DEMO MODE — LEARNING & PRODUCTION DATA DISABLED';
+  b.textContent=state.language==='es'?'MODO DEMO — DATOS DEMO AISLADOS • PRODUCCIÓN Y APRENDIZAJE REAL DESACTIVADOS':state.language==='fr'?'MODE DÉMO — DONNÉES DÉMO ISOLÉES • PRODUCTION ET APPRENTISSAGE RÉELS DÉSACTIVÉS':'DEMO MODE — ISOLATED DEMO DATA • REAL PRODUCTION & LEARNING DISABLED';
 }
 
 function chatMemoryMode(){return 'separate';}
@@ -3743,7 +4331,7 @@ function hydrateLineState(){
   state.shiftArchive=safeJSON(lineGet(SHIFT_ARCHIVE_KEY,'[]'),[]);
   state.productionTargets=safeJSON(lineGet('viejitoProductionTargetsV1','{}'),{});
   state.latestOptimization=null;
-  state.bwTrendHistory=safeJSON(lineGet(TREND_HISTORY_KEY,'[]'),[]);
+  state.bwTrendHistory=safeJSON(lineGet(activeTrendHistoryKey(),'[]'),[]);
   state.latestTrend=null;
   state.lastCompletedCut=safeJSON(lineGet(LAST_COMPLETED_CUT_KEY,'null'),null);
   state.selectedLine=ACTIVE_LINE;
@@ -3765,11 +4353,20 @@ function renderOperatorGreeting(){
 }
 function renderLastWinderBW(){
   const last=state.lastCompletedCut||null;
-  const w1=Number(last?.winder1),w2=Number(last?.winder2);
-  const l1=$('winder1-last-bw'),l2=$('winder2-last-bw');
-  const label=state.language==='es'?'Último BW':state.language==='fr'?'Dernier BW':'Last BW';
-  if(l1)l1.textContent=`${label}: ${Number.isFinite(w1)?fmt(w1,3):'—'}`;
-  if(l2)l2.textContent=`${label}: ${Number.isFinite(w2)?fmt(w2,3):'—'}`;
+  const target=Number(last?.targetBW||state.targetBW),w1=Number(last?.winder1),w2=Number(last?.winder2);
+  [[1,w1],[2,w2]].forEach(([index,value])=>{
+    const el=$(`winder${index}-last-bw`);
+    const block=document.querySelector(index===1?'#bw-weight':'#bw2-weight')?.closest('.winder-block');
+    if(!Number.isFinite(value)||!positive(target)){
+      if(el)el.textContent='BW —';
+      if(!Number.isFinite(index===1?pendingCut?.winder1:pendingCut?.winder2))block?.classList.remove('green','yellow','red');
+      return;
+    }
+    const q=completedWinderQuality(index,value,target);
+    if(el){el.textContent=`BW ${fmt(value,3)} • ${q.status}`;el.classList.remove('green','yellow','red');el.classList.add(q.level);}
+    const hasPending=Number.isFinite(index===1?pendingCut?.winder1:pendingCut?.winder2);
+    if(block&&!hasPending){block.classList.remove('green','yellow','red');block.classList.add(q.level);}
+  });
 }
 
 // Keep every visible BW/result/recommendation panel synchronized with the selected line.
@@ -3797,6 +4394,9 @@ function renderSelectedLineResult(){
       if($('result-status-title'))$('result-status-title').textContent='';
       if($('result-status-message'))$('result-status-message').textContent='';
     }
+    $('individual-winder-quality')?.classList.add('hidden');
+    $('die-move-alert')?.classList.add('hidden');
+    $('line-quality-strip')?.classList.add('hidden');
     return;
   }
 
@@ -3813,6 +4413,9 @@ function renderSelectedLineResult(){
   }
   if($('bw-meta'))$('bw-meta').textContent=`${mandrel}” • ${t('averageBW')}`;
   renderOptimizerPanel(result);
+  renderCompletedWinderQuality(last);
+  if(Number.isFinite(Number(last.winder1))&&Number.isFinite(Number(last.winder2)))renderDieMoveAlert(Number(last.winder1),Number(last.winder2));
+  else $('die-move-alert')?.classList.add('hidden');
   $('process-setpoint-panel')?.classList.add('hidden');
 }
 
@@ -3858,105 +4461,13 @@ function switchLine(line){
   sessionStorage.setItem('viejitoLineChosenSession','1');
   hydrateLineState();
   renderSelectedLineState();
-  noteOperatorActivity();
-  setTimeout(checkSmartReminders,900);
   showToast(`Line ${line}`);
 }
 function openLinePicker(){}
 function closeLinePicker(){}
 
-const BLADE_REMINDER_KEY='viejitoBladeReminderV1';
-const HYDRATION_REMINDER_KEY='viejitoHydrationReminderV1';
-let lastOperatorActivityAt=Date.now();
-let reminderActivityTimer=null;
-function localDayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function reminderState(key){try{return JSON.parse(lineGet(key,'null')||'null')||{};}catch(_){return {};}}
-function saveReminderState(key,v){lineSet(key,JSON.stringify(v));}
-function bladeReminderState(){return reminderState(BLADE_REMINDER_KEY);}
-function saveBladeReminderState(v){saveReminderState(BLADE_REMINDER_KEY,v);}
-function hydrationReminderState(){return reminderState(HYDRATION_REMINDER_KEY);}
-function saveHydrationReminderState(v){saveReminderState(HYDRATION_REMINDER_KEY,v);}
-function operatorRecentlyActive(){return Date.now()-lastOperatorActivityAt<=20000;}
-function reminderFirstName(){return operatorFirstName()||'';}
-function randomChoice(items){return items[Math.floor(Math.random()*items.length)];}
-function scheduleBladeReminderIfNeeded(){
-  if(!state.activeShift)return;
-  const day=localDayKey(),r=bladeReminderState();
-  if(r.day===day&&(r.done||r.dueAt))return;
-  saveBladeReminderState({day,dueAt:Date.now()+(30+Math.floor(Math.random()*91))*60000,done:false});
-}
-function scheduleHydrationReminderIfNeeded(){
-  if(!state.activeShift)return;
-  const day=localDayKey(),r=hydrationReminderState();
-  if(r.day===day&&Number(r.dueAt))return;
-  const count=r.day===day?Number(r.count)||0:0;
-  if(count>=2)return;
-  saveHydrationReminderState({day,count,dueAt:Date.now()+(60+Math.floor(Math.random()*121))*60000});
-}
-function bladeReminderText(){
-  const n=reminderFirstName();
-  if(state.language==='es')return randomChoice([
-    `${n?n+', ':''}¿ya checaste tu navaja hoy?`,
-    `${n?n+', ':''}cuando tengas un momento, confirma que tu navaja esté bien. ¿Ya la revisaste?`,
-    `Una rápida${n?' para ti, '+n:''}: ¿la navaja ya quedó revisada hoy?`
-  ]);
-  return randomChoice([
-    `${n?n+', ':''}have you checked your blade today?`,
-    `${n?n+', ':''}quick check—have you looked over your blade today?`,
-    `Quick one${n?', '+n:''}: is your blade checked for today?`
-  ]);
-}
-function hydrationReminderText(){
-  const n=reminderFirstName();
-  if(state.language==='es')return randomChoice([
-    `${n?n+', ':''}¿ya tomaste un poco de agua hoy? 💧`,
-    `${n?'Ey '+n+', ':''}cuando tengas chance, échate un poco de agua. 💧`,
-    `${n?n+', ':''}¿cómo vamos? Acuérdate de hidratarte cuando puedas.`,
-    `${n?n+', ':''}turno largo 😅 ¿ya te hidrataste?`
-  ]);
-  return randomChoice([
-    `${n?n+', ':''}have you had some water today? 💧`,
-    `${n?'Hey '+n+', ':''}grab some water when you get a chance. 💧`,
-    `${n?n+', ':''}how’s it going? Remember to hydrate when you get a minute.`,
-    `Long shift${n?', '+n:''} 😅. Staying hydrated?`
-  ]);
-}
-function showSmartReminder(type){
-  if($('smart-reminder-modal')||$('blade-reminder-modal'))return false;
-  const isBlade=type==='blade';
-  const modal=document.createElement('div'); modal.id='smart-reminder-modal'; modal.className='blade-reminder-modal';
-  const question=isBlade?bladeReminderText():hydrationReminderText();
-  const yes=state.language==='es'?(isBlade?'Sí':'Gracias'):isBlade?'Yes':'Got it';
-  const later=state.language==='es'?'Todavía no':'Not yet';
-  modal.innerHTML=`<div class="blade-reminder-card"><strong>${isBlade?'🔪':'💧'} ${escapeHTML(question)}</strong><div><button type="button" class="primary" data-reminder-ok>${escapeHTML(yes)}</button>${isBlade?`<button type="button" class="secondary" data-reminder-later>${escapeHTML(later)}</button>`:''}</div></div>`;
-  document.body.appendChild(modal);
-  modal.querySelector('[data-reminder-ok]').addEventListener('click',()=>{
-    if(isBlade){const r=bladeReminderState();saveBladeReminderState({...r,day:localDayKey(),done:true,dueAt:null});}
-    else{const r=hydrationReminderState(),count=(r.day===localDayKey()?Number(r.count)||0:0)+1;saveHydrationReminderState({day:localDayKey(),count,dueAt:count>=2?null:Date.now()+(90+Math.floor(Math.random()*121))*60000});}
-    modal.remove();
-  });
-  modal.querySelector('[data-reminder-later]')?.addEventListener('click',()=>{const r=bladeReminderState();saveBladeReminderState({...r,day:localDayKey(),done:false,dueAt:Date.now()+(45+Math.floor(Math.random()*46))*60000});modal.remove();});
-  return true;
-}
-function checkSmartReminders(){
-  if(!state.activeShift||!operatorRecentlyActive()||$('smart-reminder-modal')||$('blade-reminder-modal'))return;
-  scheduleBladeReminderIfNeeded();
-  scheduleHydrationReminderIfNeeded();
-  const now=Date.now(),day=localDayKey(),blade=bladeReminderState(),water=hydrationReminderState();
-  const bladeDue=blade.day===day&&!blade.done&&Number(blade.dueAt)&&now>=Number(blade.dueAt);
-  const waterDue=water.day===day&&(Number(water.count)||0)<2&&Number(water.dueAt)&&now>=Number(water.dueAt);
-  if(bladeDue&&waterDue){showSmartReminder(Math.random()<0.55?'blade':'hydration');return;}
-  if(bladeDue){showSmartReminder('blade');return;}
-  if(waterDue)showSmartReminder('hydration');
-}
-function noteOperatorActivity(){
-  lastOperatorActivityAt=Date.now();
-  if(reminderActivityTimer)return;
-  reminderActivityTimer=setTimeout(()=>{reminderActivityTimer=null;checkSmartReminders();},700);
-}
-['pointerdown','mousemove','keydown','touchstart'].forEach(type=>document.addEventListener(type,noteOperatorActivity,{passive:true}));
-setInterval(checkSmartReminders,45000);
-setTimeout(()=>{scheduleBladeReminderIfNeeded();scheduleHydrationReminderIfNeeded();},5000);
+// 5.34.6 — random hydration/blade reminders removed by operator request.
+
 
 $('chat-form').addEventListener('submit',event=>{
   event.preventDefault();
@@ -4027,6 +4538,8 @@ document.querySelectorAll('[data-draft-theme]').forEach(b=>b.addEventListener('c
 document.querySelectorAll('[data-draft-personality]').forEach(b=>b.addEventListener('click',()=>{if(settingsDraft){settingsDraft.personality=b.dataset.draftPersonality;renderSettingsDraft();}}));
 document.querySelectorAll('[data-draft-bw-factor]').forEach(b=>b.addEventListener('click',()=>{if(settingsDraft){settingsDraft.bwFactor=Number(b.dataset.draftBwFactor);renderSettingsDraft();}}));
 $('settings-save')?.addEventListener('click',saveSettingsDraft);
+$('post-cut-accept')?.addEventListener('click',acceptPostCutRecommendation);
+$('post-cut-continue')?.addEventListener('click',continueRunningPostCut);
 $('accept-swrap-recommendation')?.addEventListener('click',acceptSWrapRecommendation);
 $('reject-swrap-recommendation')?.addEventListener('click',rejectSWrapRecommendation);
 
@@ -4038,8 +4551,8 @@ $('personality-select').addEventListener('change',event=>{
 $('winder1-calc').addEventListener('click',()=>{try{calculateSingleWinder(1);}catch(e){showToast(e.message);}});
 $('winder2-calc').addEventListener('click',()=>{try{calculateSingleWinder(2);}catch(e){showToast(e.message);}});
 $('bw-calc').addEventListener('click',()=>{try{completeDualWinderCut();}catch(e){showToast(e.message);}});
-$('ft-calc').addEventListener('click',()=>{try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
-$('sw-calc').addEventListener('click',()=>{try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),raw=rawSWrapCalculation(a,s,target),r=clampSWrap(raw);$('sw-result').textContent=fmt(r,1);if(raw>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}${raw>MAX_SWRAP_SPEED?' • MAX 228':''}`);}catch(e){showToast(e.message);}});
+$('ft-calc').addEventListener('click',()=>{if(!requireActiveShift({openStart:true}))return;try{const bw=Number($('ft-bw').value),w=Number($('ft-weight').value),m=currentMandrel('ft'),r=calculateFT(bw,w,m);$('ft-result').textContent=`${fmt(r,0)} ft`;$('ft-meta').textContent=m===48?t('defaultMandrel',{m}):t('mandrelOnly',{m});addHistory('FT',`${fmt(r,0)} ft • BW ${bw} / ${w} lb • ${m}”`);}catch(e){showToast(e.message);}});
+$('sw-calc').addEventListener('click',()=>{if(!requireActiveShift({openStart:true}))return;try{const a=Number($('sw-current').value),s=Number($('sw-speed').value),target=Number($('sw-target').value),raw=rawSWrapCalculation(a,s,target),r=clampSWrap(raw);$('sw-result').textContent=fmt(r,1);if(raw>MAX_SWRAP_SPEED)showToast(swrapLimitCopy());addHistory('S-Wrap',`${fmt(r,1)} speed • ${a} × ${s} ÷ ${target}${raw>MAX_SWRAP_SPEED?' • MAX 228':''}`);}catch(e){showToast(e.message);}});
 
 $('record-result-toggle').addEventListener('click',()=>{$('learning-form').classList.toggle('hidden');});
 $('cancel-learning').addEventListener('click',()=>{$('learning-form').classList.add('hidden');});
@@ -4052,7 +4565,7 @@ $('clear-learning')?.addEventListener('click',()=>{
 $('clear-trend')?.addEventListener('click',()=>{
   const ok=confirm(state.language==='es'?`¿Borrar TODO el historial de tendencia de Line ${ACTIVE_LINE}? Esta acción no se puede deshacer.`:state.language==='fr'?`Effacer TOUT l’historique de tendance de Line ${ACTIVE_LINE} ? Cette action est irréversible.`:`Erase ALL trend history for Line ${ACTIVE_LINE}? This cannot be undone.`);
   if(!ok)return;
-  state.bwTrendHistory=[];lineRemove(TREND_HISTORY_KEY);saveAcceptedPreventiveTrend(null);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));
+  state.bwTrendHistory=[];lineRemove(activeTrendHistoryKey());saveAcceptedPreventiveTrend(null);renderTrendPanel(analyzeTrend());showToast(ot('trendCleared'));
 });
 $('clear-process-learning')?.addEventListener('click',()=>{
   const ok=confirm(state.language==='es'?`¿Borrar TODO el aprendizaje de Primary/Secondary/output de Line ${ACTIVE_LINE}? Esta acción no se puede deshacer.`:state.language==='fr'?`Effacer TOUT l’apprentissage process de Line ${ACTIVE_LINE} ? Cette action est irréversible.`:`Erase ALL Primary/Secondary/output process learning for Line ${ACTIVE_LINE}? This cannot be undone.`);
@@ -4060,7 +4573,6 @@ $('clear-process-learning')?.addEventListener('click',()=>{
   state.processLearning.clear();
   showToast(state.language==='es'?'Aprendizaje de desempeño del proceso borrado.':'Process Performance Learning cleared.');
 });
-$('apply-preventive-swrap')?.addEventListener('click',acceptPreventiveSWrapChange);
 $('clear-history').addEventListener('click',()=>{state.history=[];lineRemove('viejitoHistory');renderHistory();showToast(t('historyCleared'));});
 $('production-target')?.addEventListener('click',openProductionDialog);
 $('manual-process-open')?.addEventListener('click',openManualProcessDialog);
@@ -4081,15 +4593,18 @@ $('daily-report-dialog')?.addEventListener('click',event=>{if(event.target===$('
 $('daily-report-period')?.addEventListener('change',()=>{updateDailyReportPeriodUI();renderDailyReportPreview();});
 $('daily-report-date')?.addEventListener('change',renderDailyReportPreview);
 $('daily-report-scope')?.addEventListener('change',renderDailyReportPreview);
+$('daily-report-shift')?.addEventListener('change',renderDailyReportPreview);
 $('daily-report-refresh')?.addEventListener('click',renderDailyReportPreview);
 $('daily-report-print')?.addEventListener('click',printDailyReport);
+$('lead-confirm-yes')?.addEventListener('click',()=>saveLeadConfirmation('yes'));
+$('lead-confirm-no')?.addEventListener('click',()=>saveLeadConfirmation('no'));
 $('production-summary-toggle')?.addEventListener('click',openProductionDialog);
 $('production-dialog-close')?.addEventListener('click',closeProductionDialog);
 $('production-dialog')?.addEventListener('click',event=>{if(event.target===$('production-dialog'))closeProductionDialog();});
 $('target-lbs-hour')?.addEventListener('input',updateProductionTargetPreview);
 $('target-shift-hours')?.addEventListener('input',updateProductionTargetPreview);
 $('save-production-target')?.addEventListener('click',saveCurrentProductionTarget);
-setInterval(()=>{if(state.activeShift)renderProductionDashboard();},30000);
+setInterval(()=>{const closed=closeExpiredShiftForSchedule();if(closed){renderShiftPanel();renderTrendPanel(analyzeTrend());}else if(state.activeShift)renderProductionDashboard();},30000);
 $('start-shift').addEventListener('click',()=>{if(state.activeShift)endShift();else startShift();});
 $('change-product').addEventListener('click',()=>changeProduct());
 $('end-shift')?.addEventListener('click',endShift);
@@ -4130,7 +4645,13 @@ $('bw-product').addEventListener('input',()=>{
   if(!state.activeShift||typed===live)syncTargetFromProduct($('bw-product').value);
   saveSession();
 });
-$('bw-current-swrap').addEventListener('input',()=>syncCurrentSWrap($('bw-current-swrap').value));
+let manualSWrapEditStart=null;
+$('bw-current-swrap').addEventListener('focus',()=>{manualSWrapEditStart=Number(state.currentSWrap);});
+$('bw-current-swrap').addEventListener('input',()=>{if(!hasActiveScheduledShift())return;syncCurrentSWrap($('bw-current-swrap').value);});
+$('bw-current-swrap').addEventListener('change',()=>{
+  if(!state.activeShift)return;
+  const before=Number(manualSWrapEditStart),after=Number(state.currentSWrap);recordSWrapChange(before,after,'manual_input');manualSWrapEditStart=after;
+});
 $('theme-toggle').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem('viejitoTheme',document.documentElement.classList.contains('light')?'light':'dark');});
 window.addEventListener('online',updateConnection);
 window.addEventListener('offline',updateConnection);
@@ -4186,7 +4707,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.33.1',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.34.6',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

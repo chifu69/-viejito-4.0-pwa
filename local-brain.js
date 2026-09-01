@@ -1,4 +1,4 @@
-/* Industrial IA 5.33.1 — Viejito Local Brain
+/* Industrial IA 5.34.6 — Viejito Local Brain
    Deterministic offline orchestration layer. No LLM, no network calls.
    It plans which existing Viejito skills to use and ranks findings by operational priority.
 */
@@ -24,7 +24,7 @@
   }
 
   class ViejitoLocalBrain{
-    constructor({version='5.33.1',name='Viejito Local Brain'}={}){
+    constructor({version='5.34.6',name='Viejito Local Brain'}={}){
       this.version=version;
       this.name=name;
       this.skills=new Map();
@@ -58,7 +58,7 @@
       if(/\b(brain status|brain skills|local brain|cerebro local|estado del brain|estado del cerebro|que sabe el brain|que sabe el cerebro)\b/.test(q))hit('brain_status',100,'explicit brain request');
       if(/\b(compare|comparison|which line|best line|worst line|compare lines|compara|comparar|cual linea|que linea|mejor linea|peor linea|las cuatro lineas|4 lineas)\b/.test(q))hit('compare_lines',96,'cross-line comparison');
       if(/\b(review everything|full review|analyze everything|check everything|overall health|what should i watch|what needs attention|revisa todo|analiza todo|checa todo|revision completa|salud de la linea|que debo vigilar|que necesita atencion|como ves la linea)\b/.test(q))hit('full_review',94,'composite line review');
-      if(/\b(how are we|how is line|line status|current status|status line|como vamos|estado de la linea|como esta la linea|como va la linea|running|corriendo)\b/.test(q) || (/\b(status|estado|como va|como esta|how is)\b/.test(q)&&/\b(line|linea|extruder|extrusor)\s*[1-4]?\b/.test(q)))hit('line_health',90,'line health');
+      if(/\b(how are we|how is line|line status|current status|status line|what happened with|what happened to|como vamos|estado de la linea|como esta la linea|como va la linea|que paso con|que pasa con|running|corriendo)\b/.test(q) || (/\b(status|estado|como va|como esta|how is|que paso|what happened)\b/.test(q)&&/\b(line|linea|extruder|extrusor|la)\s*[1-4]?\b/.test(q)))hit('line_health',90,'line health');
       if(/\b(sheet balance|die move|winder 1|winder 2|w1|w2|top sheet|bottom sheet|heavier|heavy side|balance de sheet|desbalance|lado pesado|pesado)\b/.test(q))hit('sheet_balance',86,'sheet balance');
       if(/\b(trend|tendency|projected bw|next bw|rising|falling|going up|going down|tendencia|proximo bw|próximo bw|subiendo|bajando)\b/.test(q))hit('trend_analysis',84,'BW trend');
       if(/\b(production|current rate|target rate|lbs per hour|lbs\/hr|forecast|projected end|produccion|producción|libras por hora|ritmo|proyeccion final|proyección final)\b/.test(q))hit('production_status',82,'production');

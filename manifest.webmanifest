@@ -1,7 +1,7 @@
 {
   "name": "Industrial IA",
   "short_name": "Industrial IA",
-  "description": "Industrial IA 5.33.1 offline industrial assistant with Viejito Local Brain plus printable Daily Quality Reports for BW trend and persistent sheet-balance review across Lines 1-4.",
+  "description": "Industrial IA 5.34.6 offline industrial assistant with mandatory post-cut S-Wrap decisions, accepted-recommendation learning on the next completed cut, top Winder/Sheet Balance quality strip, Average BW and Sheet Balance Lead escalation, isolated Demo reporting, and no random hydration or blade reminders.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",
