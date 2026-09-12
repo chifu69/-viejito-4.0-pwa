@@ -1743,7 +1743,7 @@ function conversationalChat(text){
     return {kind:'info',message:state.language==='es'?`La última recomendación fue S-Wrap ${fmt(last.swrap,1)}${product}.`:`Your last recommended S-Wrap was ${fmt(last.swrap,1)}${product}.`};
   }
   if(/^(thanks|thank you|gracias|merci)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'De nada. Aquí estoy.':state.language==='fr'?`Avec plaisir. Je suis là.`:`You're welcome. I'm here.`};
-  if(/(what can you do|qué puedes hacer|que puedes hacer|qué haces|que haces|help me|ayuda)/.test(q))return {kind:'info',title:state.language==='es'?'Puedo ayudarte con la línea':'Line assistant',message:state.language==='es'?`Puedo operar las funciones principales de Viejito desde el chat: BW/Feet/S-Wrap, winders y cortes, estado/tendencia por línea, Changeover, sugerencias preventivas, producción y Adaptive Learning. También tengo un cerebro separado de conocimiento Davis-Standard para proceso/troubleshooting y Process Performance Learning para aprender Primary RPM + Secondary RPM → output/presión, guardar corridas manuales de dos rollos y consultarlas después en el chat. Para cambios ocasionales e intencionales de velocidad, Tools → Speed Change Advisor calcula un starting point coordinado de Primary + Secondary + Secondary Heat usando Last BW y el output real de dos rollos. Para correcciones normales de BW, S-Wrap sigue siendo el control principal. El S-Wrap nunca se recomienda por encima de ${MAX_SWRAP_SPEED}. Settings y borrado de datos siguen protegidos.`:state.language==='fr'?`Je peux calculer BW et pieds, recommander le S-Wrap, revoir les derniers rouleaux, résumer la ligne et utiliser le cerveau Davis-Standard.`:`I can operate Viejito's main functions from chat: BW/Feet/S-Wrap, winders and cuts, per-line status/trend, Changeover, preventive suggestions, production and Adaptive Learning. I also have a separate Davis-Standard knowledge brain for process/troubleshooting and Process Performance Learning that learns Primary RPM + Secondary RPM → output/pressure behavior, stores manual two-roll process records you can query later in chat. For occasional intentional line-speed changes, Tools → Speed Change Advisor calculates a coordinated Primary + Secondary + Secondary Heat starting point from Last BW and actual two-roll output. Routine BW correction still uses S-Wrap first. S-Wrap is never recommended above ${MAX_SWRAP_SPEED}. Settings and destructive data actions remain protected.`};
+  if(/^(what can you do|qué puedes hacer|que puedes hacer|qué haces|que haces|help me|ayuda)[!?. ]*$/.test(q))return {kind:'info',title:state.language==='es'?'Puedo ayudarte con la línea':'Line assistant',message:state.language==='es'?`Puedo operar las funciones principales de Viejito desde el chat: BW/Feet/S-Wrap, winders y cortes, estado/tendencia por línea, Changeover, sugerencias preventivas, producción y Adaptive Learning. También tengo un cerebro separado de conocimiento Davis-Standard para proceso/troubleshooting y Process Performance Learning para aprender Primary RPM + Secondary RPM → output/presión, guardar corridas manuales de dos rollos y consultarlas después en el chat. Para cambios ocasionales e intencionales de velocidad, Tools → Speed Change Advisor calcula un starting point coordinado de Primary + Secondary + Secondary Heat usando Last BW y el output real de dos rollos. Para correcciones normales de BW, S-Wrap sigue siendo el control principal. El S-Wrap nunca se recomienda por encima de ${MAX_SWRAP_SPEED}. Settings y borrado de datos siguen protegidos.`:state.language==='fr'?`Je peux calculer BW et pieds, recommander le S-Wrap, revoir les derniers rouleaux, résumer la ligne et utiliser le cerveau Davis-Standard.`:`I can operate Viejito's main functions from chat: BW/Feet/S-Wrap, winders and cuts, per-line status/trend, Changeover, preventive suggestions, production and Adaptive Learning. I also have a separate Davis-Standard knowledge brain for process/troubleshooting and Process Performance Learning that learns Primary RPM + Secondary RPM → output/pressure behavior, stores manual two-roll process records you can query later in chat. For occasional intentional line-speed changes, Tools → Speed Change Advisor calculates a coordinated Primary + Secondary + Secondary Heat starting point from Last BW and actual two-roll output. Routine BW correction still uses S-Wrap first. S-Wrap is never recommended above ${MAX_SWRAP_SPEED}. Settings and destructive data actions remain protected.`};
   if(/(who.*operator|quién.*operador|quien.*operador|operador.*quién|operador.*quien)/.test(q)){
     const op=state.activeShift?.operator||state.operator||'';
     return {kind:'info',message:op?(state.language==='es'?`El operador de Line ${ACTIVE_LINE} es ${op}.`:`Line ${ACTIVE_LINE} operator is ${op}.`):(state.language==='es'?`No hay operador seleccionado para Line ${ACTIVE_LINE}.`:`No operator is selected for Line ${ACTIVE_LINE}.`)};
@@ -1778,7 +1778,7 @@ function conversationalChat(text){
   if(/^(ok|okay|alright|got it|vale|está bien|esta bien|bueno|perfecto|bien)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Perfecto. Aquí sigo pendiente.':'Sounds good. I’m right here if you need me.'};
   if(/^(yes|yeah|yep|si|sí|no|nope)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Entendido.':'Got it.'};
   if(/^(bye|goodbye|see you|later|hasta luego|adiós|adios|nos vemos)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?`Nos vemos${first?`, ${first}`:''}. Que tengas buen turno.`:`See you${first?`, ${first}`:''}. Have a good shift.`};
-  if(/(what do you think|qué piensas|que piensas|qué opinas|que opinas)/.test(q))return {kind:'info',message:state.language==='es'?'Dime qué quieres que revise y te doy mi mejor respuesta con los datos que tengo de la línea.':'Tell me what you want me to look at and I’ll give you my best answer from the line data I have.'};
+  if(/^(what do you think|qué piensas|que piensas|qué opinas|que opinas)[!?. ]*$/.test(q))return {kind:'info',message:state.language==='es'?'Dime qué quieres que revise y te doy mi mejor respuesta con los datos que tengo de la línea.':'Tell me what you want me to look at and I’ll give you my best answer from the line data I have.'};
   return null;
 }
 
@@ -1853,7 +1853,7 @@ function predictiveSWrapForBW(outputLbHr,targetBW,mandrel=currentMandrel('bw')){
   return (output*FACTOR_GRAMS_PER_LB*100)/(target*60*12*width);
 }
 function labeledProcessNumber(text,label){
-  const raw=String(text||'');
+  const raw=String(text||'').replace(/,/g,'.');
   const patterns={
     primary:/\b(?:primary|primario)\s*(?:rpm)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
     secondary:/\b(?:secondary|secundario)\s*(?:rpm)?\s*[:=@-]?\s*(\d+(?:\.\d+)?)/i,
@@ -1949,12 +1949,12 @@ function handleProcessPerformanceWorkflow(text){
   const hasWords=/[a-záéíóúñàèùâêîôûç]/i.test(String(text||''));
   // Do not trap normal conversation inside a numeric guided workflow.
   // If Viejito is waiting for a number and the operator asks a normal question,
-  // release the workflow and let interpret() process the same message normally.
+  // preserve the workflow; the dialogue bridge handles and resumes side questions.
   if(chatWorkflow.stage!=='conditions'&&!numericReply&&hasWords){
-    chatWorkflow=null;saveChatWorkflow();return null;
+    return null;
   }
   if(chatWorkflow.stage==='conditions'&&!numericReply&&!conditionsSkip&&hasWords){
-    chatWorkflow=null;saveChatWorkflow();return null;
+    return null;
   }
   const first=numbers(text).find(v=>positive(v));
   if(chatWorkflow.stage==='primary'){
@@ -2004,7 +2004,7 @@ function parseCoordinatedSpeedRequest(text){
     if(change)targetSpeed=Number(change[1]);
   }
   if(!positive(targetSpeed)){
-    const ft=[...raw.matchAll(/(\d+(?:\.\d+)?)\s*(?:ft(?:\/?min)?|fpm)\b/ig)].map(m=>Number(m[1])).filter(positive);
+    const ft=[...raw.matchAll(/(\d+(?:\.\d+)?)\s*(?:ft(?:\/?min)?|fpm)\b/ig)].map(m=>Number(m[1])).filter(value=>positive(value));
     if(ft.length)targetSpeed=ft[ft.length-1];
   }
   if(!positive(targetSpeed))return null;
@@ -2397,14 +2397,12 @@ function processPerformanceChatQuery(text){
   if(coordinated)return positive(coordinated.primaryRPM,coordinated.secondaryRPM)?coordinatedSpeedRecommendation(coordinated):startCoordinatedSpeedWorkflow(coordinated);
   const primary=labeledProcessNumber(text,'primary'),secondary=labeledProcessNumber(text,'secondary');
   const wantsLearn=/\b(learn output|teach output|record output|save output|learn process|teach process|aprender output|ensenar output|enseñar output|guardar output|aprender proceso|guardar proceso)\b/.test(q);
-  if(wantsLearn){
+  if(wantsLearn&&window.ViejitoConversation.mode(text)==='training'){
     const seed={primaryRPM:primary,secondaryRPM:secondary,w1:labeledProcessNumber(text,'w1'),w2:labeledProcessNumber(text,'w2'),minutes:labeledProcessNumber(text,'minutes'),swrapSpeed:labeledProcessNumber(text,'swrap')||state.currentSWrap,melt:labeledProcessNumber(text,'melt'),heat:labeledProcessNumber(text,'heat'),load:labeledProcessNumber(text,'load'),pressure:labeledProcessNumber(text,'pressure')};
     if(positive(seed.primaryRPM,seed.secondaryRPM,seed.w1,seed.w2,seed.minutes,seed.swrapSpeed))return saveProcessPerformanceSample(seed);
     return startProcessLearningWorkflow(seed);
   }
   if(!(positive(primary)&&positive(secondary)))return null;
-  const sampleW1=labeledProcessNumber(text,'w1'),sampleW2=labeledProcessNumber(text,'w2'),sampleMinutes=labeledProcessNumber(text,'minutes');
-  if(positive(sampleW1,sampleW2,sampleMinutes))return saveProcessPerformanceSample({primaryRPM:primary,secondaryRPM:secondary,w1:sampleW1,w2:sampleW2,minutes:sampleMinutes,swrapSpeed:labeledProcessNumber(text,'swrap')||state.currentSWrap,melt:labeledProcessNumber(text,'melt'),heat:labeledProcessNumber(text,'heat'),load:labeledProcessNumber(text,'load'),pressure:labeledProcessNumber(text,'pressure')});
   const troubleshooting=/\b(why|porque|por que|trouble|problem|problema|melt|heat|load|pressure|presion|friction|friccion|hot|cold|caliente|frio|enfriar|cool)\b/.test(q);
   const predictionIntent=/\b(output|rate|lbs|lb hr|bw|basis weight|predict|prediction|predicho|cuanto produce|cuánto produce|que bw|qué bw|s wrap|swrap)\b/.test(q);
   if(troubleshooting&&!predictionIntent)return null;
@@ -2445,7 +2443,7 @@ function handleOutputRateWorkflow(text){
   if(!chatWorkflow||chatWorkflow.type!=='output-rate')return null;
   const q=normalizeKnowledgeQuery(text);
   if(/\b(cancel|cancelar|cancela|annuler)\b/.test(q)){chatWorkflow=null;saveChatWorkflow();return {kind:'info',message:chatLang('Output calculation cancelled.','Cálculo de output cancelado.','Calcul annulé.')};}
-  const vals=numbers(text).filter(positive);
+  const vals=numbers(text).filter(value=>positive(value));
   if(chatWorkflow.stage==='weights'){
     const w1=labeledProcessNumber(text,'w1')||vals[0],w2=labeledProcessNumber(text,'w2')||vals[1];
     if(!positive(w1,w2))return {kind:'info',message:chatLang('Enter both roll weights, for example 520 515.','Escribe los dos pesos, por ejemplo 520 515.','Entrez les deux poids.')};
@@ -2468,7 +2466,7 @@ function standaloneOutputChatQuery(text){
   if(positive(labeledProcessNumber(text,'primary'),labeledProcessNumber(text,'secondary')))return null;
   const w1=labeledProcessNumber(text,'w1'),w2=labeledProcessNumber(text,'w2'),mins=labeledProcessNumber(text,'minutes');
   if(positive(w1,w2,mins))return outputRateResult(w1,w2,mins);
-  const vals=numbers(text).filter(positive);
+  const vals=numbers(text).filter(value=>positive(value));
   if(positive(w1,w2))return startOutputRateWorkflow(w1,w2);
   if(vals.length>=3&&/\b(min|mins|minutes|minutos)\b/.test(q))return outputRateResult(vals[0],vals[1],vals[2]);
   if(vals.length>=2)return startOutputRateWorkflow(vals[0],vals[1]);
@@ -2494,6 +2492,7 @@ function productionStatusForChat(){
   return {kind:'result',title:chatLang('Production status','Estado de producción','État de production'),message:chatLang(`Current ${fmt(stats.rate,0)} lbs/hr${target?` • Target ${fmt(target,0)} lbs/hr`:''} • Projected end ${fmt(stats.projected,0)} lb. ${forecast}`,`Actual ${fmt(stats.rate,0)} lbs/hr${target?` • Target ${fmt(target,0)} lbs/hr`:''} • Proyección final ${fmt(stats.projected,0)} lb. ${forecast}`,`Actuel ${fmt(stats.rate,0)} lb/h. ${forecast}`)};
 }
 function chatActionCommand(text){
+  if(window.ViejitoConversation.mode(text)!=='action')return null;
   const q=normalizeKnowledgeQuery(text);
   const requested=requestedLineNumber(text);
   const startVerb=/\b(start|begin|run|empezar|empieza|iniciar|inicia|arrancar|arranca|comenzar|comienza)\b/.test(q);
@@ -2574,7 +2573,7 @@ function chatActionCommand(text){
 }
 
 function unsupportedChatResponse(){
-  return {kind:'info',message:state.language==='es'?'Lo siento, todavía no tengo la capacidad de entender lo que me pides.':state.language==='fr'?`Désolé, je n’ai pas encore la capacité de comprendre cette demande.`:`Sorry, I don’t have the ability to understand that request yet.`};
+  return {kind:'info',dialogueTransient:true,message:state.language==='es'?'Me falta precisar qué quieres revisar. ¿Es el BW, el desbalance de winders, la producción o el proceso? Puedes describir el síntoma o escribir «continuar» para retomar los datos pendientes.':'I need to clarify what you want to review: BW, winder balance, production or process? Describe the symptom, or say “continue” to resume pending values.'};
 }
 
 
@@ -3046,7 +3045,7 @@ function localIntelligenceQuery(text){
   return null;
 }
 
-function interpret(text){
+function interpretLegacy(text){
   // Finish an active guided workflow before generic numeric parsing.
   if(chatWorkflow?.type==='start-line'){
     const startFlow=handleStartLineChatWorkflow(text); if(startFlow)return startFlow;
@@ -4477,11 +4476,19 @@ $('chat-form').addEventListener('submit',event=>{
   bubble('user',text);
   saveChatMessage('user',text);
   input.value='';
+  const submittedLine=ACTIVE_LINE;
   setTimeout(()=>{
-    inChatQuery=true;
-    const response=interpret(text);
-    rememberChatRecommendation(response);
-    inChatQuery=false;
+    if(ACTIVE_LINE!==submittedLine)return;
+    const wasInChatQuery=inChatQuery;
+    let response;
+    try{
+      inChatQuery=true;
+      response=interpret(text);
+      rememberChatRecommendation(response);
+    }catch(error){
+      console.error('Unable to complete chat turn',error);
+      response={kind:'error',message:chatLang('Unable to complete this reply. Please try again.','No pude completar esta respuesta. Inténtalo de nuevo.','Impossible de répondre. Réessayez.')};
+    }finally{inChatQuery=wasInChatQuery;}
     if(response?.kind==='result' && !response.sarcasm && (state.personality==='light' || state.personality==='heavy')){
       response.sarcasm=getSarcasmLine();
     }
@@ -4707,7 +4714,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.34.6',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.34.7',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

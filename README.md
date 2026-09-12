@@ -1,4 +1,27 @@
-# Industrial IA V5.16 — Line Learning Intelligence
+# Industrial IA — Local Dialogue Update (5.34.7)
+
+The chat now uses a local deterministic conversation engine (`conversation-engine.js`) and a dialogue bridge (`chat-dialogue.js`). No LLM, external service, or new runtime dependency is required by the PWA.
+
+- Separate dialogue memory for each active line and demo/production namespace; persisted context expires after 12 hours on reload.
+- Numeric output replies such as `520 515` and then `10` work correctly.
+- Ask a side question during a guided form without losing the collected values. Use `pausa` / `pause`, `continuar` / `continue`, or `cancelar` / `cancel`.
+- Process forms accept several labeled values in one message, such as `Primary 100 Secondary 8 W1 520 W2 515 10 minutos`.
+- Chat BW calculations accept separate weight/length replies, explanations (`¿por qué?`), corrections (`perdón, 530 lb`) and mandrel follow-ups (`¿y con 51?`).
+- Line follow-ups reuse the current review topic without switching the operational line. Commands with ambiguous cross-line context ask the operator to select the intended line first.
+- Negated instructions do not apply changes. S-Wrap what-if simulations use a recent measured cut and a constant-output assumption, with no operational write or training.
+- Saving process samples requires an explicit training request or completion of an explicitly started training form. Merely supplying process numbers in a question does not create a training record.
+- Basic trend/balance troubleshooting tracks a reported adjustment and asks whether the cut was entirely produced after it. These answers remain conversational observations; they do not alter cuts or setpoints.
+- Startup confirmation accepts an unambiguous yes/no; a reply such as `sí pero S-Wrap 175` updates the draft and asks again.
+
+This is a bounded domain dialogue system, not open-ended language understanding. New dialogue copy supports Spanish and English (other selected languages fall back to English in the new bridge). Unknown references are clarified; unsupported simulations are not guessed. Existing process-learning/optimizer limitations are outside this chat update.
+
+### Verification
+
+Run pure engine tests with `node --test tests/conversation.test.cjs`.
+
+Run browser integration tests with `node tests/chat-browser.cjs` with Playwright available to Node. Set `CHROME_PATH` to an installed Chromium/Chrome executable if Playwright's browser is unavailable. The tests serve the app on localhost and use isolated temporary browser contexts, including an offline service-worker reload. They do not use the operator's stored production data.
+
+## Previous release notes — V5.16
 
 ## What changed
 - Shared-computer line selector for Line 1–4. Each line keeps independent shifts, products, BW trend history, S-Wrap learning, production targets and run history.

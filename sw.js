@@ -1,4 +1,4 @@
-const CACHE='industrial-ia-5.34.6-shift-intelligence-quality-report';
+const CACHE='industrial-ia-5.34.7-local-dialogue';
 const APP_FILES=[
   './',
   './index.html',
@@ -9,7 +9,9 @@ const APP_FILES=[
   './shift-schedule.js?v=5.34.6',
   './daily-report.js?v=5.34.6',
   './local-brain.js?v=5.34.6',
-  './app.js?v=5.34.6',
+  './conversation-engine.js?v=5.34.7',
+  './chat-dialogue.js?v=5.34.7',
+  './app.js?v=5.34.7',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',
