@@ -1,8 +1,9 @@
-const CACHE='industrial-ia-5.34.7-local-dialogue';
+const CACHE='industrial-ia-5.35.0-experimental-lab';
 const APP_FILES=[
   './',
   './index.html',
-  './styles.css?v=5.34.6',
+  './styles.css?v=5.35.0',
+  './lab-core.js?v=5.35.0',
   './optimizer.js?v=5.34.6',
   './process-learning.js?v=5.34.6',
   './davis-standard-brain.js?v=5.34.6',
@@ -11,7 +12,8 @@ const APP_FILES=[
   './local-brain.js?v=5.34.6',
   './conversation-engine.js?v=5.34.7',
   './chat-dialogue.js?v=5.34.7',
-  './app.js?v=5.34.7',
+  './app.js?v=5.35.0',
+  './lab-brain.js?v=5.35.0',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

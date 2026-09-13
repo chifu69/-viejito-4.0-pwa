@@ -24,7 +24,7 @@
   }
 
   class ViejitoLocalBrain{
-    constructor({version='5.34.6',name='Viejito Local Brain'}={}){
+    constructor({version='5.35.0',name='Viejito Local Brain'}={}){
       this.version=version;
       this.name=name;
       this.skills=new Map();

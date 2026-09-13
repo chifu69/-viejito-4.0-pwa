@@ -142,9 +142,9 @@ const translations = {
     swSingle: 'I interpreted {n} as S-Wrap speed. To recalculate it, enter current weight, current speed and target weight.',
     newRecommendedSpeed: 'Recommended new speed', onlyMandrels: 'Only 48” and 51” mandrels are supported.',
     recalculatedMandrel: 'Recalculated with {m}” mandrel', defaultChanged: 'Default mandrel changed to {m}”.',
-    introTitle: 'Industrial IA 5.34.6',
+    introTitle: 'Industrial IA 5.35.0',
     intro: 'Ready. Without commands: two numbers calculate BW using the 48” mandrel; 15 through 228 is interpreted as S-Wrap Speed; more than 228 is interpreted as FT. You can force BW, FT or S-Wrap by typing it.',
-    footer: 'Industrial IA 5.34.6 • Daily Quality Report'
+    footer: 'Industrial IA 5.35.0 • Daily Quality Report'
   },
   es: {
     personality: 'Personalidad', chatPersonality: 'Personalidad del chat', professional: 'Profesional',
@@ -170,9 +170,9 @@ const translations = {
     swSingle: 'Interpreté {n} como velocidad de S-Wrap. Para recalcularla escribe: peso actual, velocidad actual y peso objetivo.',
     newRecommendedSpeed: 'Nueva velocidad recomendada', onlyMandrels: 'Solo usamos mandrel de 48” o 51”.',
     recalculatedMandrel: 'Recalculado con mandrel {m}”', defaultChanged: 'Mandrel predeterminado cambiado a {m}”.',
-    introTitle: 'Industrial IA 5.34.6',
+    introTitle: 'Industrial IA 5.35.0',
     intro: 'Listo. Sin comandos: dos números calculan BW con mandrel 48”; de 15 a 228 interpreto S-Wrap Speed; más de 228 interpreto FT. Puedes forzar BW, FT o S-Wrap escribiéndolo.',
-    footer: 'Industrial IA 5.34.6 • Reporte diario + Brain local'
+    footer: 'Industrial IA 5.35.0 • Reporte diario + Brain local'
   },
   fr: {
     personality: 'Personnalité', chatPersonality: 'Personnalité du chat', professional: 'Professionnel',
@@ -198,9 +198,9 @@ const translations = {
     swSingle: 'J’ai interprété {n} comme la vitesse S-Wrap. Pour la recalculer, entrez le poids actuel, la vitesse actuelle et le poids cible.',
     newRecommendedSpeed: 'Nouvelle vitesse recommandée', onlyMandrels: 'Seuls les mandrins de 48” et 51” sont pris en charge.',
     recalculatedMandrel: 'Recalculé avec le mandrin {m}”', defaultChanged: 'Mandrin par défaut changé à {m}”.',
-    introTitle: 'Industrial IA 5.34.6',
+    introTitle: 'Industrial IA 5.35.0',
     intro: 'Prêt. Sans commande : deux nombres calculent BW avec le mandrin de 48”; de 15 à 228 est interprété comme la vitesse S-Wrap; plus de 228 est interprété comme FT. Vous pouvez forcer BW, FT ou S-Wrap en l’écrivant.',
-    footer: 'Industrial IA 5.34.6 • Rapport quotidien + Cerveau local'
+    footer: 'Industrial IA 5.35.0 • Rapport quotidien + Cerveau local'
   }
 };
 
@@ -583,7 +583,7 @@ function optimizeBasisWeight(actualBW,targetBW=state.targetBW,currentSWrap=state
   if(persist) saveOptimizerSettings(normalizedTarget,normalizedSWrap);
   const optimizer=new SmartOptimizer({targetBW:normalizedTarget,currentSWrap:normalizedSWrap,roundMode:'nearest1',learningEngine:state.learningEngine,context:currentProcessContext()});
   const result=optimizer.evaluate(actualBW);
-  // 5.34.6: a green average at the outer edge of the ±0.17 band gets a
+  // 5.35.0: a green average at the outer edge of the ±0.17 band gets a
   // small 2-point preventive S-Wrap option before the next cut enters warning.
   const edgeStart=0.15;
   if(result.level==='green'&&Number(result.absoluteDifference)>=edgeStart&&Number(result.absoluteDifference)<=Number(result.greenTolerance||0.17)){
@@ -1159,6 +1159,7 @@ function learnFromPendingRecommendation(finalBW,pair,processContext){
     const comment=contextualSarcasm(event,{before:pending.beforeBW,after:finalBW,target:pending.targetBW});
     savePendingRecommendation(null);
     showToast(comment || `Viejito learned: predicted ${fmt(pending.predictedBW,3)}, actual ${fmt(finalBW,3)}, error ${error>=0?'+':''}${fmt(error,3)} BW.`);
+    window.ViejitoLab?.notifyProcessDataChanged?.();
     return true;
   }catch(_){return false;}
 }
@@ -1190,6 +1191,7 @@ function saveLearningResult(){
     const refreshed=optimizeBasisWeight(optimization.actualBW,optimization.targetBW,optimization.currentSWrap);
     renderOptimizerPanel(refreshed);
     showToast(ot('learningSaved'));
+    window.ViejitoLab?.notifyProcessDataChanged?.();
   }catch(error){showToast(error.message);}
 }
 
@@ -2577,12 +2579,12 @@ function unsupportedChatResponse(){
 }
 
 
-// V5.34.6 — Viejito Local Brain orchestration layer.
+// V5.35.0 — Viejito Local Brain orchestration layer.
 // This is a deterministic offline brain: it never calls a cloud model and it never writes
 // operational state while answering QUERY/SIMULATION requests. Existing calculators,
 // optimizers and learning engines remain the source of truth; Brain decides which ones to combine.
 const BRAIN_LAST_INSIGHT_KEY='viejitoBrainLastInsightV1';
-const viejitoBrain=window.ViejitoLocalBrain?new window.ViejitoLocalBrain({version:'5.34.6'}):null;
+const viejitoBrain=window.ViejitoLocalBrain?new window.ViejitoLocalBrain({version:'5.35.0'}):null;
 let brainSkillsRegistered=false;
 
 function brainLineSnapshot(line=ACTIVE_LINE){
@@ -2765,7 +2767,7 @@ function brainComposeResponse(run,requestedLine=ACTIVE_LINE){
   const lang=state.language,es=lang==='es',fr=lang==='fr',intent=run.plan.intent;
   if(intent==='brain_status'){
     const count=viejitoBrain.skillNames().length,c=brainContext(requestedLine);
-    return {kind:'info',title:es?'VIEJITO LOCAL BRAIN 🧠':fr?'CERVEAU LOCAL VIEJITO 🧠':'VIEJITO LOCAL BRAIN 🧠',message:es?`Brain 5.34.6 activo y 100% local. ${count} skills conectados. No usa LLM ni internet. Contexto actual: Line ${c.line}, ${c.running?`corriendo ${c.product} a S-Wrap ${fmt(c.currentSWrap,1)}`:'sin turno activo'}.`:fr?`Brain 5.34.6 local actif. ${count} skills connectés.`:`Brain 5.34.6 is active and fully local. ${count} connected skills. No LLM or internet. Current context: Line ${c.line}, ${c.running?`running ${c.product} at S-Wrap ${fmt(c.currentSWrap,1)}`:'no active shift'}.`,brain:{plan:run.plan}};
+    return {kind:'info',title:es?'VIEJITO LOCAL BRAIN 🧠':fr?'CERVEAU LOCAL VIEJITO 🧠':'VIEJITO LOCAL BRAIN 🧠',message:es?`Brain 5.35.0 activo y 100% local. ${count} skills conectados. No usa LLM ni internet. Contexto actual: Line ${c.line}, ${c.running?`corriendo ${c.product} a S-Wrap ${fmt(c.currentSWrap,1)}`:'sin turno activo'}.`:fr?`Brain 5.35.0 local actif. ${count} skills connectés.`:`Brain 5.35.0 is active and fully local. ${count} connected skills. No LLM or internet. Current context: Line ${c.line}, ${c.running?`running ${c.product} at S-Wrap ${fmt(c.currentSWrap,1)}`:'no active shift'}.`,brain:{plan:run.plan}};
   }
   if(intent==='compare_lines'){
     const v=brainResultValue(run,'line.compare');return {kind:'result',title:es?'BRAIN — COMPARACIÓN DE LÍNEAS':'BRAIN — LINE COMPARISON',message:v?.findings?.[0]?.message||v?.summary||'',brain:{plan:run.plan}};
@@ -2811,7 +2813,7 @@ function refreshBrainInsightAfterCut(){
 
 
 
-// V5.34.6 — Daily Quality + Operator Action Report (English output by design).
+// V5.35.0 — Daily Quality + Operator Action Report (English output by design).
 let lastDailyReport=null;
 function dailyReportCopy(){
   return {
@@ -2932,7 +2934,7 @@ function buildDailyReportFromControls(){
 function renderDailyReportPreview(){
   const report=buildDailyReportFromControls(),box=$('daily-report-preview'),c=dailyReportCopy();if(!report||!box)return null;lastDailyReport=report;
   const demoNote=report.demo?' • DEMO DATA — NOT PRODUCTION':'';
-  const header=`<section class="report-sheet"><div class="report-sheet-head"><div><small>INDUSTRIAL IA 5.34.6${demoNote}</small><h4>${escapeHTML(c.title)}</h4></div><div><small>${c.generated}</small><br><strong>${formatReportDateTime(report.generatedAt)}</strong></div></div><div class="report-alert ${report.leadReviewLines.length?'lead':'good'}"><strong>${escapeHTML(formatReportPeriod(report.period,report.generatedAt,report.shift))}</strong><p>${report.totalCuts} cuts • ${report.totalSWrapChanges} S-Wrap changes • ${report.totalRecommendationsApplied} recommendations applied • ${report.totalRecommendationsNotApplied} not applied${report.leadReviewLines.length?` • Lead follow-up: Line ${report.leadReviewLines.join(', ')}`:''}</p></div></section>`;
+  const header=`<section class="report-sheet"><div class="report-sheet-head"><div><small>INDUSTRIAL IA 5.35.0${demoNote}</small><h4>${escapeHTML(c.title)}</h4></div><div><small>${c.generated}</small><br><strong>${formatReportDateTime(report.generatedAt)}</strong></div></div><div class="report-alert ${report.leadReviewLines.length?'lead':'good'}"><strong>${escapeHTML(formatReportPeriod(report.period,report.generatedAt,report.shift))}</strong><p>${report.totalCuts} cuts • ${report.totalSWrapChanges} S-Wrap changes • ${report.totalRecommendationsApplied} recommendations applied • ${report.totalRecommendationsNotApplied} not applied${report.leadReviewLines.length?` • Lead follow-up: Line ${report.leadReviewLines.join(', ')}`:''}</p></div></section>`;
   box.innerHTML=header+report.lines.map(renderDailyReportLine).join('');return report;
 }
 function openDailyReportDialog(){
@@ -2941,7 +2943,7 @@ function openDailyReportDialog(){
 function closeDailyReportDialog(){const d=$('daily-report-dialog');if(d){d.classList.add('hidden');d.setAttribute('aria-hidden','true');}}
 function updateDailyReportPeriodUI(){const calendar=$('daily-report-period')?.value==='calendar';if($('daily-report-date-wrap'))$('daily-report-date-wrap').classList.toggle('hidden',!calendar);}
 function dailyReportPrintableDocument(report){
-  const c=dailyReportCopy(),demoNote=report.demo?' • DEMO DATA — NOT PRODUCTION':'',body=`<header class="print-head"><div><strong>INDUSTRIAL IA 5.34.6${demoNote}</strong><h1>${escapeHTML(c.title)}</h1><p>${escapeHTML(formatReportPeriod(report.period,report.generatedAt,report.shift))}</p></div><div><small>${c.generated}</small><br>${formatReportDateTime(report.generatedAt)}</div></header>${report.lines.map(renderDailyReportLine).join('')}`;
+  const c=dailyReportCopy(),demoNote=report.demo?' • DEMO DATA — NOT PRODUCTION':'',body=`<header class="print-head"><div><strong>INDUSTRIAL IA 5.35.0${demoNote}</strong><h1>${escapeHTML(c.title)}</h1><p>${escapeHTML(formatReportPeriod(report.period,report.generatedAt,report.shift))}</p></div><div><small>${c.generated}</small><br>${formatReportDateTime(report.generatedAt)}</div></header>${report.lines.map(renderDailyReportLine).join('')}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${escapeHTML(c.title)}</title><style>*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:22px;background:#fff}.print-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px}.print-head h1{margin:4px 0;font-size:24px}.print-head p{margin:0}.report-sheet{page-break-inside:avoid;border:1px solid #bbb;border-radius:10px;padding:14px;margin:0 0 16px}.report-sheet-head{display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:10px}.report-sheet-head h4{margin:3px 0;font-size:20px}.report-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.report-stat{border:1px solid #ccc;border-radius:7px;padding:7px}.report-stat span{display:block;font-size:8px;text-transform:uppercase}.report-stat strong{font-size:14px}.report-alert{border:1px solid #aaa;border-left:5px solid #555;padding:9px;margin:10px 0}.report-alert.lead{border-left-color:#b00020}.report-alert.persistent{border-left-color:#a46600}.report-alert.good{border-left-color:#087a45}.report-alert p{margin:3px 0 0;font-size:10px}.report-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.report-chart-card{border:1px solid #ccc;border-radius:7px;padding:8px}.report-chart-card h5{margin:0 0 5px}.report-chart-card svg{width:100%;height:120px}.report-zero{stroke:#333;stroke-width:1}.report-threshold{stroke:#999;stroke-width:1;stroke-dasharray:4 4}.report-polyline{fill:none;stroke:#111;stroke-width:2}.report-dot{fill:#111}.report-chart-caption{display:flex;justify-content:space-between;font-size:8px}.report-subtitle{display:flex;justify-content:space-between;margin-top:12px}.report-subtitle h5{margin:0 0 5px}.report-table-wrap{overflow:visible;margin-bottom:7px}.report-table{width:100%;border-collapse:collapse;font-size:8px}.report-table th,.report-table td{border:1px solid #ccc;padding:4px;text-align:left}.report-table th{background:#eee}.bad{font-weight:bold}.report-empty{padding:15px;border:1px dashed #aaa;text-align:center}@media print{body{padding:0}.report-sheet{break-inside:avoid}.report-chart-grid{break-inside:avoid}@page{margin:.35in}}</style></head><body>${body}</body></html>`;
 }
 function printDailyReport(){const report=renderDailyReportPreview()||lastDailyReport;if(!report)return;const win=window.open('','_blank');if(!win){showToast('The browser blocked the print window.');return;}win.document.open();win.document.write(dailyReportPrintableDocument(report));win.document.close();setTimeout(()=>{try{win.focus();win.print();}catch(_){}},250);}
@@ -4112,6 +4114,7 @@ function completeDualWinderCut(){
     recordProductionMaterial(pendingCut.winder1Input?.weight,pendingCut.winder2Input?.weight);
   }
   renderLearningDashboard();
+  window.ViejitoLab?.notifyProcessDataChanged?.();
   refreshBrainInsightAfterCut();
   pendingCut={winder1:null,winder2:null,mandrel:null,winder1Input:null,winder2Input:null}; saveSession(); renderPendingCut(); renderLastWinderBW(); renderLineQualityStrip(state.lastCompletedCut); renderTrendQualityCompact(state.lastCompletedCut);
   openPostCutRecommendationDecision(optimizer,trend);
@@ -4465,7 +4468,7 @@ function switchLine(line){
 function openLinePicker(){}
 function closeLinePicker(){}
 
-// 5.34.6 — random hydration/blade reminders removed by operator request.
+// 5.35.0 — random hydration/blade reminders removed by operator request.
 
 
 $('chat-form').addEventListener('submit',event=>{
@@ -4494,6 +4497,7 @@ $('chat-form').addEventListener('submit',event=>{
     }
     bubble('bot',response);
     saveChatMessage('bot',response);
+    try{window.ViejitoLab?.observeChatTurn?.({line:submittedLine,text,response,context:brainContext(submittedLine)});}catch(error){console.warn('Lab shadow observation failed',error);}
   },120);
 });
 document.querySelectorAll('.example').forEach(button=>button.addEventListener('click',()=>{$('chat-input').value=button.dataset.example;$('chat-form').requestSubmit();}));
@@ -4680,6 +4684,26 @@ window.addEventListener('pagehide',persistLineOperationalState);
 window.addEventListener('beforeunload',persistLineOperationalState);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistLineOperationalState();});
 
+// 5.35.0 — read-only bridge for Experimental Lab. No mutation methods are exposed.
+window.ViejitoLabBridge={
+  version:'5.35.0',
+  activeLine:()=>ACTIVE_LINE,
+  language:()=>state.language,
+  operator:()=>state.activeShift?.operator||state.operator||'',
+  context:(line=ACTIVE_LINE)=>brainContext(Number(line)||ACTIVE_LINE),
+  learningRecords:(line=ACTIVE_LINE)=>{
+    const n=Number(line)||ACTIVE_LINE;
+    if(n===ACTIVE_LINE)return (state.learningEngine?.records||[]).map(r=>({...r,line:n,extruder:Number(r.extruder)||n}));
+    try{const rows=JSON.parse(localStorage.getItem(`viejitoMachineLearningV3::line${n}`)||'[]');return Array.isArray(rows)?rows.map(r=>({...r,line:n,extruder:Number(r.extruder)||n})):[];}catch(_){return [];}
+  },
+  learningRecordsAll:()=>[1,2,3,4].flatMap(n=>window.ViejitoLabBridge.learningRecords(n)),
+  processRecords:(line=ACTIVE_LINE)=>{
+    const n=Number(line)||ACTIVE_LINE;if(n===ACTIVE_LINE)return (state.processLearning?.records||[]).map(r=>({...r,line:n}));
+    try{const rows=JSON.parse(localStorage.getItem(`${PROCESS_PERFORMANCE_KEY}::line${n}`)||'[]');return Array.isArray(rows)?rows.map(r=>({...r,line:n})):[];}catch(_){return [];}
+  },
+  chatHistory:(line=ACTIVE_LINE)=>{try{const n=Number(line)||ACTIVE_LINE;const rows=JSON.parse(localStorage.getItem(`${CHAT_HISTORY_KEY}::line${n}`)||'[]');return Array.isArray(rows)?rows:[];}catch(_){return [];} }
+};
+
 if(localStorage.getItem('viejitoTheme')==='light')document.documentElement.classList.add('light');
 selectMandrel('bw',state.mandrel);
 selectMandrel('ft',state.mandrel);
@@ -4714,7 +4738,7 @@ if(!restoreChatMessages()) ensureChatWelcome();
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js?v=5.34.7',{updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('./sw.js?v=5.35.0',{updateViaCache:'none'});
       await registration.update();
     }catch(error){
       console.error(error);

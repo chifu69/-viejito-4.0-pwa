@@ -10,7 +10,7 @@
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Industrial IA" name="apple-mobile-web-app-title"/>
 <link href="manifest.webmanifest" rel="manifest"/>
-<link href="styles.css?v=5.34.6" rel="stylesheet"/>
+<link href="styles.css?v=5.35.0" rel="stylesheet"/>
 <title>Industrial IA</title>
 </head>
 <body><div class="demo-mode-banner hidden" id="demo-mode-banner">DEMO MODE — ISOLATED DEMO DATA • REAL PRODUCTION &amp; LEARNING DISABLED</div>
@@ -252,6 +252,7 @@
 <button class="tool-menu-item" id="manual-process-open" role="menuitem" type="button"><span>🧾</span><strong id="manual-process-tool-label">Process Record</strong></button>
 <button class="tool-menu-item" id="speed-change-open" role="menuitem" type="button"><span>⚡</span><strong id="speed-change-tool-label">Speed Change Advisor</strong></button>
 <button class="tool-menu-item" id="daily-report-open" role="menuitem" type="button"><span>📊</span><strong id="daily-report-tool-label">Daily Quality Report</strong></button>
+<button class="tool-menu-item lab-tool-entry" id="lab-open" role="menuitem" type="button"><span>🧪</span><strong>Experimental Lab</strong><small>Shadow mode</small></button>
 <div aria-label="Mandrel selector" class="tool-menu-mandrel" role="group">
 <span class="tool-menu-mandrel-label">Mandrel</span>
 <div class="tool-menu-mandrel-buttons">
@@ -291,7 +292,7 @@
 <span class="production-summary-chevron">›</span>
 <span aria-hidden="true" class="production-hidden-values"><strong id="prod-produced-material">0</strong><strong id="prod-shift-target">—</strong><span id="prod-target-label">Shift target</span><span id="production-forecast">Start a shift to begin production tracking.</span></span>
 </button></main>
-<footer id="footer-text">Industrial IA 5.34.6 • Header Quality + Operator Rail Hotfix</footer>
+<footer id="footer-text">Industrial IA 5.35.0 • Experimental Lab 🧪</footer>
 </div>
 <div class="chat-backdrop" hidden="" id="chat-backdrop"></div>
 <aside aria-hidden="true" aria-label="Industrial IA chat" class="floating-chat" id="floating-chat">
@@ -588,7 +589,82 @@
 <div class="product-run-history" id="product-run-history"></div>
 </div>
 </div>
+
+<div aria-hidden="true" aria-labelledby="lab-title" aria-modal="true" class="product-dialog hidden lab-dialog" id="lab-dialog" role="dialog">
+  <div class="product-dialog-card lab-card">
+    <div class="product-dialog-heading lab-heading">
+      <div><p class="eyebrow">EXPERIMENTAL • SHADOW MODE</p><h3 id="lab-title">🧪 Viejito Lab</h3><p class="lab-subtitle">Learns and compares without changing normal Viejito or production controls.</p></div>
+      <button aria-label="Close Lab" class="dialog-close" id="lab-close" type="button">×</button>
+    </div>
+    <div class="lab-safety-strip"><strong>ISOLATED</strong><span>Lab may read shared learning data, train models and make shadow predictions. It cannot apply production changes.</span></div>
+    <nav aria-label="Lab sections" class="lab-tabs">
+      <button class="active" data-lab-tab="overview" type="button">Overview</button>
+      <button data-lab-tab="process" type="button">Process FIT</button>
+      <button data-lab-tab="chat" type="button">Chat Brain 🧠</button>
+      <button data-lab-tab="experiments" type="button">Experiments</button>
+    </nav>
+    <div class="lab-status" id="lab-status" data-state="info">Shadow mode ready.</div>
+
+    <section class="lab-panel" data-lab-panel="overview">
+      <div class="lab-metric-grid">
+        <div><small>Shared process samples</small><strong id="lab-overview-process-count">0</strong></div>
+        <div><small>Products represented</small><strong id="lab-overview-products">0</strong></div>
+        <div><small>Shadow chat turns</small><strong id="lab-overview-chat-count">0</strong></div>
+        <div><small>FIT champion</small><strong id="lab-overview-champion">16 → 8 → 1</strong></div>
+      </div>
+      <div class="lab-two-column">
+        <article class="lab-module-card"><div class="lab-module-title"><span>⚙️</span><div><small>PROCESS BRAIN</small><strong>FIT vs Viejito</strong></div></div><p>Starts at 16 → 8 → 1. Uses time-separated train / validation / test data and compares smaller and larger challengers only in the Lab.</p><span class="lab-state-pill" id="lab-overview-fit-state">Waiting for training</span></article>
+        <article class="lab-module-card"><div class="lab-module-title"><span>🧠</span><div><small>CHAT BRAIN</small><strong>Flow + context learning</strong></div></div><p>Learns operator phrasing from approved corrections while preserving line, product, winder and multi-turn context. Production actions remain disabled in Lab.</p><span class="lab-state-pill" id="lab-overview-chat-state">Seed brain ready</span></article>
+      </div>
+      <div class="lab-principle"><strong>Champion rule</strong><p>Keep the smallest model that performs best. More neurons are promoted only when the same held-out test proves a meaningful, repeatable improvement.</p></div>
+    </section>
+
+    <section class="lab-panel hidden" data-lab-panel="process">
+      <div class="lab-metric-grid compact">
+        <div><small>Valid samples</small><strong id="lab-process-samples">0</strong></div>
+        <div><small>Products</small><strong id="lab-process-products">0</strong></div>
+        <div><small>Lines</small><strong id="lab-process-lines">0</strong></div>
+        <div><small>Champion</small><strong id="lab-champion-arch">16 → 8 → 1</strong></div>
+        <div><small>Parameters</small><strong id="lab-champion-params">—</strong></div>
+        <div><small>Normal adaptive MAE</small><strong id="lab-viejito-mae">—</strong></div>
+        <div><small>FIT MAE</small><strong id="lab-fit-mae">—</strong></div>
+      </div>
+      <div class="lab-controls-row">
+        <button class="secondary" id="lab-train" type="button">Train champion</button>
+        <button class="primary" id="lab-auto-compare" type="button">Auto compare neurons</button>
+        <label class="lab-switch"><input checked id="lab-auto-toggle" type="checkbox"/><span>Auto-test after enough new samples</span></label>
+      </div>
+      <div class="lab-progress" id="lab-process-progress">Ready.</div>
+      <div class="lab-results" id="lab-process-results"></div>
+      <p class="lab-footnote">FIT target for v1 is the ideal S-Wrap learned from confirmed roll outcomes. The Lab never writes its prediction back to production.</p>
+    </section>
+
+    <section class="lab-panel hidden" data-lab-panel="chat">
+      <div class="lab-metric-grid compact">
+        <div><small>Labeled examples</small><strong id="lab-chat-samples">0</strong></div>
+        <div><small>Approved corrections</small><strong id="lab-chat-feedback-count">0</strong></div>
+        <div><small>Shadow turns</small><strong id="lab-chat-shadow-count">0</strong></div>
+        <div><small>Hybrid held-out accuracy</small><strong id="lab-chat-accuracy">—</strong></div>
+        <div><small>Brain status</small><strong id="lab-chat-model-status">Seed/rules only</strong></div>
+      </div>
+      <div class="lab-controls-row"><button class="primary" id="lab-chat-train" type="button">Train Chat Brain</button><span id="lab-chat-train-status">Approve real chat interpretations to add plant-language examples.</span></div>
+      <div class="lab-chat-playground">
+        <div class="lab-section-heading"><div><small>PLAYGROUND</small><strong>Test multi-turn understanding</strong></div><span>Does not execute actions</span></div>
+        <div class="lab-chat-test-row"><input autocomplete="off" id="lab-chat-input" placeholder="Example: W2 sigue pesado / y la otra?" type="text"/><button class="secondary" id="lab-chat-test" type="button">Test</button></div>
+        <div class="lab-chat-output" id="lab-chat-output"><p>Try a message. The Lab will show intent, reference resolution and the response it would build from current context.</p></div>
+      </div>
+      <div class="lab-section-heading"><div><small>LIVE SHADOW REVIEW</small><strong>Teach from real chat</strong></div><span>✓ saves the selected interpretation as a training example</span></div>
+      <div class="lab-shadow-list" id="lab-chat-shadow-list"></div>
+    </section>
+
+    <section class="lab-panel hidden" data-lab-panel="experiments">
+      <div class="lab-section-heading"><div><small>MODEL HISTORY</small><strong>Champion / challenger record</strong></div><span>Rejected models remain metrics only; production is untouched.</span></div>
+      <div class="lab-experiment-list" id="lab-experiment-list"></div>
+    </section>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
+<script src="lab-core.js?v=5.35.0"></script>
 <script src="optimizer.js?v=5.34.6"></script>
 <script src="process-learning.js?v=5.34.6"></script>
 <script src="davis-standard-brain.js?v=5.34.6"></script>
@@ -597,6 +673,7 @@
 <script src="local-brain.js?v=5.34.6"></script>
 <script src="conversation-engine.js?v=5.34.7"></script>
 <script src="chat-dialogue.js?v=5.34.7"></script>
-<script src="app.js?v=5.34.7"></script>
+<script src="app.js?v=5.35.0"></script>
+<script src="lab-brain.js?v=5.35.0"></script>
 </body>
 </html>
