@@ -1,5 +1,5 @@
 /*
-  Industrial IA 5.35.1 — Output Correction escalation
+  Industrial IA 5.35.2 — Output Correction hotfix
   When BW is heavy and S-Wrap is already at the 228 ft/min ceiling,
   Viejito asks for measured two-roll production data and calculates a
   coordinated Primary/Secondary starting point to reduce output.
@@ -13,6 +13,7 @@
   const DIALOG_ID = 'output-correction-dialog';
   const STYLE_ID = 'output-correction-style';
   let lastSignature = '';
+  let lastLanguage = '';
 
   const num = value => Number(value);
   const finitePositive = value => Number.isFinite(num(value)) && num(value) > 0;
@@ -245,23 +246,40 @@
 
   function refresh(){
     if(!document.body)return;
-    injectStyle();renderLanguage();
+    injectStyle();
     const card=ensureCard(),ctx=activeContext();
     if(!card)return;
-    card.classList.toggle('hidden',!ctx);
+
+    // Keep refresh idempotent. Output Correction lives inside optimizer-panel, so a
+    // subtree MutationObserver calling refresh() would observe the DOM changes made
+    // by refresh itself and can create an endless feedback loop that blocks the UI.
+    const currentLanguage=language();
+    if(currentLanguage!==lastLanguage){
+      renderLanguage();
+      lastLanguage=currentLanguage;
+    }
+
+    const shouldHide=!ctx;
+    if(card.classList.contains('hidden')!==shouldHide)card.classList.toggle('hidden',shouldHide);
+
     if(ctx){
       const signature=[ctx.actualBW,ctx.targetBW,ctx.currentSWrap,(typeof state!=='undefined'?state?.activeShift?.runId:'')||''].join('|');
-      if(signature!==lastSignature){lastSignature=signature;renderLanguage();}
+      lastSignature=signature;
+    }else{
+      lastSignature='';
     }
   }
 
   function start(){
     if(!document.body)return;
+    injectStyle();
+    renderLanguage();
+    lastLanguage=language();
     refresh();
-    const panel=document.getElementById('optimizer-panel');
-    if(panel&&root.MutationObserver)new MutationObserver(refresh).observe(panel,{subtree:true,childList:true,characterData:true,attributes:true});
     ['bw-target','bw-current-swrap','bw-weight','bw-length','bw2-weight','bw2-length'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>setTimeout(refresh,0)));
-    root.setInterval(refresh,1500);
+    // Polling is intentionally lightweight and idempotent. It catches optimizer
+    // state changes after a BW calculation without observing our own DOM mutations.
+    root.setInterval(refresh,1200);
   }
 
   root.ViejitoOutputCorrection={calculateOutputCorrection,refresh,openDialog};

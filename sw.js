@@ -1,5 +1,5 @@
-const CACHE='industrial-ia-5.35.1-output-correction';
-const OUTPUT_CORRECTION_SCRIPT='./output-correction.js?v=5.35.1';
+const CACHE='industrial-ia-5.35.2-output-correction-hotfix';
+const OUTPUT_CORRECTION_SCRIPT='./output-correction.js?v=5.35.2';
 const APP_FILES=[
   './',
   './index.html',
@@ -25,7 +25,7 @@ const APP_FILES=[
 function injectOutputCorrection(html){
   const text=String(html||'');
   if(text.includes('output-correction.js'))return text;
-  const tag='<script src="./output-correction.js?v=5.35.1"></script>';
+  const tag='<script src="./output-correction.js?v=5.35.2"></script>';
   return text.includes('</body>')?text.replace('</body>',`${tag}\n</body>`):`${text}\n${tag}`;
 }
 
